@@ -36,3 +36,6 @@ out/
 *.swp
 .idea/
 .vscode/
+
+third_party/bitcoin/build-uwp/
+**/.xbb-uwp-patches-applied

@@ -1,0 +1,28 @@
+diff --git a/src/common/system.cpp b/src/common/system.cpp
+index 08c0c69..3fa738b 100644
+--- a/src/common/system.cpp
++++ b/src/common/system.cpp
+@@ -50,14 +50,21 @@ std::string ShellEscape(const std::string& arg)
+ void runCommand(const std::string& strCommand)
+ {
+     if (strCommand.empty()) return;
+-#ifndef WIN32
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++    // UWP: no process spawn / _wsystem in AppContainer.
++    LogWarning("runCommand ignored under UWP AppContainer: %s", strCommand);
++    return;
++#elif !defined(WIN32)
+     int nErr = ::system(strCommand.c_str());
++    if (nErr) {
++        LogWarning("runCommand error: system(%s) returned %d", strCommand, nErr);
++    }
+ #else
+     int nErr = ::_wsystem(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>,wchar_t>().from_bytes(strCommand).c_str());
+-#endif
+     if (nErr) {
+         LogWarning("runCommand error: system(%s) returned %d", strCommand, nErr);
+     }
++#endif
+ }
+ #endif
+ 

@@ -56,11 +56,17 @@ source ~/.config/xllama/xbox-env   # or scripts/env.sh
 
 Results also in `LocalState\probe-results.txt`.
 
-## Next integration (not in scaffold)
+## Full Core build (optional, slow)
 
-1. Link Bitcoin Core pin (static libs or object set) into the UWP project.  
-2. Call `AppInitMain` / bitcoind entry with `-datadir=<LocalState>\bitcoin`.  
-3. Disable subprocess notify hooks; keep `listen=0`.  
-4. Stream status (block height, connections) into `MainPage`.  
+```powershell
+.\scripts\build-uwp.ps1 -WithCore
+# or step by step:
+.\scripts\fetch-bitcoin-core.ps1
+.\scripts\apply-uwp-patches.ps1
+.\scripts\build-core-uwp.ps1
+.\scripts\build-uwp.ps1 -WithCore
+```
 
-See `docs/research/spikes/api-matrix.md`.
+CI job `uwp-core` on `main` / dispatch with `with_core=true`.
+
+See [plan-core-uwp.md](./plan-core-uwp.md) and [api-matrix.md](./research/spikes/api-matrix.md).

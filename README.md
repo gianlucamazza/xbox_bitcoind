@@ -6,7 +6,7 @@ Port of **Bitcoin Core (`bitcoind`)** to **Xbox Series S** (shared Dev Mode cons
 [![ci-msvc-baseline](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml)
 [![build-uwp](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml)
 
-> Status: **UWP scaffold ready** — Core **v31.1** desktop CI green; Hello-UWP probes package under `uwp/`. Bitcoind not linked into MSIX yet.
+> Status: **UWP scaffold on console (probes green)** + **Core UWP link path** (`-WithCore`, patches, CI `uwp-core`). Pin v31.1.
 
 ## Goals (v1)
 

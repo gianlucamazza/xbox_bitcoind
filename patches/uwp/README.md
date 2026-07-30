@@ -1,0 +1,11 @@
+# UWP patches for Bitcoin Core (pin v31.1)
+
+Applied by `scripts/apply-uwp-patches.sh` / `.ps1` after fetch.
+
+| Patch | Purpose |
+|-------|---------|
+| `0001-lockedpool-no-virtuallock.patch` | No VirtualLock/Unlock on AppContainer |
+| `0002-runcommand-noop-uwp.patch` | No `_wsystem` under UWP |
+| `0003-bitcoind-embed-entry.patch` | `BitcoindMain` when `BITCOIND_EMBED` |
+
+Do not commit a patched `third_party/bitcoin` tree — only these patch files.

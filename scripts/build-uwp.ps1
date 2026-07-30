@@ -23,7 +23,10 @@ param(
     [string] $Platform = "x64",
     [switch] $ForceNewCert = $false,
     [int] $BuildRevision = $(if ($env:GITHUB_RUN_NUMBER) { [int]$env:GITHUB_RUN_NUMBER } else { 0 }),
-    [string] $PlatformToolsetOverride = ""
+    [string] $PlatformToolsetOverride = "",
+    # Build+link Bitcoin Core UWP static libs into the package (slow; needs vcpkg x64-uwp).
+    [switch] $WithCore = $false,
+    [string] $CoreBuildDir = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -116,6 +119,27 @@ if ($BuildRevision -gt 0) {
     Write-Host "Version stamped: $stamped"
 }
 
+$CoreLibDir = ""
+if ($WithCore) {
+    Write-Host "=== WithCore: building Bitcoin Core for UWP ==="
+    & (Join-Path $PSScriptRoot "build-core-uwp.ps1") -Configuration $Configuration
+    if ($LASTEXITCODE -ne 0) { throw "build-core-uwp.ps1 failed" }
+    $coreRoot = if ($CoreBuildDir) { $CoreBuildDir } else { Join-Path $RepoRoot "third_party\bitcoin\build-uwp" }
+    foreach ($c in @(
+            (Join-Path $coreRoot "src\$Configuration"),
+            (Join-Path $coreRoot "lib\$Configuration"),
+            (Join-Path $coreRoot "src"),
+            (Join-Path $coreRoot "lib"),
+            $coreRoot
+        )) {
+        if (Test-Path (Join-Path $c "bitcoin_node.lib")) { $CoreLibDir = $c; break }
+    }
+    if (-not $CoreLibDir) {
+        throw "WithCore set but bitcoin_node.lib not found under $coreRoot"
+    }
+    Write-Host "Linking Core from $CoreLibDir"
+}
+
 Write-Host "Building $Configuration|$Platform ..."
 $MsBuildArgs = @(
     $SlnPath,
@@ -133,6 +157,12 @@ $MsBuildArgs = @(
 )
 if ($PlatformToolsetOverride) {
     $MsBuildArgs += "/p:PlatformToolsetOverride=$PlatformToolsetOverride"
+}
+if ($WithCore -and $CoreLibDir) {
+    $MsBuildArgs += "/p:XbbWithCore=true"
+    $MsBuildArgs += "/p:XbbCoreLibDir=$CoreLibDir"
+    $MsBuildArgs += "/p:XbbCoreSrcDir=$(Join-Path $RepoRoot 'third_party\bitcoin\src')"
+    $MsBuildArgs += "/p:XbbCoreBuildDir=$(if ($CoreBuildDir) { $CoreBuildDir } else { Join-Path $RepoRoot 'third_party\bitcoin\build-uwp' })"
 }
 
 & $MsBuild @MsBuildArgs

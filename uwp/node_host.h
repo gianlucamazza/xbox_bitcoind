@@ -2,23 +2,27 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <atomic>
 #include <string>
 
 namespace xbb {
 
-// Future integration point for Bitcoin Core bitcoind.
-// Scaffold only: does not link Core yet.
 struct NodeStatus {
     bool running = false;
-    std::string message = "bitcoind not linked (scaffold)";
+    bool available = false; // true when BITCOIND_EMBED linked
+    std::string message;
     std::string datadir;
+    int last_exit = 0;
 };
 
-// Returns planned datadir under LocalState\bitcoin and status message.
+// Snapshot for UI (thread-safe enough for status reads).
 NodeStatus NodeStatusSnapshot();
 
-// Placeholder start/stop — no-op until Core is linked into the package.
+// Start bitcoind on a background thread (no-op / false if not linked).
 bool NodeStart();
 void NodeStop();
+
+// true if compiled with XBB_WITH_CORE
+bool NodeCoreLinked();
 
 } // namespace xbb

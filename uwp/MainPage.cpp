@@ -25,7 +25,8 @@ MainPageController::MainPageController() = default;
 void MainPageController::Init() {
     BuildUI();
     auto st = NodeStatusSnapshot();
-    SetStatus(std::string("xbox_bitcoind scaffold\n\n") + st.message + "\n\nRunning probes…");
+    std::string head = NodeCoreLinked() ? "xbox_bitcoind (Core linked)\n\n" : "xbox_bitcoind scaffold\n\n";
+    SetStatus(head + st.message + "\n\nRunning probes…");
 }
 
 void MainPageController::BuildUI() {
@@ -93,8 +94,18 @@ void MainPageController::StartProbesAsync() {
             dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal,
                                 [self, report]() {
                                     auto st = NodeStatusSnapshot();
-                                    self->SetStatus(std::string("xbox_bitcoind scaffold\n\n") + st.message +
-                                                    "\n\n=== Probes ===\n\n" + report);
+                                    std::string head =
+                                        NodeCoreLinked() ? "xbox_bitcoind (Core linked)\n\n" : "xbox_bitcoind scaffold\n\n";
+                                    self->SetStatus(head + st.message + "\n\n=== Probes ===\n\n" + report);
+                                    // Auto-start node after probes when Core is linked
+                                    if (NodeCoreLinked()) {
+                                        self->AppendLine("\nStarting bitcoind…");
+                                        if (NodeStart()) {
+                                            self->AppendLine("Node thread started (see LocalState\\bitcoin\\debug.log).");
+                                        } else {
+                                            self->AppendLine("NodeStart failed.");
+                                        }
+                                    }
                                 });
         });
 }

@@ -1,0 +1,16 @@
+diff --git a/src/bitcoind.cpp b/src/bitcoind.cpp
+index 323e757..28f90e3 100644
+--- a/src/bitcoind.cpp
++++ b/src/bitcoind.cpp
+@@ -257,7 +257,11 @@ static bool AppInit(NodeContext& node)
+     return fRet;
+ }
+ 
++#ifdef BITCOIND_EMBED
++int BitcoindMain(int argc, char* argv[])
++#else
+ MAIN_FUNCTION
++#endif
+ {
+     NodeContext node;
+     int exit_status;

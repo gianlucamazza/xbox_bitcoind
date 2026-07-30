@@ -58,6 +58,8 @@
     <GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
     <AppxAutoIncrementPackageRevision>false</AppxAutoIncrementPackageRevision>
     <CppWinRTGenerateWindowsMetadata>true</CppWinRTGenerateWindowsMetadata>
+    <!-- Optional Core link: /p:XbbWithCore=true /p:XbbCoreLibDir=... /p:XbbCoreSrcDir=... -->
+    <XbbWithCore Condition="'$(XbbWithCore)' == ''">false</XbbWithCore>
   </PropertyGroup>
 
   <ItemDefinitionGroup>
@@ -66,6 +68,9 @@
         $(ProjectDir);
         $(ProjectDir)Generated Files;
         $(IntDir)Generated Files;
+        $(XbbCoreSrcDir);
+        $(XbbCoreBuildDir);
+        $(XbbCoreBuildDir)\src;
         %(AdditionalIncludeDirectories)
       </AdditionalIncludeDirectories>
       <PreprocessorDefinitions>
@@ -87,6 +92,35 @@
       <AdditionalDependencies>WindowsApp.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+
+  <!-- When linking Core: define embed flag and pull static libs. -->
+  <ItemDefinitionGroup Condition="'$(XbbWithCore)' == 'true'">
+    <ClCompile>
+      <PreprocessorDefinitions>XBB_WITH_CORE=1;BITCOIND_EMBED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(XbbCoreLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+        bitcoin_node.lib;
+        bitcoin_common.lib;
+        bitcoin_util.lib;
+        bitcoin_consensus.lib;
+        bitcoin_crypto.lib;
+        bitcoin_clientversion.lib;
+        leveldb.lib;
+        crc32c.lib;
+        minisketch.lib;
+        secp256k1.lib;
+        univalue.lib;
+        %(AdditionalDependencies)
+      </AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <ItemGroup Condition="'$(XbbWithCore)' == 'true'">
+    <ClCompile Include="$(XbbCoreSrcDir)\bitcoind.cpp" />
+    <ClCompile Include="$(XbbCoreSrcDir)\init\bitcoind.cpp" />
+  </ItemGroup>
 
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

@@ -5,46 +5,96 @@ on:
     branches: [main]
     paths:
       - "uwp/**"
-      - "config/bitcoin.conf.console"
+      - "config/**"
+      - "patches/**"
       - "scripts/build-uwp.ps1"
+      - "scripts/build-core-uwp.ps1"
+      - "scripts/apply-uwp-patches.*"
+      - "scripts/fetch-bitcoin-core.*"
       - ".github/workflows/build-uwp.yml"
   pull_request:
     paths:
       - "uwp/**"
-      - "config/bitcoin.conf.console"
+      - "config/**"
+      - "patches/**"
       - "scripts/build-uwp.ps1"
+      - "scripts/build-core-uwp.ps1"
+      - "scripts/apply-uwp-patches.*"
+      - "scripts/fetch-bitcoin-core.*"
       - ".github/workflows/build-uwp.yml"
   workflow_dispatch:
+    inputs:
+      with_core:
+        description: "Build and link Bitcoin Core into the MSIX (slow)"
+        type: boolean
+        default: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  uwp:
-    # Prefer VS2022 image for stable UWP SDK 22621 / v143 (same as xllama).
-    # Override via workflow_dispatch later if moving fully to VS2026.
+  # Fast path: Hello-UWP scaffold (no Core)
+  uwp-scaffold:
+    if: github.event_name != 'workflow_dispatch' || inputs.with_core == false
     runs-on: windows-2022
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
-
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
-
-      - name: Install NuGet
-        uses: nuget/setup-nuget@v2
-
-      - name: Build UWP package
-        id: build
+      - uses: microsoft/setup-msbuild@v2
+      - uses: nuget/setup-nuget@v2
+      - name: Build UWP package (scaffold)
         shell: pwsh
-        run: |
-          .\scripts\build-uwp.ps1 -Configuration Release -BuildRevision ${{ github.run_number }}
-
-      - name: Upload MSIX + cert
-        uses: actions/upload-artifact@v7
+        run: .\scripts\build-uwp.ps1 -Configuration Release -BuildRevision ${{ github.run_number }}
+      - uses: actions/upload-artifact@v7
         with:
-          name: xbox_bitcoind-msix
+          name: xbox_bitcoind-msix-scaffold
+          path: |
+            uwp/AppPackages/**/*.msix
+            uwp/AppPackages/**/*.appx
+            uwp/xbox_bitcoind-dev.cer
+          if-no-files-found: error
+          retention-days: 14
+
+  # Full path: Core UWP libs + linked package
+  uwp-core:
+    # On main push always try full core; on PR scaffold only unless dispatch
+    if: |
+      github.event_name == 'workflow_dispatch' && inputs.with_core == true ||
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: windows-2022
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: microsoft/setup-msbuild@v2
+      - uses: nuget/setup-nuget@v2
+
+      - name: Install Ninja
+        shell: pwsh
+        run: choco install ninja -y --no-progress
+
+      - name: Cache vcpkg UWP + core build
+        uses: actions/cache@v6
+        with:
+          path: |
+            third_party/bitcoin/build-uwp
+            ~/AppData/Local/vcpkg/archives
+            C:/vcpkg/installed/x64-uwp
+          key: core-uwp-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}
+          restore-keys: core-uwp-
+
+      - name: Build UWP package with Core
+        shell: pwsh
+        env:
+          VCPKG_ROOT: C:\vcpkg
+          VCPKG_INSTALLATION_ROOT: C:\vcpkg
+        run: |
+          .\scripts\build-uwp.ps1 -Configuration Release -BuildRevision ${{ github.run_number }} -WithCore
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: xbox_bitcoind-msix-core
           path: |
             uwp/AppPackages/**/*.msix
             uwp/AppPackages/**/*.appx

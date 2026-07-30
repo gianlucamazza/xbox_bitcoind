@@ -1,0 +1,44 @@
+diff --git a/src/support/lockedpool.cpp b/src/support/lockedpool.cpp
+index ff3a9e6..c20f82e 100644
+--- a/src/support/lockedpool.cpp
++++ b/src/support/lockedpool.cpp
+@@ -179,11 +179,16 @@ void *Win32LockedPageAllocator::AllocateLocked(size_t len, bool *lockingSuccess)
+     len = align_up(len, page_size);
+     void *addr = VirtualAlloc(nullptr, len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+     if (addr) {
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++        // UWP AppContainer: VirtualLock is not in the API partition.
++        *lockingSuccess = false;
++#else
+         // VirtualLock is used to attempt to keep keying material out of swap. Note
+         // that it does not provide this as a guarantee, but, in practice, memory
+         // that has been VirtualLock'd almost never gets written to the pagefile
+         // except in rare circumstances where memory is extremely low.
+         *lockingSuccess = VirtualLock(const_cast<void*>(addr), len) != 0;
++#endif
+     }
+     return addr;
+ }
+@@ -191,16 +196,22 @@ void Win32LockedPageAllocator::FreeLocked(void* addr, size_t len)
+ {
+     len = align_up(len, page_size);
+     memory_cleanse(addr, len);
++#if !defined(WINAPI_FAMILY) || (WINAPI_FAMILY != WINAPI_FAMILY_APP)
+     VirtualUnlock(const_cast<void*>(addr), len);
++#endif
+ }
+ 
+ size_t Win32LockedPageAllocator::GetLimit()
+ {
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++    return std::numeric_limits<size_t>::max();
++#else
+     size_t min, max;
+     if(GetProcessWorkingSetSize(GetCurrentProcess(), &min, &max) != 0) {
+         return min;
+     }
+     return std::numeric_limits<size_t>::max();
++#endif
+ }
+ #endif
+ 
