@@ -56,7 +56,8 @@ export XBOX_PORT="${XBOX_PORT:-11443}"
 export XBOX_ENV_SOURCE="${_xbox_env_found}"
 
 # Package identity for this project (WDP helpers).
-export XBOX_BITCOIND_APP_ID="${XBOX_BITCOIND_APP_ID:-GianlucaMazza.xbox_bitcoind}"
+# AppX Identity Name: only [-.A-Za-z0-9] (no underscore)
+export XBOX_BITCOIND_APP_ID="${XBOX_BITCOIND_APP_ID:-GianlucaMazza.xboxbitcoind}"
 export XBOX_BITCOIND_APP_ENTRY="${XBOX_BITCOIND_APP_ENTRY:-xbox_bitcoind}"
 export XBOX_BITCOIND_LOG="${XBOX_BITCOIND_LOG:-bitcoind.log}"
 

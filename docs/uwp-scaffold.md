@@ -8,7 +8,7 @@ next integration step after probes pass on console.
 
 ```
 uwp/
-  AppxManifest.xml          # GianlucaMazza.xbox_bitcoind, capabilities
+  AppxManifest.xml          # GianlucaMazza.xboxbitcoind, capabilities
   xbox_bitcoind.sln|.vcxproj
   packages.config           # Microsoft.Windows.CppWinRT only
   App.* / MainPage.*        # programmatic XAML UI

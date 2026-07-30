@@ -75,6 +75,6 @@ Exact working-set ceiling for a pruned IBD is **not yet measured** under bitcoin
 
 | Field | Value |
 |-------|--------|
-| Identity Name | `GianlucaMazza.xbox_bitcoind` |
+| Identity Name | `GianlucaMazza.xboxbitcoind` (AppX: no underscores) |
 | Application Id | `xbox_bitcoind` |
 | Log file (LocalState) | `bitcoind.log` |

@@ -9,7 +9,7 @@
 
   <!-- Major.Minor.Build is semantic; Revision stamped by build-uwp.ps1 -BuildRevision in CI. -->
   <Identity
-    Name="GianlucaMazza.xbox_bitcoind"
+    Name="GianlucaMazza.xboxbitcoind"
     Publisher="CN=xbox_bitcoind-dev"
     Version="0.1.0.0"
     ProcessorArchitecture="x64" />
