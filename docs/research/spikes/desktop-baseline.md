@@ -27,19 +27,20 @@
 | vcpkg | VS-bundled / standalone path |
 | Script | `.\scripts\build-msvc-baseline.ps1` |
 | Flags | GUI=OFF wallet=OFF ZMQ=OFF IPC=OFF tests=ON |
-| Result | **pending** — run on Windows |
+| Result | **pending** — GHA `ci-msvc-baseline` on `windows-2025-vs2026` |
 | `bitcoind -version` | |
-| ctest summary | |
-| Binary path | |
+| ctest summary | on `main` push (skipped on PR) |
+| Binary path | Actions artifact `bitcoind-msvc-x64` |
 | Regtest smoke | not run |
-| Notes | See `docs/build-msvc-baseline.md` |
+| Notes | See `docs/build-msvc-baseline.md` and `docs/ci.md` |
 
 ## Go / no-go for UWP port of this pin
 
 - [x] Pin recorded and fetch script idempotent (`./scripts/fetch-bitcoin-core.sh`)
-- [x] Same pin builds on Linux (daemon)
-- [ ] MSVC Release `bitcoind` builds
+- [x] Same pin builds on Linux (daemon + CI workflow)
+- [ ] MSVC Release `bitcoind` builds (CI workflow added; await green)
 - [ ] Unit tests acceptable (or known failures listed)
 - [x] Console defaults in `config/bitcoin.conf.console` still sensible for this version
+- [x] GitHub Actions wired (`ci-linux`, `ci-msvc-baseline`)
 
-**Decision:** pin **v31.1** accepted for port work; **MSVC gate still open** until Windows run.
+**Decision:** pin **v31.1** accepted for port work; **MSVC gate** closes when `ci-msvc-baseline` is green on `main`.
