@@ -128,7 +128,7 @@ Details: [docs/uwp-scaffold.md](docs/uwp-scaffold.md)
 | **0b′** | GitHub Actions (Linux + MSVC) | **green on main** |
 | **0c** | API matrix | **done** (static) |
 | **0d** | Hello-UWP scaffold + probes | **scaffold in tree** |
-| **1** | Link Core into UWP (`-WithCore`, patches, CI) | **in tree — needs CI green** |
+| **1** | Link Core into UWP (`-WithCore`, VS2026 CI) | **in progress — toolchain aligned** |
 | **2** | Node: regtest → testnet → mainnet pruned | pending |
 | **3** | Hardening, docs, optional wallet | pending |
 
