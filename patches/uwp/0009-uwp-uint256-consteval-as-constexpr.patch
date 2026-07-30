@@ -1,0 +1,46 @@
+diff --git a/src/uint256.h b/src/uint256.h
+index d420427..03ad648 100644
+--- a/src/uint256.h
++++ b/src/uint256.h
+@@ -6,6 +6,14 @@
+ #ifndef BITCOIN_UINT256_H
+ #define BITCOIN_UINT256_H
+ 
++// MSVC + WindowsStore: consteval hex ctors fail C7595 in designated initializers
++// (chainparams assumeutxo). Use constexpr under UWP App partition only.
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++#define XBB_CONSTEVAL constexpr
++#else
++#define XBB_CONSTEVAL consteval
++#endif
++
+ #include <crypto/common.h>
+ #include <span.h>
+ #include <util/strencodings.h>
+@@ -43,7 +51,7 @@ public:
+         std::copy(vch.begin(), vch.end(), m_data.begin());
+     }
+ 
+-    consteval explicit base_blob(std::string_view hex_str);
++    XBB_CONSTEVAL explicit base_blob(std::string_view hex_str);
+ 
+     constexpr bool IsNull() const
+     {
+@@ -121,7 +129,7 @@ public:
+ };
+ 
+ template <unsigned int BITS>
+-consteval base_blob<BITS>::base_blob(std::string_view hex_str)
++XBB_CONSTEVAL base_blob<BITS>::base_blob(std::string_view hex_str)
+ {
+     if (hex_str.length() != m_data.size() * 2) throw "Hex string must fit exactly";
+     auto str_it = hex_str.rbegin();
+@@ -197,7 +205,7 @@ public:
+     static std::optional<uint256> FromHex(std::string_view str) { return detail::FromHex<uint256>(str); }
+     static std::optional<uint256> FromUserHex(std::string_view str) { return detail::FromUserHex<uint256>(str); }
+     constexpr uint256() = default;
+-    consteval explicit uint256(std::string_view hex_str) : base_blob<256>(hex_str) {}
++    XBB_CONSTEVAL explicit uint256(std::string_view hex_str) : base_blob<256>(hex_str) {}
+     constexpr explicit uint256(uint8_t v) : base_blob<256>(v) {}
+     constexpr explicit uint256(std::span<const unsigned char> vch) : base_blob<256>(vch) {}
+     static const uint256 ZERO;

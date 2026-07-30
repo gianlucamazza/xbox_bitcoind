@@ -14,3 +14,4 @@ Applied by `scripts/apply-uwp-patches.sh` / `.ps1` after fetch.
 | `0008-uwp-bitcoin-embed-static-lib.patch` | WindowsStore: build `bitcoin_embed` static lib (BitcoindMain) instead of bitcoind.exe |
 
 Do not commit a patched `third_party/bitcoin` tree — only these patch files.
+| `0009-uwp-uint256-consteval-as-constexpr.patch` | MSVC UWP C7595: treat uint256 hex ctors as constexpr |
