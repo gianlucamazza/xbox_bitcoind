@@ -33,18 +33,17 @@ Suggested method:
 
 | Area | Core usage (fill in) | UWP allowed? | Plan |
 |------|----------------------|--------------|------|
-| TCP client sockets | | | |
-| TCP listen / bind | | | |
-| Filesystem (datadir) | | | |
-| Memory-mapped files | | | |
-| Threads / sync | | | |
-| RNG / entropy | | | |
-| Time / steady clock | | | |
-| Process / signals / shutdown | | | |
-| HTTP RPC server | | | |
-| DNS seed resolution | | | |
+| TCP client sockets | winsock / select | OK w/ caps | outbound first |
+| TCP listen / bind | accept listeners | RISK | `listen=0` v1 |
+| Filesystem (datadir) | CSIDL AppData default | RISK | force LocalState |
+| Memory-mapped files | LevelDB mmap limited | RISK | probe / limit 0 |
+| Threads / sync | std threads | OK | modest par |
+| RNG / entropy | Win crypto | OK expected | smoke |
+| Process / spawn | CreateProcess | BLOCK | disable notifies |
+| HTTP RPC server | libevent | RISK | localhost only |
+| DNS seed resolution | system/libevent | OK | default |
 
-**Output artifact:** `docs/research/spikes/api-matrix.md`
+**Output artifact:** `docs/research/spikes/api-matrix.md` (**written**)
 
 ---
 
@@ -97,9 +96,9 @@ Console-oriented conf sketch: `config/bitcoin.conf.console` (`prune=550`, `liste
 | Tag pinned in repo | [x] | v31.1 |
 | `fetch-bitcoin-core.sh` checks out commit | [x] | verified on host |
 | MSVC scripts + docs | [x] | run on Windows still required |
-| Builds with GUI off (MSVC) | [ ] | `build-msvc-baseline.ps1` on Windows |
-| Unit tests (MSVC ctest) | [ ] | |
-| Linux smoke build | [x] | 2026-07-30 PASS — `v31.1 bitcoind` |
+| Builds with GUI off (MSVC) | [x] | GHA run 30582397400 PASS |
+| Unit tests (MSVC ctest) | [x] | **137/137** passed |
+| Linux smoke build | [x] | local + CI PASS |
 | Regtest smoke | [ ] | optional |
 | Testnet or mainnet pruned start | [ ] | optional, long |
 
@@ -144,9 +143,10 @@ Proceed to Phase 1 (build skeleton) only if:
 - [ ] Outbound TCP from UWP works  
 - [ ] Multi-file datadir writes work at pruned scale (or USB path proven)  
 - [ ] Measured RAM ≥ ~1.5–2 GB usable for node process (ideally more with Game class)  
-- [ ] Core tag pinned and desktop build documented  
+- [x] Core tag pinned and desktop build documented (MSVC 137/137)  
 - [ ] Host model A or B chosen  
+- [x] Static API matrix complete  
 
-**Overall:** `_GO / NO-GO / CONDITIONAL_`  
-**Date:**  
-**Author notes:**
+**Overall:** **CONDITIONAL GO** — pin/desktop gates closed; console Hello-UWP still required before Phase 1 package skeleton.  
+**Date:** 2026-07-30  
+**Author notes:** Proceed to Hello-UWP probes on shared Series S.

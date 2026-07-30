@@ -5,7 +5,7 @@ Port of **Bitcoin Core (`bitcoind`)** to **Xbox Series S** (shared Dev Mode cons
 [![ci-linux](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-linux.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-linux.yml)
 [![ci-msvc-baseline](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml)
 
-> Status: **Phase 0** — console config + **Bitcoin Core pin v31.1** + MSVC baseline + **GitHub Actions CI**. No Xbox MSIX yet.
+> Status: **Phase 0 complete for pin** — Core **v31.1** green on Linux + MSVC CI (137/137 tests). Next: Hello-UWP + AppContainer port.
 
 ## Goals (v1)
 
@@ -108,8 +108,9 @@ README.md
 |-------|--------|--------|
 | **0** | Research + console config (shared xllama) | **done** |
 | **0b** | Pin Core + MSVC baseline docs/scripts | **done** |
-| **0b′** | GitHub Actions (Linux + MSVC) | **workflows added** |
-| **0c** | Spikes: API matrix, Hello-UWP | pending |
+| **0b′** | GitHub Actions (Linux + MSVC) | **green on main** |
+| **0c** | API matrix | **done** (static) |
+| **0d** | Hello-UWP console probes | pending |
 | **1** | CMake/UWP package skeleton | pending |
 | **2** | Node: regtest → testnet → mainnet pruned | pending |
 | **3** | Hardening, docs, optional wallet | pending |
