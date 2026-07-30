@@ -54,6 +54,8 @@ ProbeResult ProbeLocalStateWrite() {
 
 ProbeResult ProbeVirtualAlloc() {
     ProbeResult r{"virtual_alloc", false, {}};
+    // VirtualLock/VirtualUnlock are desktop-partition APIs and are not available
+    // under WINAPI_PARTITION_APP (UWP). Probe committed memory only.
     constexpr SIZE_T kSize = 64 * 1024 * 1024; // 64 MiB
     void* p = VirtualAlloc(nullptr, kSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
     if (!p) {
@@ -65,13 +67,9 @@ ProbeResult ProbeVirtualAlloc() {
     for (SIZE_T i = 0; i < kSize; i += 4096) {
         c[i] = 1;
     }
-    BOOL locked = VirtualLock(p, kSize);
-    DWORD lock_err = locked ? 0 : GetLastError();
-    VirtualUnlock(p, kSize);
     VirtualFree(p, 0, MEM_RELEASE);
     r.ok = true;
-    r.detail = "VirtualAlloc 64MiB OK; VirtualLock=" + std::string(locked ? "ok" : "fail") +
-               " err=" + std::to_string(lock_err) + " (lock fail expected under AppContainer)";
+    r.detail = "VirtualAlloc+touch 64MiB OK (VirtualLock not in UWP partition — skipped)";
     return r;
 }
 
