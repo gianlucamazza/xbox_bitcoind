@@ -90,10 +90,28 @@ $cmakeArgs = @(
 & cmake @cmakeArgs
 if ($LASTEXITCODE -ne 0) { throw "cmake configure failed" }
 
-# Build embed stack (bitcoin_embed → bitcoin_node + deps). Avoid desktop bitcoind.exe.
-Write-Host "Building Core UWP libraries (bitcoin_embed + deps) ..."
-& cmake --build $BuildDir --config $Configuration --parallel --target bitcoin_embed
-if ($LASTEXITCODE -ne 0) { throw "cmake build failed (bitcoin_embed)" }
+# Explicitly build every static lib the UWP app links. MSVC does not merge
+# PRIVATE static deps into bitcoin_node.lib, and EXCLUDE_FROM_ALL targets may
+# not emit .lib files unless named as build targets.
+$CoreTargets = @(
+    "bitcoin_clientversion",
+    "bitcoin_crypto",
+    "bitcoin_consensus",
+    "bitcoin_util",
+    "bitcoin_common",
+    "leveldb",
+    "crc32c",
+    "minisketch",
+    "secp256k1",
+    "univalue",
+    "bitcoin_node",
+    "bitcoin_embed"
+)
+Write-Host "Building Core UWP libraries: $($CoreTargets -join ', ') ..."
+$targetArgs = @()
+foreach ($t in $CoreTargets) { $targetArgs += @("--target", $t) }
+& cmake --build $BuildDir --config $Configuration --parallel @targetArgs
+if ($LASTEXITCODE -ne 0) { throw "cmake build failed (Core UWP static libs)" }
 
 # Collect every directory that holds a .lib under the Core build (MSVC multi-config scatters some).
 $allLibs = Get-ChildItem $BuildDir -Recurse -Filter "*.lib" -ErrorAction SilentlyContinue
