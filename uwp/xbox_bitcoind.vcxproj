@@ -93,17 +93,14 @@
     </Link>
   </ItemDefinitionGroup>
 
-  <!-- When linking Core: BitcoindMain lives in bitcoin_embed.lib (built by build-core-uwp). -->
+  <!-- Core link paths come from xbb-core-libs.props (written by build-core-uwp.ps1). -->
+  <Import Project="$(XbbCoreProps)" Condition="'$(XbbWithCore)' == 'true' and '$(XbbCoreProps)' != '' and Exists('$(XbbCoreProps)')" />
+
   <ItemDefinitionGroup Condition="'$(XbbWithCore)' == 'true'">
     <ClCompile>
       <PreprocessorDefinitions>XBB_WITH_CORE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>
-        $(XbbCoreLibDir);
-        $(XbbVcpkgLibDir);
-        %(AdditionalLibraryDirectories)
-      </AdditionalLibraryDirectories>
       <AdditionalDependencies>
         bitcoin_embed.lib;
         bitcoin_node.lib;

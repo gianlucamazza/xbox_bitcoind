@@ -95,27 +95,22 @@ Write-Host "Building Core UWP libraries (bitcoin_embed + deps) ..."
 & cmake --build $BuildDir --config $Configuration --parallel --target bitcoin_embed
 if ($LASTEXITCODE -ne 0) { throw "cmake build failed (bitcoin_embed)" }
 
-# Export paths for the UWP app build
-$libCandidates = @(
-    (Join-Path $BuildDir "src\$Configuration"),
-    (Join-Path $BuildDir "lib\$Configuration"),
-    (Join-Path $BuildDir "src"),
-    (Join-Path $BuildDir "lib"),
-    $BuildDir
-)
-$found = $null
-foreach ($c in $libCandidates) {
-    if ((Test-Path (Join-Path $c "bitcoin_embed.lib")) -or (Test-Path (Join-Path $c "bitcoin_node.lib"))) {
-        $found = $c
-        break
-    }
+# Collect every directory that holds a .lib under the Core build (MSVC multi-config scatters some).
+$allLibs = Get-ChildItem $BuildDir -Recurse -Filter "*.lib" -ErrorAction SilentlyContinue
+if (-not $allLibs) {
+    throw "No .lib files produced under $BuildDir"
 }
+Write-Host "Core .lib inventory ($($allLibs.Count) files):"
+$allLibs | ForEach-Object { Write-Host ("  " + $_.FullName.Substring($BuildDir.Length)) }
+
+$libDirs = $allLibs | ForEach-Object { $_.DirectoryName } | Sort-Object -Unique
+$found = ($libDirs | Where-Object { Test-Path (Join-Path $_ "bitcoin_embed.lib") } | Select-Object -First 1)
 if (-not $found) {
-    Write-Warning "Could not locate bitcoin_embed/node.lib — listing build dir:"
-    Get-ChildItem $BuildDir -Recurse -Filter "bitcoin_*.lib" -ErrorAction SilentlyContinue | Select-Object -First 30 FullName
-} else {
-    Write-Host "Core libs: $found"
+    $found = ($libDirs | Where-Object { Test-Path (Join-Path $_ "bitcoin_node.lib") } | Select-Object -First 1)
 }
+if (-not $found) { throw "bitcoin_embed.lib / bitcoin_node.lib missing after build" }
+Write-Host "Primary Core lib dir: $found"
+Write-Host "All Core lib dirs: $($libDirs -join ';')"
 
 # vcpkg installed libs (libevent, etc.) for final UWP link
 $vcpkgLibCandidates = @(
@@ -128,14 +123,42 @@ foreach ($c in $vcpkgLibCandidates) {
 }
 if ($vcpkgLib) {
     Write-Host "vcpkg libs: $vcpkgLib"
+    Get-ChildItem $vcpkgLib -Filter "*.lib" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ("  vcpkg: " + $_.Name) }
 } else {
     Write-Warning "vcpkg lib dir not found (link may miss libevent)"
 }
 
+# Semicolon-separated path list for MSBuild AdditionalLibraryDirectories.
+# Do NOT pass this via /p: (MSBuild splits on ';'). Put it in a .props file instead.
+$allLibDirs = @($libDirs) + @($vcpkgLib) | Where-Object { $_ } | Sort-Object -Unique
+$libPathList = $allLibDirs -join ";"
+
 if ($env:GITHUB_OUTPUT) {
     "core_build_dir=$BuildDir" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
-    if ($found) { "core_lib_dir=$found" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8 }
+    "core_lib_dir=$found" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
     if ($vcpkgLib) { "vcpkg_lib_dir=$vcpkgLib" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8 }
 }
 
+# Props file imported by the UWP project when WithCore=true (avoids /p: semicolon split).
+$propsPath = Join-Path $BuildDir "xbb-core-libs.props"
+$libDirsXml = ($allLibDirs | ForEach-Object { "      $_;" }) -join "`n"
+@"
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <XbbCoreLibDir>$found</XbbCoreLibDir>
+    <XbbVcpkgLibDir>$vcpkgLib</XbbVcpkgLibDir>
+    <XbbWithCore>true</XbbWithCore>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <Link>
+      <AdditionalLibraryDirectories>
+$libDirsXml
+        %(AdditionalLibraryDirectories)
+      </AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>
+"@ | Set-Content -Path $propsPath -Encoding UTF8
+Write-Host "Wrote $propsPath"
 Write-Host "OK: Core UWP build finished ($BuildDir)"
