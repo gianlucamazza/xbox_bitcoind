@@ -112,10 +112,23 @@ index 692f671..ca074d5 100644
          reason = GetErrorReason();
      }
 diff --git a/src/util/fs_helpers.cpp b/src/util/fs_helpers.cpp
-index e7780d7..4783636 100644
+index e7780d7..b769c38 100644
 --- a/src/util/fs_helpers.cpp
 +++ b/src/util/fs_helpers.cpp
-@@ -229,6 +229,11 @@ void AllocateFileRange(FILE* file, unsigned int offset, unsigned int length)
+@@ -27,7 +27,12 @@
+ #include <unistd.h>
+ #else
+ #include <io.h>
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++// UWP: shlobj is not a full desktop partition; pull windows.h for HANDLE / file APIs.
++#include <windows.h>
++#else
+ #include <shlobj.h>
++#endif
+ #endif // WIN32
+ 
+ #ifdef __APPLE__
+@@ -229,6 +234,11 @@ void AllocateFileRange(FILE* file, unsigned int offset, unsigned int length)
  #ifdef WIN32
  fs::path GetSpecialFolderPath(int nFolder, bool fCreate)
  {
@@ -127,7 +140,7 @@ index e7780d7..4783636 100644
      WCHAR pszPath[MAX_PATH] = L"";
  
      if (SHGetSpecialFolderPathW(nullptr, pszPath, nFolder, fCreate)) {
-@@ -237,6 +242,7 @@ fs::path GetSpecialFolderPath(int nFolder, bool fCreate)
+@@ -237,6 +247,7 @@ fs::path GetSpecialFolderPath(int nFolder, bool fCreate)
  
      LogError("SHGetSpecialFolderPathW() failed, could not obtain requested path.");
      return fs::path("");
