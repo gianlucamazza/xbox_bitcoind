@@ -1,0 +1,108 @@
+diff --git a/src/common/args.cpp b/src/common/args.cpp
+index 5c8589c..de32252 100644
+--- a/src/common/args.cpp
++++ b/src/common/args.cpp
+@@ -761,7 +761,9 @@ fs::path GetDefaultDataDir()
+     //   new: C:\Users\Username\AppData\Local\Bitcoin
+     // macOS: ~/Library/Application Support/Bitcoin
+     // Unix-like: ~/.bitcoin
+-#ifdef WIN32
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++    return fs::path("Bitcoin");
++#elif defined(WIN32)
+     // Windows
+     // Check for existence of datadir in old location and keep it there
+     fs::path legacy_path = GetSpecialFolderPath(CSIDL_APPDATA) / "Bitcoin";
+diff --git a/src/leveldb/util/env_windows.cc b/src/leveldb/util/env_windows.cc
+index 8897e2a..65741c8 100644
+--- a/src/leveldb/util/env_windows.cc
++++ b/src/leveldb/util/env_windows.cc
+@@ -37,6 +37,26 @@
+ #undef DeleteFile
+ #endif  // defined(DeleteFile)
+ 
++
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++#ifndef XBB_UWP_CREATEFILE
++#define XBB_UWP_CREATEFILE
++static HANDLE XbbCreateFileW(LPCWSTR name, DWORD access, DWORD share, LPSECURITY_ATTRIBUTES sa,
++                             DWORD disp, DWORD flags, HANDLE tmpl) {
++  CREATEFILE2_EXTENDED_PARAMETERS ep = {};
++  ep.dwSize = sizeof(ep);
++  ep.dwFileAttributes = flags & 0x0000FFFF;
++  ep.dwFileFlags = flags & 0xFFF00000;
++  ep.dwSecurityQosFlags = 0;
++  ep.lpSecurityAttributes = sa;
++  ep.hTemplateFile = tmpl;
++  return CreateFile2(name, access, share, disp, &ep);
++}
++#define CreateFileW XbbCreateFileW
++#define MoveFileW(src, dst) MoveFileExW((src), (dst), MOVEFILE_REPLACE_EXISTING)
++#endif
++#endif
++
+ namespace leveldb {
+ 
+ namespace {
+diff --git a/src/util/exec.cpp b/src/util/exec.cpp
+index 6b14061..149aa48 100644
+--- a/src/util/exec.cpp
++++ b/src/util/exec.cpp
+@@ -20,7 +20,11 @@
+ namespace util {
+ int ExecVp(const char* file, char* const argv[])
+ {
+-#ifndef WIN32
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++    (void)file;
++    (void)argv;
++    return -1;
++#elif !defined(WIN32)
+     return execvp(file, argv);
+ #else
+     std::vector<std::wstring> escaped_args;
+diff --git a/src/util/fs.cpp b/src/util/fs.cpp
+index 692f671..ca074d5 100644
+--- a/src/util/fs.cpp
++++ b/src/util/fs.cpp
+@@ -85,8 +85,16 @@ static std::string GetErrorReason() {
+ 
+ FileLock::FileLock(const fs::path& file)
+ {
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++    CREATEFILE2_EXTENDED_PARAMETERS ep{};
++    ep.dwSize = sizeof(ep);
++    ep.dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
++    hFile = CreateFile2(file.wstring().c_str(), GENERIC_READ | GENERIC_WRITE,
++        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, OPEN_EXISTING, &ep);
++#else
+     hFile = CreateFileW(file.wstring().c_str(),  GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+         nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
++#endif
+     if (hFile == INVALID_HANDLE_VALUE) {
+         reason = GetErrorReason();
+     }
+diff --git a/src/util/fs_helpers.cpp b/src/util/fs_helpers.cpp
+index e7780d7..4783636 100644
+--- a/src/util/fs_helpers.cpp
++++ b/src/util/fs_helpers.cpp
+@@ -229,6 +229,11 @@ void AllocateFileRange(FILE* file, unsigned int offset, unsigned int length)
+ #ifdef WIN32
+ fs::path GetSpecialFolderPath(int nFolder, bool fCreate)
+ {
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++    (void)nFolder;
++    (void)fCreate;
++    return fs::path("");
++#else
+     WCHAR pszPath[MAX_PATH] = L"";
+ 
+     if (SHGetSpecialFolderPathW(nullptr, pszPath, nFolder, fCreate)) {
+@@ -237,6 +242,7 @@ fs::path GetSpecialFolderPath(int nFolder, bool fCreate)
+ 
+     LogError("SHGetSpecialFolderPathW() failed, could not obtain requested path.");
+     return fs::path("");
++#endif
+ }
+ #endif
+ 

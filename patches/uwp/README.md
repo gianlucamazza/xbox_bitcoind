@@ -10,3 +10,4 @@ Applied by `scripts/apply-uwp-patches.sh` / `.ps1` after fetch.
 | `0004-vcpkg-drop-libevent-override.patch` | Use current vcpkg libevent (UWP fix) instead of 2.1.12#7 |
 
 Do not commit a patched `third_party/bitcoin` tree — only these patch files.
+| `0005-uwp-win32-api-shims.patch` | CreateFile2, no CSIDL, no exec/CreateProcess on UWP |
