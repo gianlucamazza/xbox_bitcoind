@@ -380,7 +380,8 @@ APPX_DIR=$(dirname "${APPX}")
 for CER_PATH in \
 	"${APPX_DIR}/${APPX_NAME%.msix}.cer" \
 	"${APPX_DIR}/xbox_bitcoind-dev.cer" \
-	"${APPX_DIR}/../xbox_bitcoind-dev.cer"; do
+	"${APPX_DIR}/../xbox_bitcoind-dev.cer" \
+	"${SCRIPT_DIR}/../uwp/xbox_bitcoind-dev.cer"; do
 	if [[ -f "${CER_PATH}" ]]; then
 		echo "Found companion certificate: $(readlink -f "${CER_PATH}")"
 		"$0" install-cert "$(readlink -f "${CER_PATH}")" || true

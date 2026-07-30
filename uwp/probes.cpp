@@ -1,0 +1,222 @@
+// Copyright (c) 2026 Gianluca Mazza
+// SPDX-License-Identifier: MIT
+
+#include "pch.h"
+#include "log.h"
+#include "probes.h"
+
+#include <chrono>
+#include <fstream>
+#include <sstream>
+
+#pragma comment(lib, "ws2_32.lib")
+
+namespace xbb {
+namespace {
+
+ProbeResult ProbeLocalStateWrite() {
+    ProbeResult r{"localstate_write", false, {}};
+    try {
+        auto dir = LocalStatePath() + L"\\probe";
+        CreateDirectoryW(dir.c_str(), nullptr);
+        // Several 4 MiB files (well under 2 GB single-file limit)
+        constexpr size_t kChunk = 4 * 1024 * 1024;
+        constexpr int kFiles = 4;
+        std::vector<char> buf(kChunk, 0xAB);
+        size_t total = 0;
+        for (int i = 0; i < kFiles; ++i) {
+            wchar_t name[64];
+            swprintf(name, 64, L"\\probe\\chunk_%02d.bin", i);
+            auto path = LocalStatePath() + name;
+            FILE* f = _wfopen(path.c_str(), L"wb");
+            if (!f) {
+                r.detail = "fopen failed";
+                return r;
+            }
+            if (fwrite(buf.data(), 1, buf.size(), f) != buf.size()) {
+                fclose(f);
+                r.detail = "fwrite short";
+                return r;
+            }
+            fclose(f);
+            total += buf.size();
+        }
+        r.ok = true;
+        r.detail = "wrote " + std::to_string(total / (1024 * 1024)) + " MiB across " +
+                   std::to_string(kFiles) + " files under LocalState\\probe";
+    } catch (const std::exception& ex) {
+        r.detail = ex.what();
+    } catch (...) {
+        r.detail = "unknown exception";
+    }
+    return r;
+}
+
+ProbeResult ProbeVirtualAlloc() {
+    ProbeResult r{"virtual_alloc", false, {}};
+    constexpr SIZE_T kSize = 64 * 1024 * 1024; // 64 MiB
+    void* p = VirtualAlloc(nullptr, kSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if (!p) {
+        r.detail = "VirtualAlloc failed err=" + std::to_string(GetLastError());
+        return r;
+    }
+    // Touch pages
+    volatile char* c = static_cast<volatile char*>(p);
+    for (SIZE_T i = 0; i < kSize; i += 4096) {
+        c[i] = 1;
+    }
+    BOOL locked = VirtualLock(p, kSize);
+    DWORD lock_err = locked ? 0 : GetLastError();
+    VirtualUnlock(p, kSize);
+    VirtualFree(p, 0, MEM_RELEASE);
+    r.ok = true;
+    r.detail = "VirtualAlloc 64MiB OK; VirtualLock=" + std::string(locked ? "ok" : "fail") +
+               " err=" + std::to_string(lock_err) + " (lock fail expected under AppContainer)";
+    return r;
+}
+
+ProbeResult ProbeOutboundTcp() {
+    ProbeResult r{"outbound_tcp", false, {}};
+    WSADATA wsa{};
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+        r.detail = "WSAStartup failed";
+        return r;
+    }
+
+    // DNS + TCP connect to a public HTTP host (port 80). No full HTTP needed.
+    addrinfo hints{};
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    addrinfo* res = nullptr;
+    int gai = getaddrinfo("one.one.one.one", "80", &hints, &res);
+    if (gai != 0 || !res) {
+        r.detail = "getaddrinfo failed: " + std::to_string(gai);
+        WSACleanup();
+        return r;
+    }
+
+    SOCKET s = INVALID_SOCKET;
+    std::string how;
+    for (auto* p = res; p; p = p->ai_next) {
+        s = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (s == INVALID_SOCKET) {
+            continue;
+        }
+        // short timeout
+        DWORD timeout_ms = 8000;
+        setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout_ms), sizeof(timeout_ms));
+        setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeout_ms), sizeof(timeout_ms));
+        if (connect(s, p->ai_addr, static_cast<int>(p->ai_addrlen)) == 0) {
+            how = (p->ai_family == AF_INET6) ? "IPv6" : "IPv4";
+            break;
+        }
+        closesocket(s);
+        s = INVALID_SOCKET;
+    }
+    freeaddrinfo(res);
+
+    if (s == INVALID_SOCKET) {
+        r.detail = "connect failed WSA=" + std::to_string(WSAGetLastError());
+        WSACleanup();
+        return r;
+    }
+
+    const char* req = "HEAD / HTTP/1.0\r\nHost: one.one.one.one\r\nConnection: close\r\n\r\n";
+    send(s, req, static_cast<int>(strlen(req)), 0);
+    char buf[256];
+    int n = recv(s, buf, sizeof(buf) - 1, 0);
+    closesocket(s);
+    WSACleanup();
+
+    if (n <= 0) {
+        r.detail = "connected (" + how + ") but no response";
+        // Still count as partial success for P2P-like outbound
+        r.ok = true;
+        return r;
+    }
+    buf[n] = 0;
+    r.ok = true;
+    r.detail = "TCP " + how + " to one.one.one.one:80 OK, recv " + std::to_string(n) + " bytes";
+    return r;
+}
+
+ProbeResult ProbeDatadirLayout() {
+    ProbeResult r{"datadir_layout", false, {}};
+    try {
+        auto base = LocalStatePath() + L"\\bitcoin";
+        CreateDirectoryW(base.c_str(), nullptr);
+        auto conf = base + L"\\bitcoin.conf";
+        // Copy packaged conf if present under installed path; else write minimal.
+        std::string content =
+            "# generated by xbox_bitcoind probes\n"
+            "prune=550\n"
+            "server=1\n"
+            "listen=0\n"
+            "dbcache=256\n"
+            "maxconnections=8\n";
+        FILE* f = _wfopen(conf.c_str(), L"wb");
+        if (!f) {
+            r.detail = "cannot write bitcoin.conf";
+            return r;
+        }
+        fwrite(content.data(), 1, content.size(), f);
+        fclose(f);
+        r.ok = true;
+        // Report UTF-8 path for UI
+        int need = WideCharToMultiByte(CP_UTF8, 0, base.c_str(), -1, nullptr, 0, nullptr, nullptr);
+        std::string utf8(static_cast<size_t>(need > 0 ? need - 1 : 0), '\0');
+        if (need > 1) {
+            WideCharToMultiByte(CP_UTF8, 0, base.c_str(), -1, utf8.data(), need, nullptr, nullptr);
+        }
+        r.detail = "datadir ready: " + utf8;
+    } catch (...) {
+        r.detail = "exception";
+    }
+    return r;
+}
+
+} // namespace
+
+std::vector<ProbeResult> RunProbes() {
+    LogInit();
+    Logf("[probe] starting AppContainer probes");
+    std::vector<ProbeResult> out;
+    out.push_back(ProbeLocalStateWrite());
+    out.push_back(ProbeVirtualAlloc());
+    out.push_back(ProbeOutboundTcp());
+    out.push_back(ProbeDatadirLayout());
+    for (const auto& p : out) {
+        Logf("[probe] %s: %s — %s", p.name.c_str(), p.ok ? "OK" : "FAIL", p.detail.c_str());
+    }
+    // Persist machine-readable summary
+    try {
+        auto path = LocalStateFile(L"probe-results.txt");
+        FILE* f = _wfopen(path.c_str(), L"w");
+        if (f) {
+            for (const auto& p : out) {
+                fprintf(f, "%s\t%s\t%s\n", p.name.c_str(), p.ok ? "OK" : "FAIL", p.detail.c_str());
+            }
+            fclose(f);
+        }
+    } catch (...) {
+    }
+    return out;
+}
+
+std::string FormatProbeReport(const std::vector<ProbeResult>& results) {
+    std::ostringstream oss;
+    int ok = 0;
+    for (const auto& p : results) {
+        if (p.ok) {
+            ++ok;
+        }
+        oss << (p.ok ? "[OK]   " : "[FAIL] ") << p.name << "\n  " << p.detail << "\n\n";
+    }
+    oss << "Summary: " << ok << "/" << results.size() << " probes passed.\n";
+    oss << "After install: Dev Home → package → App type → Game.\n";
+    oss << "Log: LocalState\\bitcoind.log\n";
+    return oss.str();
+}
+
+} // namespace xbb

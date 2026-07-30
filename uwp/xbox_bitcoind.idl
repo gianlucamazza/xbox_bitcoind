@@ -1,0 +1,10 @@
+// MIDL 3 — cppwinrt emits xbox_bitcoind.winmd for EntryPoint="xbox_bitcoind.App".
+// MainPage is plain C++ (programmatic XAML), not a runtimeclass.
+namespace xbox_bitcoind
+{
+    [default_interface]
+    runtimeclass App : Windows.UI.Xaml.Application
+    {
+        App();
+    }
+}

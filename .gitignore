@@ -7,6 +7,19 @@ xbox-env
 # Bitcoin Core tree (fetched via scripts/fetch-bitcoin-core.sh)
 third_party/bitcoin/
 
+# UWP local build / certs (CI generates; do not commit secrets)
+uwp/packages/
+uwp/AppPackages/
+uwp/BundleArtifacts/
+uwp/xbox_bitcoind-dev.pfx
+uwp/xbox_bitcoind-dev.cer
+uwp/**/Generated Files/
+uwp/**/x64/
+uwp/**/ARM64/
+*.user
+*.suo
+*.aps
+
 # Build / package artefacts
 build/
 out/

@@ -4,8 +4,9 @@ Port of **Bitcoin Core (`bitcoind`)** to **Xbox Series S** (shared Dev Mode cons
 
 [![ci-linux](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-linux.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-linux.yml)
 [![ci-msvc-baseline](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml)
+[![build-uwp](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml)
 
-> Status: **Phase 0 complete for pin** — Core **v31.1** green on Linux + MSVC CI (137/137 tests). Next: Hello-UWP + AppContainer port.
+> Status: **UWP scaffold ready** — Core **v31.1** desktop CI green; Hello-UWP probes package under `uwp/`. Bitcoind not linked into MSIX yet.
 
 ## Goals (v1)
 
@@ -90,17 +91,33 @@ Draft node defaults: [config/bitcoin.conf.console](config/bitcoin.conf.console)
 
 ```
 config/               # pin, xbox-env.example, bitcoin.conf.console
-scripts/              # fetch Core, MSVC baseline, console deploy/probe
+scripts/              # fetch Core, MSVC/UWP build, console deploy
+uwp/                  # C++/WinRT Hello-UWP + probes (scaffold)
 third_party/bitcoin/  # fetched pin (gitignored clone)
 docs/
+  uwp-scaffold.md
   build-msvc-baseline.md
+  ci.md
   console.md
-  device-portal.md
-  uwp-constraints.md
   research/
 README.md
-# later: uwp/, patches/
 ```
+
+### UWP build & deploy
+
+```powershell
+# Windows
+.\scripts\build-uwp.ps1
+```
+
+```bash
+# Linux host → Series S
+source scripts/env.sh
+./scripts/deploy.sh uwp/AppPackages/**/xbox_bitcoind_*.msix
+./scripts/deploy.sh get-log
+```
+
+Details: [docs/uwp-scaffold.md](docs/uwp-scaffold.md)
 
 ## Roadmap
 
@@ -110,8 +127,8 @@ README.md
 | **0b** | Pin Core + MSVC baseline docs/scripts | **done** |
 | **0b′** | GitHub Actions (Linux + MSVC) | **green on main** |
 | **0c** | API matrix | **done** (static) |
-| **0d** | Hello-UWP console probes | pending |
-| **1** | CMake/UWP package skeleton | pending |
+| **0d** | Hello-UWP scaffold + probes | **scaffold in tree** |
+| **1** | Link Core into UWP / package on console | pending |
 | **2** | Node: regtest → testnet → mainnet pruned | pending |
 | **3** | Hardening, docs, optional wallet | pending |
 

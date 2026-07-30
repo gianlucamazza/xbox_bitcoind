@@ -9,8 +9,9 @@ It does **not** deploy to the Xbox (use `scripts/deploy.sh` locally).
 |----------|--------|---------|
 | [`ci-linux.yml`](../.github/workflows/ci-linux.yml) | `ubuntu-24.04` | shellcheck, pin validation, Linux `bitcoind` smoke |
 | [`ci-msvc-baseline.yml`](../.github/workflows/ci-msvc-baseline.yml) | `windows-2025-vs2026` | MSVC + vcpkg desktop baseline (VS 2026) |
+| [`build-uwp.yml`](../.github/workflows/build-uwp.yml) | `windows-2022` | Hello-UWP MSIX + test cert (path-filtered) |
 
-Future (after `uwp/` exists): `build-uwp.yml` → MSIX artifact (no auto-deploy).
+No auto-deploy to the console; download the MSIX artifact and use `scripts/deploy.sh`.
 
 ## Action versions (keep current)
 
