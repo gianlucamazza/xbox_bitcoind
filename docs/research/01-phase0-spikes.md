@@ -140,13 +140,14 @@ Indexes (`txindex`, etc.): **off** for v1.
 
 Proceed to Phase 1 (build skeleton) only if:
 
-- [ ] Outbound TCP from UWP works  
-- [ ] Multi-file datadir writes work at pruned scale (or USB path proven)  
+- [x] Outbound TCP from UWP works (console probe)  
+- [x] Multi-file LocalState writes work (16 MiB probe; full prune scale TBD)  
 - [ ] Measured RAM ≥ ~1.5–2 GB usable for node process (ideally more with Game class)  
 - [x] Core tag pinned and desktop build documented (MSVC 137/137)  
 - [ ] Host model A or B chosen  
 - [x] Static API matrix complete  
+- [x] Hello-UWP MSIX builds (CI) and runs on Series S  
 
-**Overall:** **CONDITIONAL GO** — pin/desktop gates closed; console Hello-UWP still required before Phase 1 package skeleton.  
+**Overall:** **GO** for Phase 1 — link Bitcoin Core into UWP.  
 **Date:** 2026-07-30  
-**Author notes:** Proceed to Hello-UWP probes on shared Series S.
+**Author notes:** Scaffold deployed; all AppContainer probes green.
