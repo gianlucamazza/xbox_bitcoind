@@ -81,18 +81,15 @@ $cmakeArgs = @(
     "-DBUILD_BITCOIN_BIN=OFF",
     "-DBUILD_DAEMON=ON",
     "-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON",
-    "-DVCPKG_INSTALL_OPTIONS=--x-buildtrees-root=C:/vcpkg-bt"
+    # libevent marks !uwp in vcpkg; allow-unsupported to attempt AppContainer build (Dev Mode).
+    "-DVCPKG_INSTALL_OPTIONS=--allow-unsupported;--x-buildtrees-root=C:/vcpkg-bt"
 )
 
 & cmake @cmakeArgs
 if ($LASTEXITCODE -ne 0) { throw "cmake configure failed" }
 
 Write-Host "Building Core UWP libraries ..."
-if ($Generator -like "Visual Studio*") {
-    & cmake --build $BuildDir --config $Configuration --parallel
-} else {
-    & cmake --build $BuildDir --parallel
-}
+& cmake --build $BuildDir --config $Configuration --parallel
 if ($LASTEXITCODE -ne 0) { throw "cmake build failed" }
 
 # Export paths for the UWP app build
