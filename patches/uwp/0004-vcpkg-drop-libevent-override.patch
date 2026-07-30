@@ -1,0 +1,17 @@
+diff --git a/vcpkg.json b/vcpkg.json
+index e034c79..d0fbd98 100644
+--- a/vcpkg.json
++++ b/vcpkg.json
+@@ -51,11 +51,5 @@
+       ]
+     }
+   },
+-  "overrides": [
+-    {
+-      "$comment": "Newer unreleased libevent versions cause https://github.com/bitcoin/bitcoin/issues/30096",
+-      "name": "libevent",
+-      "version": "2.1.12#7"
+-    }
+-  ]
++  "overrides": []
+ }
