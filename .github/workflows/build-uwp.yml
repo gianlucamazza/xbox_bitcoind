@@ -70,10 +70,6 @@ jobs:
       - uses: microsoft/setup-msbuild@v2
       - uses: nuget/setup-nuget@v2
 
-      - name: Install Ninja
-        shell: pwsh
-        run: choco install ninja -y --no-progress
-
       - name: Cache vcpkg UWP + core build
         uses: actions/cache@v6
         with:
@@ -81,8 +77,11 @@ jobs:
             third_party/bitcoin/build-uwp
             ~/AppData/Local/vcpkg/archives
             C:/vcpkg/installed/x64-uwp
-          key: core-uwp-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}
-          restore-keys: core-uwp-
+            C:/vcpkg-bt
+          key: core-uwp-v2-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}
+          restore-keys: |
+            core-uwp-v2-
+            core-uwp-
 
       - name: Build UWP package with Core
         shell: pwsh
@@ -90,6 +89,14 @@ jobs:
           VCPKG_ROOT: C:\vcpkg
           VCPKG_INSTALLATION_ROOT: C:\vcpkg
         run: |
+          # Fresh CMake cache if a previous failed configure left Ninja generator
+          if (Test-Path third_party\bitcoin\build-uwp\CMakeCache.txt) {
+            $gen = Select-String -Path third_party\bitcoin\build-uwp\CMakeCache.txt -Pattern 'CMAKE_GENERATOR:' | ForEach-Object { $_.Line }
+            if ($gen -match 'Ninja') {
+              Write-Host "Removing stale Ninja build dir"
+              Remove-Item -Recurse -Force third_party\bitcoin\build-uwp
+            }
+          }
           .\scripts\build-uwp.ps1 -Configuration Release -BuildRevision ${{ github.run_number }} -WithCore
 
       - uses: actions/upload-artifact@v7

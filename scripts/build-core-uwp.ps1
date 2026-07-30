@@ -47,13 +47,14 @@ Write-Host "VCPKG_ROOT=$($env:VCPKG_ROOT)"
 $Toolchain = Join-Path $env:VCPKG_ROOT "scripts\buildsystems\vcpkg.cmake"
 $Triplet = "x64-uwp"
 
-# Prefer Ninja Multi-Config if ninja is available; else VS generator for UWP is awkward.
-# Use Ninja + clang-cl or MSVC with explicit WindowsStore.
-$Generator = "Ninja"
-$ninja = Get-Command ninja -ErrorAction SilentlyContinue
-if (-not $ninja) {
-    # Fall back: Visual Studio generator still works with WindowsStore toolchain file from vcpkg
-    $Generator = "Visual Studio 17 2022"
+# Visual Studio generator is reliable on GHA windows-2022 (Ninja often missing from PATH).
+$Generator = "Visual Studio 17 2022"
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+if (Test-Path $vswhere) {
+    $vsVer = & $vswhere -latest -property catalog_productLineVersion
+    if ($vsVer -eq "2026" -or $vsVer -eq "18") {
+        $Generator = "Visual Studio 18 2026"
+    }
 }
 
 Write-Host "Configuring Core for UWP (triplet $Triplet, generator $Generator) ..."
@@ -61,6 +62,7 @@ $cmakeArgs = @(
     "-S", $Src,
     "-B", $BuildDir,
     "-G", $Generator,
+    "-A", "x64",
     "-DCMAKE_TOOLCHAIN_FILE=$Toolchain",
     "-DVCPKG_TARGET_TRIPLET=$Triplet",
     "-DVCPKG_HOST_TRIPLET=x64-windows",
@@ -78,15 +80,9 @@ $cmakeArgs = @(
     "-DBUILD_UTIL=OFF",
     "-DBUILD_BITCOIN_BIN=OFF",
     "-DBUILD_DAEMON=ON",
-    "-DCMAKE_BUILD_TYPE=$Configuration",
-    "-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON"
+    "-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON",
+    "-DVCPKG_INSTALL_OPTIONS=--x-buildtrees-root=C:/vcpkg-bt"
 )
-
-if ($Generator -like "Visual Studio*") {
-    $cmakeArgs += @("-A", "x64")
-    # strip CMAKE_BUILD_TYPE for multi-config
-    $cmakeArgs = $cmakeArgs | Where-Object { $_ -notlike "-DCMAKE_BUILD_TYPE=*" }
-}
 
 & cmake @cmakeArgs
 if ($LASTEXITCODE -ne 0) { throw "cmake configure failed" }
