@@ -50,7 +50,7 @@ source ~/.config/xllama/xbox-env   # or scripts/env.sh
 | Probe | Expectation |
 |-------|-------------|
 | `localstate_write` | ~16 MiB across 4 files under `LocalState\probe` |
-| `virtual_alloc` | 64 MiB `VirtualAlloc`; `VirtualLock` may fail (OK) |
+| `virtual_alloc` | 64 MiB `VirtualAlloc`+touch (`VirtualLock` not available in UWP) |
 | `outbound_tcp` | connect to `one.one.one.one:80` |
 | `datadir_layout` | creates `LocalState\bitcoin\bitcoin.conf` |
 

@@ -22,7 +22,7 @@ ProbeResult ProbeLocalStateWrite() {
         // Several 4 MiB files (well under 2 GB single-file limit)
         constexpr size_t kChunk = 4 * 1024 * 1024;
         constexpr int kFiles = 4;
-        std::vector<char> buf(kChunk, 0xAB);
+        std::vector<char> buf(kChunk, static_cast<char>(0xAB));
         size_t total = 0;
         for (int i = 0; i < kFiles; ++i) {
             wchar_t name[64];

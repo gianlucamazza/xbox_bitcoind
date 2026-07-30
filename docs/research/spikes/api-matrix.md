@@ -17,7 +17,7 @@ Legend: **OK** usable / **RISK** needs probe or shim / **BLOCK** known AppContai
 | **Filesystem (datadir)** | `fs::` + `GetSpecialFolderPath(CSIDL_APPDATA/LOCAL_APPDATA)` default paths (`common/args.cpp`) | **RISK** — CSIDL desktop paths wrong in AppContainer; must force `-datadir` under LocalState | Host sets absolute LocalState path; ignore default AppData |
 | **std::filesystem walks** | Widespread | **RISK** — `weakly_canonical` / root walk issues known on Xbox (xllama §8) | Avoid path canonicalization across Q:\; use lexical paths under LocalState |
 | **LevelDB mmap** | Windows env uses limited mmap (`leveldb/util/env_windows.cc`, `MaxMmaps`) | **RISK** — may fall back; xllama saw no POSIX mmap | Prefer buffered I/O; measure; set mmap limit 0 if needed |
-| **Locked pages / secrets** | `VirtualAlloc` + `VirtualLock` (`support/lockedpool.cpp`); `SecureZeroMemory` | **RISK** — `VirtualLock` may fail under AppContainer (non-fatal in Core); alloc should work | Treat lock failure as OK (Core already does); probe alloc |
+| **Locked pages / secrets** | `VirtualAlloc` + `VirtualLock` (`support/lockedpool.cpp`); `SecureZeroMemory` | **RISK** — `VirtualLock` **not in UWP partition** (won't link); need AppContainer-safe locked pool or no-lock path | Patch Core lockedpool for UWP; probe `VirtualAlloc` only (scaffold) |
 | **Entropy** | Windows crypto APIs via util random | **OK** expected | Smoke only |
 | **Threads** | std::thread / OS threads | **OK** — Series S ~6–7 usable cores | Cap via config if needed |
 | **Process / spawn** | `CreateProcessW` in `util/subprocess.h`; `_wsystem` in `common/system.cpp` | **BLOCK / N/A** for daemon path — external signer / runCommand | Disable external signer; no `-alertnotify`/`-blocknotify` shells in v1 |
