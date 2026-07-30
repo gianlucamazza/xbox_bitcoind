@@ -1,13 +1,14 @@
 diff --git a/src/util/subprocess.h b/src/util/subprocess.h
-index 8b91713..55bb338 100644
+index 8b91713..cbb9a6f 100644
 --- a/src/util/subprocess.h
 +++ b/src/util/subprocess.h
-@@ -73,6 +73,77 @@ extern "C" {
+@@ -73,6 +73,47 @@ extern "C" {
    #include <sys/types.h>
  }
  
 +// UWP AppContainer: process-creation APIs are outside the app partition.
-+// Stub after windows.h so BOOL/HANDLE types exist (never before — pollutes headers).
++// Stub AFTER windows.h so BOOL/HANDLE types exist. Do not redeclare
++// PROCESS_INFORMATION/STARTUPINFOW — UWP headers already provide them.
 +#if defined(WIN32) && defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
 +#ifndef HANDLE_FLAG_INHERIT
 +#define HANDLE_FLAG_INHERIT 0x00000001
@@ -20,37 +21,6 @@ index 8b91713..55bb338 100644
 +#endif
 +#ifndef CREATE_NO_WINDOW
 +#define CREATE_NO_WINDOW 0x08000000
-+#endif
-+// Minimal process types if the App partition omits them.
-+#ifndef _PROCESS_INFORMATION_
-+typedef struct _PROCESS_INFORMATION {
-+  HANDLE hProcess;
-+  HANDLE hThread;
-+  DWORD dwProcessId;
-+  DWORD dwThreadId;
-+} PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
-+#endif
-+#ifndef _STARTUPINFOW_
-+typedef struct _STARTUPINFOW {
-+  DWORD cb;
-+  LPWSTR lpReserved;
-+  LPWSTR lpDesktop;
-+  LPWSTR lpTitle;
-+  DWORD dwX;
-+  DWORD dwY;
-+  DWORD dwXSize;
-+  DWORD dwYSize;
-+  DWORD dwXCountChars;
-+  DWORD dwYCountChars;
-+  DWORD dwFillAttribute;
-+  DWORD dwFlags;
-+  WORD wShowWindow;
-+  WORD cbReserved2;
-+  LPBYTE lpReserved2;
-+  HANDLE hStdInput;
-+  HANDLE hStdOutput;
-+  HANDLE hStdError;
-+} STARTUPINFOW, *LPSTARTUPINFOW;
 +#endif
 +static inline BOOL WINAPI XbbCreateProcessW(
 +    LPCWSTR, LPWSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD,
