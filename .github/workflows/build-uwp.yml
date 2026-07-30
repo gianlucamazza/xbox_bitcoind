@@ -34,7 +34,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Fast path: Hello-UWP scaffold (no Core)
+  # Fast path: Hello-UWP scaffold (no Core).
+  # windows-2022: VS2022 v143 + UWP C++ workload preinstalled (same as xllama).
   uwp-scaffold:
     if: github.event_name != 'workflow_dispatch' || inputs.with_core == false
     runs-on: windows-2022
@@ -56,19 +57,42 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # Full path: Core UWP libs + linked package
+  # Full path: Core UWP libs + linked package.
+  # Bitcoin Core v31.1 requires VS 2026 18.3+ (consteval / C++20); building
+  # Core on VS2022 causes C7595. Same runner as ci-msvc-baseline.
   uwp-core:
-    # On main push always try full core; on PR scaffold only unless dispatch
     if: |
       github.event_name == 'workflow_dispatch' && inputs.with_core == true ||
       github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: windows-2022
+    runs-on: windows-2025-vs2026
     timeout-minutes: 360
     steps:
       - uses: actions/checkout@v7
 
       - uses: microsoft/setup-msbuild@v2
       - uses: nuget/setup-nuget@v2
+
+      - name: Ensure UWP C++ workload (VS 2026)
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $ip = & $vswhere -latest -products * -property installationPath
+          if (-not $ip) { throw "Visual Studio installation not found" }
+          Write-Host "VS install: $ip"
+          # Log toolsets / UWP-related packages for diagnosis
+          & $vswhere -latest -products * -requires Microsoft.VisualStudio.ComponentGroup.UWP.VC -property installationPath 2>$null
+          $setup = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\setup.exe"
+          if (Test-Path $setup) {
+            Write-Host "Adding UWP VC + Windows app development components if missing ..."
+            # Idempotent modify; may no-op when already present.
+            & $setup modify --installPath $ip `
+              --add Microsoft.VisualStudio.ComponentGroup.UWP.VC `
+              --add Microsoft.VisualStudio.ComponentGroup.WindowsAppDevelopment.Prerequisites `
+              --add Microsoft.VisualStudio.Workload.Universal `
+              --quiet --norestart --force |
+              Out-Host
+            Write-Host "setup.exe exit: $LASTEXITCODE"
+          }
 
       - name: Cache vcpkg UWP + core build
         uses: actions/cache@v6
@@ -78,10 +102,10 @@ jobs:
             ~/AppData/Local/vcpkg/archives
             C:/vcpkg/installed/x64-uwp
             C:/vcpkg-bt
-          key: core-uwp-v2-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}
+          # v3: VS2026 runner (do not restore VS2022 object caches)
+          key: core-uwp-v3-vs2026-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}
           restore-keys: |
-            core-uwp-v2-
-            core-uwp-
+            core-uwp-v3-vs2026-
 
       - name: Build UWP package with Core
         shell: pwsh
@@ -89,7 +113,6 @@ jobs:
           VCPKG_ROOT: C:\vcpkg
           VCPKG_INSTALLATION_ROOT: C:\vcpkg
         run: |
-          # Fresh CMake cache if a previous failed configure left Ninja generator
           if (Test-Path third_party\bitcoin\build-uwp\CMakeCache.txt) {
             $gen = Select-String -Path third_party\bitcoin\build-uwp\CMakeCache.txt -Pattern 'CMAKE_GENERATOR:' | ForEach-Object { $_.Line }
             if ($gen -match 'Ninja') {

@@ -95,6 +95,18 @@ if (-not $MsBuild) {
 }
 Write-Host "Using MSBuild: $MsBuild"
 
+# Bitcoin Core v31.1 needs VS 2026; match UWP app toolset to the host when possible.
+if (-not $PlatformToolsetOverride) {
+    $vsLine = & $VsWhere -latest -property catalog_productLineVersion
+    $vsMajor = & $VsWhere -latest -property installationVersion
+    Write-Host "VS productLineVersion=$vsLine installationVersion=$vsMajor"
+    if ($vsLine -eq "18" -or $vsLine -eq "2026" -or ($vsMajor -and $vsMajor.StartsWith("18."))) {
+        # VS 2026 default C++ toolset is v145 (not v143).
+        $PlatformToolsetOverride = "v145"
+        Write-Host "Auto PlatformToolsetOverride=$PlatformToolsetOverride (VS 2026)"
+    }
+}
+
 # --- NuGet restore ---
 Write-Host "Restoring NuGet packages ..."
 $nuget = Get-Command nuget -ErrorAction SilentlyContinue

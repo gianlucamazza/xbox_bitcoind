@@ -16,6 +16,7 @@
     <ProjectGuid>{C0DE0001-B17C-40D1-A001-B17C01DE0001}</ProjectGuid>
     <RootNamespace>xbox_bitcoind</RootNamespace>
     <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- 17.0: scaffold on VS2022; Core WithCore needs VS2026 (18.x) + v145 override. -->
     <MinimumVisualStudioVersion>17.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
     <AppxPackage>true</AppxPackage>

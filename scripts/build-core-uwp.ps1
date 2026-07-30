@@ -47,13 +47,18 @@ Write-Host "VCPKG_ROOT=$($env:VCPKG_ROOT)"
 $Toolchain = Join-Path $env:VCPKG_ROOT "scripts\buildsystems\vcpkg.cmake"
 $Triplet = "x64-uwp"
 
-# Visual Studio generator is reliable on GHA windows-2022 (Ninja often missing from PATH).
+# Bitcoin Core v31.1 requires VS 2026 18.3+ (same as desktop baseline / vs2026 preset).
+# Prefer VS 18 generator; fall back to VS 17 only if 18 is unavailable (will fail Core consteval).
 $Generator = "Visual Studio 17 2022"
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 if (Test-Path $vswhere) {
     $vsVer = & $vswhere -latest -property catalog_productLineVersion
-    if ($vsVer -eq "2026" -or $vsVer -eq "18") {
+    $vsMaj = & $vswhere -latest -property installationVersion
+    Write-Host "VS productLineVersion=$vsVer installationVersion=$vsMaj"
+    if ($vsVer -eq "2026" -or $vsVer -eq "18" -or ($vsMaj -and $vsMaj.ToString().StartsWith("18."))) {
         $Generator = "Visual Studio 18 2026"
+    } else {
+        Write-Warning "VS 2026 not detected. Core v31.1 needs VS 2026 18.3+; expect consteval (C7595) failures on older MSVC."
     }
 }
 

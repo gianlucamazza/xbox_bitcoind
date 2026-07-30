@@ -9,7 +9,7 @@ It does **not** deploy to the Xbox (use `scripts/deploy.sh` locally).
 |----------|--------|---------|
 | [`ci-linux.yml`](../.github/workflows/ci-linux.yml) | `ubuntu-24.04` | shellcheck, pin validation, Linux `bitcoind` smoke |
 | [`ci-msvc-baseline.yml`](../.github/workflows/ci-msvc-baseline.yml) | `windows-2025-vs2026` | MSVC + vcpkg desktop baseline (VS 2026) |
-| [`build-uwp.yml`](../.github/workflows/build-uwp.yml) | `windows-2022` | Hello-UWP MSIX + test cert (path-filtered) |
+| [`build-uwp.yml`](../.github/workflows/build-uwp.yml) | scaffold: `windows-2022`; **core: `windows-2025-vs2026`** | Hello-UWP MSIX; WithCore links pin on VS 2026 |
 
 No auto-deploy to the console; download the MSIX artifact and use `scripts/deploy.sh`.
 
@@ -42,11 +42,19 @@ Concurrency: one run per workflow + branch; newer pushes cancel older runs.
 
 Wallet stays **off** unless dispatch sets `enable_wallet`.
 
-## Runner note (MSVC)
+## Runner note (MSVC / UWP Core)
 
-Bitcoin Core **v31.1** CMake preset is `vs2026` only. The job pins
-`windows-2025-vs2026` (VS 2026 Enterprise, Native Desktop, system vcpkg at
-`C:\vcpkg`). Do **not** use `windows-2022` for this workflow.
+Bitcoin Core **v31.1** requires **Visual Studio 2026 18.3+** (consteval C++20).
+
+| Job | Runner | Reason |
+|-----|--------|--------|
+| `ci-msvc-baseline` | `windows-2025-vs2026` | Core desktop pin |
+| `uwp-core` | `windows-2025-vs2026` | same MSVC; AppContainer Core + MSIX WithCore |
+| `uwp-scaffold` | `windows-2022` | UWP v143 workload preinstalled (no Core) |
+
+Do **not** build Core (desktop or UWP) on VS2022 — expect **C7595** and other
+C++20 failures. `uwp-core` may install Universal/UWP.VC components on the
+VS2026 image when missing.
 
 ## Local equivalents
 
@@ -69,6 +77,8 @@ CI_SKIP_TESTS=1 ./scripts/build-linux-smoke.sh
 |------|----------|
 | `bitcoind-linux-x64` | `bitcoind`, `bitcoin-cli` |
 | `bitcoind-msvc-x64` | `bitcoind.exe`, `bitcoin-cli.exe` |
+| `xbox_bitcoind-msix-scaffold` | Hello-UWP MSIX + test cert |
+| `xbox_bitcoind-msix-core` | WithCore MSIX (when `uwp-core` green) |
 
 Retention: 14 days. Download from the Actions run UI.
 

@@ -16,40 +16,46 @@ xbox_bitcoind.exe (UWP AppContainer, Game class)
         ├── -datadir=<LocalState>\bitcoin
         ├── -conf=<LocalState>\bitcoin\bitcoin.conf
         ├── prune=550 listen=0 server=1 dbcache=256
-        └── links: bitcoin_node + util + common + deps (UWP)
+        └── links: bitcoin_embed → bitcoin_node + util + common + deps (UWP)
 ```
 
 **In-process only** (no `CreateProcess`). Shutdown via `Interrupt`/`Shutdown` on app exit.
+
+## Toolchain (non-negotiable)
+
+| Piece | Requirement | Why |
+|-------|-------------|-----|
+| Bitcoin Core pin | **v31.1** | product pin |
+| MSVC for Core | **VS 2026 18.3+** | Core docs + working consteval C++20 |
+| CI `uwp-core` | `windows-2025-vs2026` | same as `ci-msvc-baseline` |
+| CI `uwp-scaffold` | `windows-2022` | UWP v143 workload preinstalled |
+| UWP app toolset | **v145** on VS2026 hosts | match Core objects |
+
+Building Core for UWP on VS2022 produces **C7595** (`consteval` immediate functions). That is an unsupported toolchain, not an AppContainer issue — do **not** paper over it with language hacks in Core headers.
 
 ## Work packages
 
 | # | Package | Deliverable |
 |---|---------|-------------|
-| 1 | **Patches** | lockedpool, runCommand, optional fs; `BitcoindMain` embed entry |
-| 2 | **Core UWP build** | `build-core-uwp.ps1` → static libs via CMake + `x64-uwp` vcpkg |
+| 1 | **Patches** | AppContainer API surface only (`patches/uwp/0001`–`0008`) |
+| 2 | **Core UWP build** | `build-core-uwp.ps1` → `bitcoin_embed` + stack via CMake + `x64-uwp` |
 | 3 | **Embed + UI** | `node_host` starts/stops node thread; UI shows running/errors |
 | 4 | **Package** | `build-uwp.ps1 -WithCore` links libs into MSIX |
-| 5 | **CI** | `build-uwp.yml` builds core+app; artifact MSIX |
+| 5 | **CI** | `uwp-core` on VS2026; artifact MSIX |
 | 6 | **Console** | deploy, Game class, regtest then mainnet pruned |
 
 ## Patch set (`patches/uwp/`)
 
-1. `0001` — no `VirtualLock`/`Unlock`/`GetProcessWorkingSetSize` on UWP  
-2. `0002` — `runCommand` no-op under `WINAPI_FAMILY_APP`  
-3. `0003` — `BitcoindMain` when `BITCOIND_EMBED`  
-4. `0004` — drop pinned libevent so vcpkg UWP port can build  
-5. `0005` — CreateFile2 / no CSIDL / no exec / no GetModuleFileName  
-6. `0006` — subprocess CreateProcess/CreatePipe stubs **after** `windows.h`  
-7. `0007` — netif: no IP Helper gateway route APIs on UWP  
-8. `0008` — WindowsStore: `bitcoin_embed` static lib (`BitcoindMain`) instead of bitcoind.exe  
-9. Apply via `scripts/apply-uwp-patches.sh` after fetch
+AppContainer adaptations only (see `patches/uwp/README.md`).
 
 ## Build (Windows CI)
 
 ```
-fetch pin → apply patches → vcpkg x64-uwp (boost multi_index/signals2, libevent)
-  → cmake WindowsStore / x64-uwp → build static node stack
-  → MSBuild UWP app WITH_CORE=1 → sign MSIX
+fetch pin → apply patches 0001–0008
+  → cmake WindowsStore + x64-uwp (VS 18 2026)
+  → build bitcoin_embed + static deps
+  → write xbb-core-libs.props
+  → MSBuild UWP app (v145) XbbWithCore → sign MSIX
 ```
 
 ## Config defaults
@@ -64,34 +70,35 @@ fetch pin → apply patches → vcpkg x64-uwp (boost multi_index/signals2, libev
 
 ## Success criteria
 
-- [x] Plan + patches + embed + CI wiring  
+- [x] Plan + AppContainer patches + embed + CI wiring  
 - [x] Hello-UWP MSIX on Series S (probes 4/4)  
-- [x] vcpkg UWP deps path (libevent UWP fix via drop override)  
-- [ ] Core static libs **full** compile for UWP on GHA (in progress — remaining desktop APIs patched incrementally)  
+- [x] vcpkg UWP deps path (libevent via drop override)  
+- [x] Toolchain aligned with Core requirement (VS2026 for `uwp-core`)  
+- [ ] Core static libs full compile for UWP on GHA (VS2026)  
 - [ ] MSIX with Core linked starts node thread without crash  
 - [ ] regtest / mainnet pruned progress  
 - [ ] logs in LocalState  
 
-### Implementation status (2026-07-31)
+### Implementation status
 
 | Layer | Status |
 |-------|--------|
 | Scaffold UI + probes | **Done**, deployed on console |
-| Desktop Core pin v31.1 | **Done**, MSVC 137/137 |
-| UWP patches 0001–0008 | **Done** in `patches/uwp/` |
-| `build-core-uwp.ps1` / `-WithCore` | **Done** (`bitcoin_embed` + `bitcoin_node`, no recompile in app) |
-| CI `uwp-core` | **Iterating** — Core libs green; next: final MSIX link of embed stack |
-| Full node on Xbox | **Not yet** — blocked until WithCore MSIX links + deploy |
+| Desktop Core pin v31.1 | **Done**, MSVC 137/137 on VS2026 |
+| UWP patches 0001–0008 | **Done** (API surface; no language hacks) |
+| `build-core-uwp` / `-WithCore` | **Done** (`bitcoin_embed`, props-based link) |
+| CI `uwp-core` | **On VS2026** — iterate until green |
+| Full node on Xbox | **Not yet** |
 
 ## Risks (known)
 
 | Risk | Mitigation |
 |------|------------|
-| Boost/libevent UWP port gaps | x64-uwp triplet; fall back to vendored minimal deps |
-| LevelDB mmap / weakly_canonical | datadir only under LocalState; mmap limit 0 if needed |
+| VS2026 image missing UWP VC | CI step installs Universal + UWP.VC components |
+| Boost/libevent UWP | x64-uwp + current libevent (0004) |
+| LevelDB / LocalState | datadir only under LocalState |
 | RAM / dbcache | start 128–256 MiB; Game package |
-| Long CI | cache vcpkg + core build dir |
-| API surface still missing | iterate patches from link/runtime errors |
+| Long CI | cache vcpkg + core build dir (keyed by VS2026) |
 
 ## Out of scope v1
 
