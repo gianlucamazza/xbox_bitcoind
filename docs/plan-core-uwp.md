@@ -59,11 +59,24 @@ fetch pin → apply patches → vcpkg x64-uwp (boost multi_index/signals2, libev
 
 ## Success criteria
 
-- [ ] Core static libs build for UWP on GHA  
-- [ ] MSIX starts node thread without crash  
-- [ ] regtest mines/generates or accepts blocks  
-- [ ] mainnet pruned headers progress (IBD long-running, Game class)  
+- [x] Plan + patches + embed + CI wiring  
+- [x] Hello-UWP MSIX on Series S (probes 4/4)  
+- [x] vcpkg UWP deps path (libevent UWP fix via drop override)  
+- [ ] Core static libs **full** compile for UWP on GHA (in progress — remaining desktop APIs patched incrementally)  
+- [ ] MSIX with Core linked starts node thread without crash  
+- [ ] regtest / mainnet pruned progress  
 - [ ] logs in LocalState  
+
+### Implementation status (2026-07-31)
+
+| Layer | Status |
+|-------|--------|
+| Scaffold UI + probes | **Done**, deployed on console |
+| Desktop Core pin v31.1 | **Done**, MSVC 137/137 |
+| UWP patches 0001–0006 | **Done** in `patches/uwp/` |
+| `build-core-uwp.ps1` / `-WithCore` | **Done** |
+| CI `uwp-core` | **Iterating** (vcpkg OK path; Core C++ UWP API shims expanding) |
+| Full node on Xbox | **Not yet** — blocked until `bitcoin_node.lib` links under AppContainer |
 
 ## Risks (known)
 
