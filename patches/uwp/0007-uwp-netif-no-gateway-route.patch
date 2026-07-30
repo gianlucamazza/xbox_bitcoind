@@ -1,0 +1,25 @@
+diff --git a/src/common/netif.cpp b/src/common/netif.cpp
+index 8c0c4fa..f244f8a 100644
+--- a/src/common/netif.cpp
++++ b/src/common/netif.cpp
+@@ -193,6 +193,12 @@ std::optional<CNetAddr> QueryDefaultGatewayImpl(sa_family_t family)
+ 
+ std::optional<CNetAddr> QueryDefaultGatewayImpl(sa_family_t family)
+ {
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++    // GetBestInterfaceEx / GetBestRoute2 / MIB_IPFORWARD_ROW2 are desktop IP Helper APIs.
++    // Under UWP AppContainer return none; netgroup fallback handles missing gateway.
++    (void)family;
++    return std::nullopt;
++#else
+     NET_LUID interface_luid = {};
+     SOCKADDR_INET destination_address = {};
+     MIB_IPFORWARD_ROW2 best_route = {};
+@@ -224,6 +230,7 @@ std::optional<CNetAddr> QueryDefaultGatewayImpl(sa_family_t family)
+         return CNetAddr(best_route.NextHop.Ipv6.sin6_addr, best_route.InterfaceIndex);
+     }
+     return std::nullopt;
++#endif // WINAPI_FAMILY_APP
+ }
+ 
+ #elif defined(__APPLE__)

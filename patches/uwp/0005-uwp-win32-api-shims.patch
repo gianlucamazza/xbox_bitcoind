@@ -45,10 +45,27 @@ index 8897e2a..65741c8 100644
  
  namespace {
 diff --git a/src/util/exec.cpp b/src/util/exec.cpp
-index 6b14061..149aa48 100644
+index 6b14061..ba41706 100644
 --- a/src/util/exec.cpp
 +++ b/src/util/exec.cpp
-@@ -20,7 +20,11 @@
+@@ -5,12 +5,14 @@
+ #include <util/exec.h>
+ 
+ #include <util/fs.h>
+-#include <util/subprocess.h>
+ 
+ #include <string>
+ #include <vector>
+ 
+-#ifdef WIN32
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++// UWP: no exec/CreateProcess; no GetModuleFileNameW dependency via subprocess.
++#elif defined(WIN32)
++#include <util/subprocess.h>
+ #include <process.h>
+ #include <windows.h>
+ #else
+@@ -20,7 +22,11 @@
  namespace util {
  int ExecVp(const char* file, char* const argv[])
  {
@@ -61,6 +78,18 @@ index 6b14061..149aa48 100644
      return execvp(file, argv);
  #else
      std::vector<std::wstring> escaped_args;
+@@ -47,7 +53,10 @@ fs::path GetExePath(std::string_view argv0)
+     const fs::path argv0_path{fs::PathFromString(std::string{argv0})};
+     fs::path path{argv0_path};
+     std::error_code ec;
+-#ifndef WIN32
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++    (void)ec;
++    return path;
++#elif !defined(WIN32)
+     // If argv0 doesn't contain a path separator, it was invoked from the system
+     // PATH and can be searched for there.
+     if (!argv0_path.has_parent_path()) {
 diff --git a/src/util/fs.cpp b/src/util/fs.cpp
 index 692f671..ca074d5 100644
 --- a/src/util/fs.cpp

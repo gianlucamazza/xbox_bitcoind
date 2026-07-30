@@ -70,6 +70,7 @@ $cmakeArgs = @(
     "-DCMAKE_SYSTEM_VERSION=10.0",
     "-DBUILD_GUI=OFF",
     "-DENABLE_WALLET=OFF",
+    "-DENABLE_EXTERNAL_SIGNER=OFF",
     "-DWITH_ZMQ=OFF",
     "-DENABLE_IPC=OFF",
     "-DBUILD_TESTS=OFF",
@@ -79,6 +80,7 @@ $cmakeArgs = @(
     "-DBUILD_TX=OFF",
     "-DBUILD_UTIL=OFF",
     "-DBUILD_BITCOIN_BIN=OFF",
+    # Daemon target pulls bitcoin_node static lib; we only need libs for the UWP app embed.
     "-DBUILD_DAEMON=ON",
     "-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON",
     # libevent marks !uwp in vcpkg; allow-unsupported to attempt AppContainer build (Dev Mode).
@@ -88,9 +90,10 @@ $cmakeArgs = @(
 & cmake @cmakeArgs
 if ($LASTEXITCODE -ne 0) { throw "cmake configure failed" }
 
-Write-Host "Building Core UWP libraries ..."
-& cmake --build $BuildDir --config $Configuration --parallel
-if ($LASTEXITCODE -ne 0) { throw "cmake build failed" }
+# Build node stack only (avoid linking a WindowsStore bitcoind.exe).
+Write-Host "Building Core UWP libraries (bitcoin_node + deps) ..."
+& cmake --build $BuildDir --config $Configuration --parallel --target bitcoin_node
+if ($LASTEXITCODE -ne 0) { throw "cmake build failed (bitcoin_node)" }
 
 # Export paths for the UWP app build
 $libCandidates = @(

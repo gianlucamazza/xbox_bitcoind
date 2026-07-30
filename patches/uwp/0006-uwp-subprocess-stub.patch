@@ -1,28 +1,82 @@
 diff --git a/src/util/subprocess.h b/src/util/subprocess.h
-index 8b91713..3828fe7 100644
+index 8b91713..55bb338 100644
 --- a/src/util/subprocess.h
 +++ b/src/util/subprocess.h
-@@ -36,6 +36,23 @@ Documentation for C++ subprocessing library.
- #ifndef BITCOIN_UTIL_SUBPROCESS_H
- #define BITCOIN_UTIL_SUBPROCESS_H
+@@ -73,6 +73,77 @@ extern "C" {
+   #include <sys/types.h>
+ }
  
-+#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++// UWP AppContainer: process-creation APIs are outside the app partition.
++// Stub after windows.h so BOOL/HANDLE types exist (never before — pollutes headers).
++#if defined(WIN32) && defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
 +#ifndef HANDLE_FLAG_INHERIT
 +#define HANDLE_FLAG_INHERIT 0x00000001
 +#endif
 +#ifndef STARTF_USESTDHANDLES
 +#define STARTF_USESTDHANDLES 0x00000100
 +#endif
-+// UWP: CreateProcess is not available; stub so the header still compiles.
++#ifndef CREATE_UNICODE_ENVIRONMENT
++#define CREATE_UNICODE_ENVIRONMENT 0x00000400
++#endif
++#ifndef CREATE_NO_WINDOW
++#define CREATE_NO_WINDOW 0x08000000
++#endif
++// Minimal process types if the App partition omits them.
++#ifndef _PROCESS_INFORMATION_
++typedef struct _PROCESS_INFORMATION {
++  HANDLE hProcess;
++  HANDLE hThread;
++  DWORD dwProcessId;
++  DWORD dwThreadId;
++} PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
++#endif
++#ifndef _STARTUPINFOW_
++typedef struct _STARTUPINFOW {
++  DWORD cb;
++  LPWSTR lpReserved;
++  LPWSTR lpDesktop;
++  LPWSTR lpTitle;
++  DWORD dwX;
++  DWORD dwY;
++  DWORD dwXSize;
++  DWORD dwYSize;
++  DWORD dwXCountChars;
++  DWORD dwYCountChars;
++  DWORD dwFillAttribute;
++  DWORD dwFlags;
++  WORD wShowWindow;
++  WORD cbReserved2;
++  LPBYTE lpReserved2;
++  HANDLE hStdInput;
++  HANDLE hStdOutput;
++  HANDLE hStdError;
++} STARTUPINFOW, *LPSTARTUPINFOW;
++#endif
 +static inline BOOL WINAPI XbbCreateProcessW(
 +    LPCWSTR, LPWSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD,
-+    LPVOID, LPCWSTR, LPSTARTUPINFOW, LPPROCESS_INFORMATION) {
++    LPVOID, LPCWSTR, LPSTARTUPINFOW, LPPROCESS_INFORMATION)
++{
 +  SetLastError(ERROR_NOT_SUPPORTED);
 +  return FALSE;
 +}
 +#define CreateProcessW XbbCreateProcessW
-+#endif
++static inline BOOL WINAPI XbbCreatePipe(PHANDLE hReadPipe, PHANDLE hWritePipe,
++                                        LPSECURITY_ATTRIBUTES, DWORD)
++{
++  if (hReadPipe) *hReadPipe = INVALID_HANDLE_VALUE;
++  if (hWritePipe) *hWritePipe = INVALID_HANDLE_VALUE;
++  SetLastError(ERROR_NOT_SUPPORTED);
++  return FALSE;
++}
++#define CreatePipe XbbCreatePipe
++static inline BOOL WINAPI XbbSetHandleInformation(HANDLE, DWORD, DWORD)
++{
++  SetLastError(ERROR_NOT_SUPPORTED);
++  return FALSE;
++}
++#define SetHandleInformation XbbSetHandleInformation
++#endif // WIN32 && WINAPI_FAMILY_APP
 +
- #include <util/syserror.h>
- 
- #include <algorithm>
+ // The Microsoft C++ compiler issues deprecation warnings
+ // for the standard POSIX function names.
+ // Its preferred implementations have a leading underscore.

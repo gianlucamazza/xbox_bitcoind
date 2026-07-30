@@ -34,10 +34,14 @@ xbox_bitcoind.exe (UWP AppContainer, Game class)
 
 ## Patch set (`patches/uwp/`)
 
-1. `0001-lockedpool-no-virtuallock.patch` — no `VirtualLock`/`Unlock`/`GetProcessWorkingSetSize` on UWP  
-2. `0002-runcommand-noop-uwp.patch` — `runCommand` no-op under `WINAPI_FAMILY_APP`  
-3. `0003-bitcoind-embed-entry.patch` — `BitcoindMain` when `BITCOIND_EMBED`  
-4. Apply via `scripts/apply-uwp-patches.sh` after fetch
+1. `0001` — no `VirtualLock`/`Unlock`/`GetProcessWorkingSetSize` on UWP  
+2. `0002` — `runCommand` no-op under `WINAPI_FAMILY_APP`  
+3. `0003` — `BitcoindMain` when `BITCOIND_EMBED`  
+4. `0004` — drop pinned libevent so vcpkg UWP port can build  
+5. `0005` — CreateFile2 / no CSIDL / no exec / no GetModuleFileName  
+6. `0006` — subprocess CreateProcess/CreatePipe stubs **after** `windows.h`  
+7. `0007` — netif: no IP Helper gateway route APIs on UWP  
+8. Apply via `scripts/apply-uwp-patches.sh` after fetch
 
 ## Build (Windows CI)
 
@@ -73,10 +77,10 @@ fetch pin → apply patches → vcpkg x64-uwp (boost multi_index/signals2, libev
 |-------|--------|
 | Scaffold UI + probes | **Done**, deployed on console |
 | Desktop Core pin v31.1 | **Done**, MSVC 137/137 |
-| UWP patches 0001–0006 | **Done** in `patches/uwp/` |
-| `build-core-uwp.ps1` / `-WithCore` | **Done** |
-| CI `uwp-core` | **Iterating** (vcpkg OK path; Core C++ UWP API shims expanding) |
-| Full node on Xbox | **Not yet** — blocked until `bitcoin_node.lib` links under AppContainer |
+| UWP patches 0001–0007 | **Done** in `patches/uwp/` |
+| `build-core-uwp.ps1` / `-WithCore` | **Done** (target `bitcoin_node`, external signer off) |
+| CI `uwp-core` | **Iterating** (BOOL/subprocess fix + netif stub; next: remaining APIs) |
+| Full node on Xbox | **Not yet** — blocked until Core static stack links + MSIX WithCore |
 
 ## Risks (known)
 

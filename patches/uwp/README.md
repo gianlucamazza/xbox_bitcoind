@@ -8,8 +8,8 @@ Applied by `scripts/apply-uwp-patches.sh` / `.ps1` after fetch.
 | `0002-runcommand-noop-uwp.patch` | No `_wsystem` under UWP |
 | `0003-bitcoind-embed-entry.patch` | `BitcoindMain` when `BITCOIND_EMBED` |
 | `0004-vcpkg-drop-libevent-override.patch` | Use current vcpkg libevent (UWP fix) instead of 2.1.12#7 |
+| `0005-uwp-win32-api-shims.patch` | CreateFile2, no CSIDL, no exec/CreateProcess/GetModuleFileName on UWP |
+| `0006-uwp-subprocess-stub.patch` | CreateProcess/CreatePipe stubs **after** `windows.h` (avoid BOOL pollution) |
+| `0007-uwp-netif-no-gateway-route.patch` | No GetBestRoute2 / MIB_IPFORWARD_ROW2 under UWP |
 
 Do not commit a patched `third_party/bitcoin` tree — only these patch files.
-| `0005-uwp-win32-api-shims.patch` | CreateFile2, no CSIDL, no exec/CreateProcess on UWP |
-
-| `0006-uwp-subprocess-stub.patch` | Stub CreateProcessW for UWP |
