@@ -12,6 +12,17 @@ It does **not** deploy to the Xbox (use `scripts/deploy.sh` locally).
 
 Future (after `uwp/` exists): `build-uwp.yml` → MSIX artifact (no auto-deploy).
 
+## Action versions (keep current)
+
+| Action | Pin |
+|--------|-----|
+| `actions/checkout` | `v7` |
+| `actions/upload-artifact` | `v7` |
+| `actions/cache` | `v6` |
+
+Dependabot (`.github/dependabot.yml`) opens weekly PRs for Action bumps.
+Lint also compares `config/bitcoin-core.pin` `TAG` to the latest GitHub release (warning only if behind).
+
 ## Triggers
 
 - `push` to `main`

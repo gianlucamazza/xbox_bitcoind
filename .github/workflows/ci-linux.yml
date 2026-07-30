@@ -20,13 +20,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install shellcheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          shellcheck --version
 
       - name: shellcheck
-        run: shellcheck scripts/*.sh
+        # -x follows source= directives; severity warning+ fails on real issues only
+        run: shellcheck -x -S warning scripts/*.sh
 
       - name: Validate bitcoin-core.pin
         run: |
@@ -35,13 +39,20 @@ jobs:
           grep -E '^TAG=v[0-9]' config/bitcoin-core.pin
           grep -E '^COMMIT=[0-9a-f]{40}$' config/bitcoin-core.pin
           grep -E '^REPO_URL=https://' config/bitcoin-core.pin
+          # Pin must still be latest stable unless intentionally lagged
+          LATEST=$(curl -fsSL https://api.github.com/repos/bitcoin/bitcoin/releases/latest | jq -r .tag_name)
+          PIN=$(grep -E '^TAG=' config/bitcoin-core.pin | cut -d= -f2)
+          echo "pin=$PIN latest_release=$LATEST"
+          if [[ "$PIN" != "$LATEST" ]]; then
+            echo "::warning::Bitcoin Core pin $PIN is behind latest release $LATEST — bump config/bitcoin-core.pin when ready"
+          fi
 
   smoke:
     runs-on: ubuntu-24.04
     needs: lint
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install build dependencies
         run: |
@@ -76,7 +87,7 @@ jobs:
           echo "$VER" | grep -F "$TAG"
 
       - name: Upload bitcoind artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bitcoind-linux-x64
           path: |

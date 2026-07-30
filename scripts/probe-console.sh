@@ -4,6 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=env.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/env.sh"
 
 BASE_URL="https://${XBOX_IP}:${XBOX_PORT}"

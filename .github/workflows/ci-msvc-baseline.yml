@@ -25,14 +25,14 @@ jobs:
     runs-on: windows-2025-vs2026
     timeout-minutes: 180
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Fetch pinned Bitcoin Core
         shell: pwsh
         run: .\scripts\fetch-bitcoin-core.ps1
 
       - name: Cache vcpkg packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             third_party/bitcoin/build-msvc-baseline/vcpkg_installed
@@ -101,7 +101,7 @@ jobs:
           }
 
       - name: Upload MSVC artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bitcoind-msvc-x64
           path: |

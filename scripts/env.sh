@@ -38,7 +38,11 @@ if [[ -z "$_xbox_env_found" ]]; then
 	echo "xbox_bitcoind: no xbox-env found." >&2
 	echo "  Copy config/xbox-env.example to ~/.config/xbox_bitcoind/xbox-env" >&2
 	echo "  or reuse xllama: ensure ~/.config/xllama/xbox-env exists." >&2
-	return 1 2>/dev/null || exit 1
+	# Sourced → return; executed as a script → exit
+	if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+		return 1
+	fi
+	exit 1
 fi
 
 : "${XBOX_IP:?XBOX_IP not set in ${_xbox_env_found}}"
