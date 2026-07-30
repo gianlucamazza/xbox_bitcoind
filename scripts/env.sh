@@ -58,7 +58,8 @@ export XBOX_ENV_SOURCE="${_xbox_env_found}"
 # Package identity for this project (WDP helpers).
 # AppX Identity Name: only [-.A-Za-z0-9] (no underscore)
 export XBOX_BITCOIND_APP_ID="${XBOX_BITCOIND_APP_ID:-GianlucaMazza.xboxbitcoind}"
-export XBOX_BITCOIND_APP_ENTRY="${XBOX_BITCOIND_APP_ENTRY:-xbox_bitcoind}"
+# Application@Id in AppxManifest (AppX pattern forbids underscores)
+export XBOX_BITCOIND_APP_ENTRY="${XBOX_BITCOIND_APP_ENTRY:-App}"
 export XBOX_BITCOIND_LOG="${XBOX_BITCOIND_LOG:-bitcoind.log}"
 
 unset _f _xbox_env_candidates _xbox_env_found

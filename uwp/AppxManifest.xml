@@ -34,7 +34,7 @@
   </Resources>
 
   <Applications>
-    <Application Id="xbox_bitcoind" Executable="xbox_bitcoind.exe" EntryPoint="xbox_bitcoind.App">
+    <Application Id="App" Executable="xbox_bitcoind.exe" EntryPoint="xbox_bitcoind.App">
       <uap:VisualElements
         DisplayName="xbox_bitcoind"
         Description="Bitcoin Core pruned full node for Xbox Dev Mode"
