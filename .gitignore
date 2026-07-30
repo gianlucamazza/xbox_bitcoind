@@ -1,0 +1,25 @@
+# Secrets / local env
+xbox-env
+*.pem
+*.pfx
+*.p12
+
+# Bitcoin Core tree (fetched via scripts/fetch-bitcoin-core.sh)
+third_party/bitcoin/
+
+# Build / package artefacts
+build/
+out/
+**/build-msvc-baseline/
+**/build-linux-smoke/
+*.msix
+*.appx
+*.appxbundle
+*.cer
+!config/**
+
+# Editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/

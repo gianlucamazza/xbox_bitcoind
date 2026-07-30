@@ -1,0 +1,111 @@
+name: ci-msvc-baseline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: "Build and run unit tests (ctest)"
+        type: boolean
+        default: true
+      enable_wallet:
+        description: "Enable SQLite wallet feature"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  msvc:
+    # VS 2026 + Native Desktop + vcpkg (required by Bitcoin Core v31 vs2026 preset)
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch pinned Bitcoin Core
+        shell: pwsh
+        run: .\scripts\fetch-bitcoin-core.ps1
+
+      - name: Cache vcpkg packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/bitcoin/build-msvc-baseline/vcpkg_installed
+            ~/AppData/Local/vcpkg/archives
+          key: msvc-vcpkg-${{ runner.os }}-${{ hashFiles('config/bitcoin-core.pin') }}-${{ hashFiles('third_party/bitcoin/vcpkg.json') }}
+          restore-keys: |
+            msvc-vcpkg-${{ runner.os }}-${{ hashFiles('config/bitcoin-core.pin') }}-
+            msvc-vcpkg-${{ runner.os }}-
+
+      - name: List CMake presets (debug)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: third_party/bitcoin
+        shell: pwsh
+        run: cmake --list-presets
+
+      - name: Decide test policy
+        id: policy
+        shell: pwsh
+        run: |
+          # PR: skip ctest by default (minutes). main + dispatch: run tests unless overridden.
+          $runTests = $false
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $runTests = [System.Convert]::ToBoolean("${{ inputs.run_tests }}")
+          } elseif ("${{ github.ref }}" -eq "refs/heads/main" -and "${{ github.event_name }}" -eq "push") {
+            $runTests = $true
+          }
+          $wallet = $false
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $wallet = [System.Convert]::ToBoolean("${{ inputs.enable_wallet }}")
+          }
+          "run_tests=$runTests" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "enable_wallet=$wallet" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "run_tests=$runTests enable_wallet=$wallet"
+
+      - name: MSVC baseline build
+        id: build
+        shell: pwsh
+        env:
+          CI: "true"
+          # GHA windows-2025-vs2026 sets VCPKG_INSTALLATION_ROOT=C:\vcpkg
+        run: |
+          $args = @()
+          if ("${{ steps.policy.outputs.run_tests }}" -ne "True") {
+            $args += "-SkipTests"
+          }
+          if ("${{ steps.policy.outputs.enable_wallet }}" -eq "True") {
+            $args += "-EnableWallet"
+          }
+          Write-Host "build-msvc-baseline.ps1 $($args -join ' ')"
+          & .\scripts\build-msvc-baseline.ps1 @args
+
+      - name: Assert version string
+        shell: pwsh
+        run: |
+          $tag = (Get-Content config\bitcoin-core.pin | Where-Object { $_ -match '^TAG=' }) -replace '^TAG=',''
+          $exe = "${{ steps.build.outputs.bitcoind }}"
+          if (-not $exe -or -not (Test-Path $exe)) {
+            $exe = Get-ChildItem -Path third_party\bitcoin\build-msvc-baseline -Recurse -Filter bitcoind.exe |
+              Select-Object -First 1 -ExpandProperty FullName
+          }
+          if (-not $exe) { throw "bitcoind.exe not found" }
+          $ver = & $exe -version | Select-Object -First 1
+          Write-Host "version: $ver"
+          if ($ver -notlike "*$tag*") {
+            throw "expected tag $tag in version output, got: $ver"
+          }
+
+      - name: Upload MSVC artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitcoind-msvc-x64
+          path: |
+            third_party/bitcoin/build-msvc-baseline/**/bitcoind.exe
+            third_party/bitcoin/build-msvc-baseline/**/bitcoin-cli.exe
+          if-no-files-found: error
+          retention-days: 14

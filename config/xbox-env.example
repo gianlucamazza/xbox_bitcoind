@@ -1,0 +1,16 @@
+# Xbox Device Portal credentials (Series S / X, Dev Mode)
+#
+# Preferred: reuse the xllama console env (no copy needed):
+#   source ~/.config/xllama/xbox-env
+#
+# Or install a project-local file:
+#   mkdir -p ~/.config/xbox_bitcoind
+#   cp config/xbox-env.example ~/.config/xbox_bitcoind/xbox-env
+#   $EDITOR ~/.config/xbox_bitcoind/xbox-env
+#
+# Never commit real passwords.
+
+export XBOX_IP=192.168.1.44
+export XBOX_PORT=11443
+export XBOX_USER=Xbox
+export XBOX_PASS=change-me

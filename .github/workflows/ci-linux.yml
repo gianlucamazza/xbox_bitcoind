@@ -1,0 +1,86 @@
+name: ci-linux
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: "Build and run Bitcoin Core unit tests"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: shellcheck
+        run: shellcheck scripts/*.sh
+
+      - name: Validate bitcoin-core.pin
+        run: |
+          set -euo pipefail
+          test -f config/bitcoin-core.pin
+          grep -E '^TAG=v[0-9]' config/bitcoin-core.pin
+          grep -E '^COMMIT=[0-9a-f]{40}$' config/bitcoin-core.pin
+          grep -E '^REPO_URL=https://' config/bitcoin-core.pin
+
+  smoke:
+    runs-on: ubuntu-24.04
+    needs: lint
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake pkg-config python3 \
+            libboost-dev libevent-dev
+
+      - name: Fetch pinned Bitcoin Core
+        run: ./scripts/fetch-bitcoin-core.sh
+
+      - name: Linux smoke build
+        id: build
+        env:
+          # PR/push default: no unit tests (fast). Dispatch may enable via input.
+          CI_SKIP_TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.run_tests && '0' || '1' }}
+          BUILD_TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.run_tests && 'ON' || 'OFF' }}
+          CMAKE_BUILD_TYPE: Release
+        run: ./scripts/build-linux-smoke.sh
+
+      - name: Assert version string
+        run: |
+          set -euo pipefail
+          TAG=$(grep -E '^TAG=' config/bitcoin-core.pin | cut -d= -f2)
+          BITCOIND="${{ steps.build.outputs.bitcoind }}"
+          if [[ -z "${BITCOIND}" || ! -x "${BITCOIND}" ]]; then
+            BITCOIND=$(find third_party/bitcoin/build-linux-smoke -type f -name bitcoind | head -n1)
+          fi
+          test -n "${BITCOIND}"
+          VER=$("${BITCOIND}" -version | head -n1)
+          echo "version: $VER"
+          echo "$VER" | grep -F "$TAG"
+
+      - name: Upload bitcoind artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitcoind-linux-x64
+          path: |
+            third_party/bitcoin/build-linux-smoke/bin/bitcoind
+            third_party/bitcoin/build-linux-smoke/bin/bitcoin-cli
+          if-no-files-found: warn
+          retention-days: 14
