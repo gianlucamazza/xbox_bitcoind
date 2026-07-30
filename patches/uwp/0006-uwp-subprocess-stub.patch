@@ -1,0 +1,28 @@
+diff --git a/src/util/subprocess.h b/src/util/subprocess.h
+index 8b91713..3828fe7 100644
+--- a/src/util/subprocess.h
++++ b/src/util/subprocess.h
+@@ -36,6 +36,23 @@ Documentation for C++ subprocessing library.
+ #ifndef BITCOIN_UTIL_SUBPROCESS_H
+ #define BITCOIN_UTIL_SUBPROCESS_H
+ 
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++#ifndef HANDLE_FLAG_INHERIT
++#define HANDLE_FLAG_INHERIT 0x00000001
++#endif
++#ifndef STARTF_USESTDHANDLES
++#define STARTF_USESTDHANDLES 0x00000100
++#endif
++// UWP: CreateProcess is not available; stub so the header still compiles.
++static inline BOOL WINAPI XbbCreateProcessW(
++    LPCWSTR, LPWSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD,
++    LPVOID, LPCWSTR, LPSTARTUPINFOW, LPPROCESS_INFORMATION) {
++  SetLastError(ERROR_NOT_SUPPORTED);
++  return FALSE;
++}
++#define CreateProcessW XbbCreateProcessW
++#endif
++
+ #include <util/syserror.h>
+ 
+ #include <algorithm>

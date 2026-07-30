@@ -11,3 +11,5 @@ Applied by `scripts/apply-uwp-patches.sh` / `.ps1` after fetch.
 
 Do not commit a patched `third_party/bitcoin` tree — only these patch files.
 | `0005-uwp-win32-api-shims.patch` | CreateFile2, no CSIDL, no exec/CreateProcess on UWP |
+
+| `0006-uwp-subprocess-stub.patch` | Stub CreateProcessW for UWP |
