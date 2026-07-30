@@ -11,5 +11,6 @@ Applied by `scripts/apply-uwp-patches.sh` / `.ps1` after fetch.
 | `0005-uwp-win32-api-shims.patch` | CreateFile2, no CSIDL, no exec/CreateProcess/GetModuleFileName on UWP |
 | `0006-uwp-subprocess-stub.patch` | CreateProcess/CreatePipe stubs **after** `windows.h` (avoid BOOL pollution) |
 | `0007-uwp-netif-no-gateway-route.patch` | No GetBestRoute2 / MIB_IPFORWARD_ROW2 under UWP |
+| `0008-uwp-bitcoin-embed-static-lib.patch` | WindowsStore: build `bitcoin_embed` static lib (BitcoindMain) instead of bitcoind.exe |
 
 Do not commit a patched `third_party/bitcoin` tree — only these patch files.

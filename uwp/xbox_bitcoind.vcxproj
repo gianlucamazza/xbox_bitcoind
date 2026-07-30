@@ -93,14 +93,19 @@
     </Link>
   </ItemDefinitionGroup>
 
-  <!-- When linking Core: define embed flag and pull static libs. -->
+  <!-- When linking Core: BitcoindMain lives in bitcoin_embed.lib (built by build-core-uwp). -->
   <ItemDefinitionGroup Condition="'$(XbbWithCore)' == 'true'">
     <ClCompile>
-      <PreprocessorDefinitions>XBB_WITH_CORE=1;BITCOIND_EMBED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>XBB_WITH_CORE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(XbbCoreLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>
+        $(XbbCoreLibDir);
+        $(XbbVcpkgLibDir);
+        %(AdditionalLibraryDirectories)
+      </AdditionalLibraryDirectories>
       <AdditionalDependencies>
+        bitcoin_embed.lib;
         bitcoin_node.lib;
         bitcoin_common.lib;
         bitcoin_util.lib;
@@ -112,15 +117,17 @@
         minisketch.lib;
         secp256k1.lib;
         univalue.lib;
+        event.lib;
+        event_core.lib;
+        event_extra.lib;
+        bcrypt.lib;
+        crypt32.lib;
+        iphlpapi.lib;
+        ntdll.lib;
         %(AdditionalDependencies)
       </AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-
-  <ItemGroup Condition="'$(XbbWithCore)' == 'true'">
-    <ClCompile Include="$(XbbCoreSrcDir)\bitcoind.cpp" />
-    <ClCompile Include="$(XbbCoreSrcDir)\init\bitcoind.cpp" />
-  </ItemGroup>
 
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

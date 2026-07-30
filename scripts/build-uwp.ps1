@@ -120,6 +120,7 @@ if ($BuildRevision -gt 0) {
 }
 
 $CoreLibDir = ""
+$VcpkgLibDir = ""
 if ($WithCore) {
     Write-Host "=== WithCore: building Bitcoin Core for UWP ==="
     & (Join-Path $PSScriptRoot "build-core-uwp.ps1") -Configuration $Configuration
@@ -132,12 +133,22 @@ if ($WithCore) {
             (Join-Path $coreRoot "lib"),
             $coreRoot
         )) {
-        if (Test-Path (Join-Path $c "bitcoin_node.lib")) { $CoreLibDir = $c; break }
+        if ((Test-Path (Join-Path $c "bitcoin_embed.lib")) -or (Test-Path (Join-Path $c "bitcoin_node.lib"))) {
+            $CoreLibDir = $c
+            break
+        }
     }
     if (-not $CoreLibDir) {
-        throw "WithCore set but bitcoin_node.lib not found under $coreRoot"
+        throw "WithCore set but bitcoin_embed/node.lib not found under $coreRoot"
+    }
+    foreach ($c in @(
+            (Join-Path $coreRoot "vcpkg_installed\x64-uwp\lib"),
+            (Join-Path $env:VCPKG_ROOT "installed\x64-uwp\lib")
+        )) {
+        if ($c -and (Test-Path $c)) { $VcpkgLibDir = $c; break }
     }
     Write-Host "Linking Core from $CoreLibDir"
+    if ($VcpkgLibDir) { Write-Host "vcpkg libs from $VcpkgLibDir" }
 }
 
 Write-Host "Building $Configuration|$Platform ..."
@@ -163,6 +174,9 @@ if ($WithCore -and $CoreLibDir) {
     $MsBuildArgs += "/p:XbbCoreLibDir=$CoreLibDir"
     $MsBuildArgs += "/p:XbbCoreSrcDir=$(Join-Path $RepoRoot 'third_party\bitcoin\src')"
     $MsBuildArgs += "/p:XbbCoreBuildDir=$(if ($CoreBuildDir) { $CoreBuildDir } else { Join-Path $RepoRoot 'third_party\bitcoin\build-uwp' })"
+    if ($VcpkgLibDir) {
+        $MsBuildArgs += "/p:XbbVcpkgLibDir=$VcpkgLibDir"
+    }
 }
 
 & $MsBuild @MsBuildArgs

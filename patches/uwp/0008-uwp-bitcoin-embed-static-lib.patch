@@ -1,0 +1,50 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index ad18115..c5f6b39 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -306,18 +306,33 @@ endif()
+ 
+ # Bitcoin Core bitcoind.
+ if(BUILD_DAEMON)
+-  add_executable(bitcoind
+-    bitcoind.cpp
+-    init/bitcoind.cpp
+-  )
+-  add_windows_resources(bitcoind bitcoind-res.rc)
+-  add_windows_application_manifest(bitcoind)
+-  target_link_libraries(bitcoind
+-    core_interface
+-    bitcoin_node
+-    $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
+-  )
+-  install_binary_component(bitcoind HAS_MANPAGE)
++  if(CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
++    # UWP/Xbox embed: static library with BitcoindMain (BITCOIND_EMBED), no desktop exe.
++    add_library(bitcoin_embed STATIC
++      bitcoind.cpp
++      init/bitcoind.cpp
++    )
++    target_compile_definitions(bitcoin_embed PUBLIC BITCOIND_EMBED=1)
++    target_link_libraries(bitcoin_embed
++      PUBLIC
++        core_interface
++        bitcoin_node
++        $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
++    )
++  else()
++    add_executable(bitcoind
++      bitcoind.cpp
++      init/bitcoind.cpp
++    )
++    add_windows_resources(bitcoind bitcoind-res.rc)
++    add_windows_application_manifest(bitcoind)
++    target_link_libraries(bitcoind
++      core_interface
++      bitcoin_node
++      $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
++    )
++    install_binary_component(bitcoind HAS_MANPAGE)
++  endif()
+ endif()
+ if(ENABLE_IPC AND BUILD_DAEMON)
+   add_executable(bitcoin-node

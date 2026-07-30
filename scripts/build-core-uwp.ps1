@@ -90,10 +90,10 @@ $cmakeArgs = @(
 & cmake @cmakeArgs
 if ($LASTEXITCODE -ne 0) { throw "cmake configure failed" }
 
-# Build node stack only (avoid linking a WindowsStore bitcoind.exe).
-Write-Host "Building Core UWP libraries (bitcoin_node + deps) ..."
-& cmake --build $BuildDir --config $Configuration --parallel --target bitcoin_node
-if ($LASTEXITCODE -ne 0) { throw "cmake build failed (bitcoin_node)" }
+# Build embed stack (bitcoin_embed → bitcoin_node + deps). Avoid desktop bitcoind.exe.
+Write-Host "Building Core UWP libraries (bitcoin_embed + deps) ..."
+& cmake --build $BuildDir --config $Configuration --parallel --target bitcoin_embed
+if ($LASTEXITCODE -ne 0) { throw "cmake build failed (bitcoin_embed)" }
 
 # Export paths for the UWP app build
 $libCandidates = @(
@@ -105,19 +105,37 @@ $libCandidates = @(
 )
 $found = $null
 foreach ($c in $libCandidates) {
-    if (Test-Path (Join-Path $c "bitcoin_node.lib")) { $found = $c; break }
-    if (Test-Path (Join-Path $c "bitcoin_node.a")) { $found = $c; break }
+    if ((Test-Path (Join-Path $c "bitcoin_embed.lib")) -or (Test-Path (Join-Path $c "bitcoin_node.lib"))) {
+        $found = $c
+        break
+    }
 }
 if (-not $found) {
-    Write-Warning "Could not locate bitcoin_node.lib — listing build dir:"
-    Get-ChildItem $BuildDir -Recurse -Filter "bitcoin_node*" -ErrorAction SilentlyContinue | Select-Object -First 20 FullName
+    Write-Warning "Could not locate bitcoin_embed/node.lib — listing build dir:"
+    Get-ChildItem $BuildDir -Recurse -Filter "bitcoin_*.lib" -ErrorAction SilentlyContinue | Select-Object -First 30 FullName
 } else {
     Write-Host "Core libs: $found"
+}
+
+# vcpkg installed libs (libevent, etc.) for final UWP link
+$vcpkgLibCandidates = @(
+    (Join-Path $BuildDir "vcpkg_installed\$Triplet\lib"),
+    (Join-Path $env:VCPKG_ROOT "installed\$Triplet\lib")
+)
+$vcpkgLib = $null
+foreach ($c in $vcpkgLibCandidates) {
+    if (Test-Path $c) { $vcpkgLib = $c; break }
+}
+if ($vcpkgLib) {
+    Write-Host "vcpkg libs: $vcpkgLib"
+} else {
+    Write-Warning "vcpkg lib dir not found (link may miss libevent)"
 }
 
 if ($env:GITHUB_OUTPUT) {
     "core_build_dir=$BuildDir" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
     if ($found) { "core_lib_dir=$found" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8 }
+    if ($vcpkgLib) { "vcpkg_lib_dir=$vcpkgLib" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8 }
 }
 
 Write-Host "OK: Core UWP build finished ($BuildDir)"
