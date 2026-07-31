@@ -53,6 +53,10 @@ xllama on this console is **Game**; GPU budget measured **3801 MB** under that
 class. **After every xbox_bitcoind reinstall, set App type → Game** and re-check
 if RAM during IBD is tight.
 
+**Game does not prevent suspend.** Navigating to the Xbox **Home** still suspends
+the UWP process. For IBD, keep the title in the foreground (or re-open soon).
+`OnSuspending` soft-stops bitcoind; resume can restart the node (see `App.cpp`).
+
 ## 6. Thread / CPU budget
 
 Series S: 8 Zen 2 cores; Dev Mode apps typically see ~6–7 usable. Do not assume

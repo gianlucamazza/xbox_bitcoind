@@ -21,8 +21,10 @@ namespace winrt::xbox_bitcoind::implementation {
 App::App() {
     xbb::LogInit();
     xbb::Logf("[app] App ctor");
-    // Clean bitcoind shutdown on suspend/terminate so LevelDB/block index flush to disk.
+    // Xbox Home / title switch: OS suspends UWP (Game class does not prevent this).
+    // Soft-stop on suspend for LevelDB durability; restart on resume if we had been running.
     m_suspending_token = this->Suspending({this, &App::OnSuspending});
+    m_resuming_token = this->Resuming({this, &App::OnResuming});
 }
 
 void App::OnLaunched(LaunchActivatedEventArgs const&) {
@@ -40,9 +42,13 @@ void App::OnLaunched(LaunchActivatedEventArgs const&) {
 }
 
 void App::OnSuspending(IInspectable const&, SuspendingEventArgs const& e) {
-    xbb::Logf("[app] OnSuspending — stopping node for durable flush");
+    // Prefer clean stop over freezing mid-write (LevelDB). Game OS still suspends the process
+    // after this — IBD does not continue while the title is not in focus.
+    const bool was_running = xbb::NodeStatusSnapshot().running;
+    m_restart_node_on_resume = was_running && xbb::NodeCoreLinked();
+    xbb::Logf("[app] OnSuspending — soft-stop node (was_running=%d restart_on_resume=%d)",
+              was_running ? 1 : 0, m_restart_node_on_resume ? 1 : 0);
     auto deferral = e.SuspendingOperation().GetDeferral();
-    // Run off UI thread; Complete when NodeStop finishes (RPC stop + join).
     std::thread([deferral]() {
         try {
             xbb::NodeStop();
@@ -51,6 +57,30 @@ void App::OnSuspending(IInspectable const&, SuspendingEventArgs const& e) {
         }
         deferral.Complete();
         xbb::Logf("[app] OnSuspending complete");
+    }).detach();
+}
+
+void App::OnResuming(IInspectable const&, IInspectable const&) {
+    xbb::Logf("[app] OnResuming restart_node=%d", m_restart_node_on_resume ? 1 : 0);
+    if (!m_restart_node_on_resume || !xbb::NodeCoreLinked()) {
+        return;
+    }
+    m_restart_node_on_resume = false;
+    // Resume on a worker thread so UI can paint; bitcoind start is blocking setup only.
+    std::thread([]() {
+        try {
+            if (xbb::NodeStatusSnapshot().running) {
+                xbb::Logf("[app] OnResuming: node already running");
+                return;
+            }
+            if (xbb::NodeStart()) {
+                xbb::Logf("[app] OnResuming: NodeStart OK (continue IBD)");
+            } else {
+                xbb::Logf("[app] OnResuming: NodeStart failed");
+            }
+        } catch (...) {
+            xbb::Logf("[app] OnResuming: NodeStart threw");
+        }
     }).detach();
 }
 

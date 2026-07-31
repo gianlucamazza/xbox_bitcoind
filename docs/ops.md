@@ -25,8 +25,12 @@ PFN=$(./scripts/deploy.sh pfn)
 
 ## Golden rules
 
-1. **Leave the app open** during IBD (Game class package foreground/background
-   as the OS allows). Closing the title from the Xbox UI may kill without flush.
+1. **Leave the app open / focused during IBD.**  
+   **Game class ≠ keep running in Home.** Returning to the Xbox Home **suspends**
+   the UWP title: we soft-stop `bitcoind` (flush) so LevelDB is not frozen mid-write.
+   Sync **does not** continue while suspended. Re-open the title to resume (v0.1.2+:
+   auto-restart on resume if it was running). Prefer: leave `xbox_bitcoind` on-screen,
+   or only leave briefly.
 2. **Stop only via soft stop**: `./scripts/deploy.sh stop-app`  
    (suspend → `OnSuspending` → RPC `stop` → LevelDB flush; DELETE only after  
    `XBB_SOFT_STOP_MAX_WAIT` seconds, default **180**). Mid-IBD may still need

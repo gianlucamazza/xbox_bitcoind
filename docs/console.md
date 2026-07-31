@@ -47,7 +47,8 @@ contend for space.
 | System RAM | 10 GB GDDR6 shared | AppContainer quota lower |
 | GPU process budget (Game) | ~3801 MB measured | Mostly irrelevant (CPU node) |
 | CPU | 8× Zen 2; ~6–7 usable | Keep `par` / threads modest |
-| App vs Game | Game → more resources | **Always Game** after install |
+| App vs Game | Game → more RAM/CPU | **Always Game** after install; does **not** block Home suspend |
+| Home / suspend | Leaving the title suspends UWP | Soft-stop node; IBD pauses until you re-open the app |
 
 Start with `dbcache=256` (`config/bitcoin.conf.console`).
 
