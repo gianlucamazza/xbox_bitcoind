@@ -852,7 +852,22 @@ void MainPageController::ApplyLayout(UiLayout const& L, LayoutPlan const& plan) 
     LayoutMetricRow(m_secondary_grid, m_secondary_cards, L.primary_columns);
 
     if (m_secondary_grid) {
-        m_secondary_grid.Visibility(plan.show_secondary ? Visibility::Visible : Visibility::Collapsed);
+        if (plan.show_secondary) {
+            m_secondary_grid.Visibility(Visibility::Visible);
+            // Reserve full row so the next shell row cannot paint over secondary cards.
+            m_secondary_grid.MinHeight(L.card_min_h);
+            m_secondary_grid.Height(L.card_min_h);
+            m_secondary_grid.Margin(ThicknessHelper::FromLengths(0, L.section_gap * 0.5, 0, L.section_gap));
+        } else {
+            m_secondary_grid.Visibility(Visibility::Collapsed);
+            m_secondary_grid.Height(0);
+            m_secondary_grid.MinHeight(0);
+            m_secondary_grid.Margin(ThicknessHelper::FromUniformLength(0));
+        }
+    }
+    if (m_primary_grid) {
+        const double ph = (L.primary_columns >= 4) ? L.card_min_h : (L.card_min_h * 2 + L.card_gap);
+        m_primary_grid.MinHeight(ph);
     }
 
     if (m_progress_label) {
