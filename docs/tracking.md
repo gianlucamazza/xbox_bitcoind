@@ -85,7 +85,7 @@ Issues are created with labels:
 | [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) | 24h stability at tip (v1 close) | open |
 | [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) | Soft-stop retest at tip (v1 close) | open |
 | [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop >90s → DELETE fallback | mitigated (field-verify) |
-| [#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) | Remove stale package revisions on console | tooling landed |
+| [#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) | Remove stale package revisions on console | **closed** |
 
 ```bash
 gh issue list --label v1-close
