@@ -85,15 +85,11 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # Note: when invoked via workflow_call, github.event_name/ref still reflect the
-  # *caller* (e.g. release tag push → push + refs/tags/v*). Do not rely on
-  # event_name == 'workflow_call' alone.
+  # Skip only on PRs (scaffold job covers those) or explicit with_core=false.
+  # workflow_call inherits the *caller's* event_name/ref (tag push stays "push"),
+  # so never require event_name == 'workflow_call'.
   core-uwp:
-    if: |
-      (github.event_name == 'workflow_dispatch' && inputs.with_core == true) ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
-      (inputs.with_core == true && github.event_name != 'pull_request' && github.event_name != 'push')
+    if: ${{ github.event_name != 'pull_request' && inputs.with_core != false }}
     runs-on: windows-2025-vs2026
     timeout-minutes: 300
     env:

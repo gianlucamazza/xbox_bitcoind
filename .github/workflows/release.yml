@@ -38,9 +38,7 @@ jobs:
     uses: ./.github/workflows/build-uwp.yml
     with:
       with_core: true
-      # Tag push: always rebuild Core for a clean release artifact.
-      # workflow_dispatch: honour force_core input (default true).
-      force_core: ${{ github.event_name != 'workflow_dispatch' && true || inputs.force_core }}
+      force_core: true
       build_revision: ${{ github.run_number }}
 
   publish:
