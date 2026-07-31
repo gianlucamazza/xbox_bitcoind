@@ -24,9 +24,10 @@ Companion project on the same console: [xllama](https://github.com/gianlucamazza
 - **Bitcoin Core v31.1** embedded in-process (`BitcoindMain` / `BITCOIND_EMBED`)
 - Mainnet pruned node (`prune=550`, outbound P2P, local RPC)
 - Controller-first **10-foot dashboard**: primary/secondary metrics, dual progress bars,
-  session sparkline, rough **ETA**, live log tail
+  session sparkline, rough **ETA**, tip age (`mediantime`), live log tail
+- Status pills: `HEADERS` / `SYNCING` / `SYNCED` / `STALE` (ops consensus, not BIP9 signaling)
 - Clear versioning: **Core pin** vs **app MSIX** (e.g. `Bitcoin Core v31.1 · app 0.1.0.6`)
-- **Soft-stop** flush path (suspend → RPC `stop` → durable LevelDB; host wait default 180s)
+- **Soft-stop** on Home suspend + **auto-restart** on resume (continue IBD)
 - Path-filtered CI + automated **GitHub Releases** on `v*` tags
 
 | | |
@@ -93,15 +94,24 @@ More detail: [docs/uwp-scaffold.md](docs/uwp-scaffold.md) · [docs/ci.md](docs/c
 ## Architecture
 
 ```
-xbox_bitcoind.exe  (UWP AppContainer, Game)
-├── MainPage / rpc_client / probes
-└── node_host → BitcoindMain  [XBB_WITH_CORE]
-       datadir = LocalState\bitcoin
-       static: bitcoin_embed + node stack (x64-uwp)
+xbox_bitcoind.exe (UWP AppContainer, Game class — more RAM/CPU, not anti-suspend)
+├── App — OnSuspending soft-stop · OnResuming auto-restart if was running
+├── MainPage — 10-foot ops dashboard (consensus health, not soft-fork signaling)
+├── probes / rpc_client — AppContainer checks · loopback JSON-RPC + cookie
+└── node_host → BitcoindMain(argc, argv)   [XBB_WITH_CORE]
+        datadir = LocalState\bitcoin
+        conf profiles: console (IBD) | tip (post-sync)
+        static: bitcoin_embed + node stack + event.dll (x64-uwp)
+
+Linux host ops plane
+├── health-check / node-status / ibd-sample timer
+├── deploy.sh (MSIX + VCLibs)
+└── apply-console-conf --profile console|tip
 ```
 
-In-process only (no `CreateProcess`). Patches: [patches/uwp/](patches/uwp/README.md).  
-Design and checklist: [docs/plan-core-uwp.md](docs/plan-core-uwp.md).
+In-process only (no `CreateProcess`). No Tor / mining / LN in this package.  
+Patches: [patches/uwp/](patches/uwp/README.md). Full checklist: [docs/plan-core-uwp.md](docs/plan-core-uwp.md).  
+Dashboard layout: [docs/ui.md](docs/ui.md).
 
 ## Project layout
 
@@ -135,7 +145,8 @@ Research archive (phase 0): [docs/research/](docs/research/00-feasibility.md).
 | Area | State |
 |------|--------|
 | **v1 engineering** | **Complete** ([docs/roadmap.md](docs/roadmap.md)) |
-| WithCore on Series S | Working (package **0.1.0.65**; IBD ~14% / ~453k) |
+| Architecture + UI | **Complete on main** — lifecycle, host plane, tip age / HEADERS·STALE ([docs/plan-core-uwp.md](docs/plan-core-uwp.md) · [docs/ui.md](docs/ui.md)) |
+| WithCore on Series S | Working — package **0.1.0.6** (release **v0.1.1**); IBD mid-progress |
 | Soft-stop persistence | Tip conserved early + mid IBD; mid-IBD DELETE fallback still possible ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
 | Mainnet IBD → tip + 24h stable | **Ops pending** (timer running; `./scripts/v1-close-check.sh`) |
 | Wallet / Store / inbound listen | Out of scope for v1 |

@@ -103,7 +103,7 @@ No soft-fork **signaling** UI (BIP9 deployments) — operational consensus only.
 
 | Field | RPC |
 |-------|-----|
-| Chain / IBD / disk | `getblockchaininfo` |
+| Chain / IBD / disk / mediantime | `getblockchaininfo` |
 | Peers / network | `getconnectioncount`, `getnetworkinfo` |
 | Mempool | `getmempoolinfo` |
 | Uptime | `uptime` |

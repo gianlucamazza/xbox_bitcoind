@@ -10,7 +10,8 @@ Live ops status: [tracking.md](tracking.md).
 | Work package | Status |
 |--------------|--------|
 | AppContainer patches + Core embed | **done** |
-| Dashboard UI + loopback RPC | **done** (10-foot layout, dual bars, spark, ETA, Core-vs-app version) |
+| Dashboard UI + loopback RPC | **done** (10-foot layout, dual bars, spark, ETA, tip age, HEADERS/STALE, Core-vs-app version) |
+| App lifecycle (suspend/resume) | **done** (soft-stop on Home; auto-restart node on resume) |
 | Soft-stop persistence (early + mid IBD) | **verified** tip conservation; clean exit mid-IBD still flaky ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
 | Path-filtered CI + Core/MSIX build split | **done** |
 | Release automation (`v*` → MSIX + GitHub Release) | **done** |
@@ -63,7 +64,7 @@ Do these **before** any CLN work. Prefer stock Core options and normal operator 
 | 3 | Disk/RAM headroom at tip | Ops — UI Disk + `node-status` / samples · G5 |
 | 4 | Prune policy deliberate (`prune=550` min; raise if space) | Conf — tip profile in pre-lightning plan |
 | 5 | Keep RPC loopback + cookie; no public RPC | **Done** (defaults) · keep until PL-2 decision |
-| 6 | Dashboard shows standard node health | **Done** |
+| 6 | Dashboard shows standard node health | **Done** (tip age + HEADERS/SYNCING/SYNCED/STALE on main) |
 | 7 | Backup/restore story | [ops.md](ops.md) § Backup · LN seeds **off** LocalState |
 | 8 | Tip conf (`blocksonly` off) | After G1 — `bitcoin.conf.tip` (planned) |
 | 9 | Integration choice A/B/C | [pre-lightning.md §5](pre-lightning.md#5-integration-options-decision-after-g1g3) |
@@ -93,4 +94,4 @@ Live checklist + issue map: [tracking.md](tracking.md).
 
 ---
 
-*Last roadmap reconciliation: 2026-07-31 — engineering complete; **v0.1.1** on console **0.1.0.6**; IBD restarted (~192k); leave node running.*
+*Last roadmap reconciliation: 2026-07-31 late — engineering + architecture/UI complete on main; **v0.1.1** on console **0.1.0.6**; IBD ~307k; leave node running (no mid-IBD redeploy).*

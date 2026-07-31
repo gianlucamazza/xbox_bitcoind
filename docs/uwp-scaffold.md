@@ -11,15 +11,18 @@ uwp/
   AppxManifest.xml          # GianlucaMazza.xboxbitcoind, capabilities
   xbox_bitcoind.sln|.vcxproj
   packages.config           # Microsoft.Windows.CppWinRT
-  App.* / MainPage.*        # lifecycle + programmatic XAML dashboard
+  App.*                     # OnSuspending soft-stop · OnResuming auto-restart
+  MainPage.*                # programmatic 10-foot dashboard
+  ui_layout.h               # density / progressive plan / ETA (host-testable)
   probes.cpp                # LocalState, VirtualAlloc, outbound TCP, datadir
   node_host.cpp             # BitcoindMain thread (XBB_WITH_CORE) / stub
-  rpc_client.cpp            # loopback JSON-RPC + cookie
+  rpc_client.cpp            # loopback JSON-RPC + cookie (+ mediantime)
   log.cpp                   # LocalState\bitcoind.log
   bitcoind_embed.h          # BitcoindMain declaration
   Assets/*.png
 scripts/build-uwp.ps1
 scripts/build-core-uwp.ps1
+scripts/test-ui-layout.sh   # pure layout unit test (no Xbox)
 ```
 
 ## Build (Windows)

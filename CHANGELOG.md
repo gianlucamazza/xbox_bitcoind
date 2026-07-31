@@ -24,10 +24,12 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 ### Changed
 
 - Architecture doc: lifecycle, host ops plane, UI consensus scope ([plan-core-uwp.md](docs/plan-core-uwp.md))
+- README architecture diagram + features aligned with SSOT (resume, tip age, pills)
 - Document Home suspend: Game class does not keep IBD running in background
 - Ops hygiene / best practices section in `docs/ops.md`
 - `apply-console-conf` guards tip profile until progress ≥ 0.99 (override `--force`)
 - Docs screenshot refreshed for package **0.1.0.6** / release **v0.1.1**
+- Tracking/roadmap: architecture+UI marked complete on main; live IBD snapshot
 
 ## [0.1.1] — 2026-07-31
 
