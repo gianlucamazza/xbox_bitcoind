@@ -23,7 +23,11 @@ std::mutex g_mu;
 std::atomic<bool> g_running{false};
 std::atomic<int> g_exit{0};
 std::thread g_thread;
+#ifdef XBB_WITH_CORE
+std::string g_message = "stopped";
+#else
 std::string g_message = "bitcoind not linked (scaffold)";
+#endif
 
 std::wstring DatadirW() {
     return LocalStatePath() + L"\\bitcoin";

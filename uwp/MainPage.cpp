@@ -9,6 +9,7 @@
 #include "probes.h"
 #include "rpc_client.h"
 
+#include <winrt/Windows.Graphics.Display.h>
 #include <winrt/Windows.System.Threading.h>
 #include <winrt/Windows.UI.Core.h>
 #include <winrt/Windows.UI.Text.h>
@@ -34,6 +35,7 @@ using namespace winrt::Windows::UI::Xaml::Input;
 using namespace winrt::Windows::UI::Xaml::Media;
 using namespace winrt::Windows::UI::Xaml::Shapes;
 using namespace winrt::Windows::UI::ViewManagement;
+using namespace winrt::Windows::Graphics::Display;
 
 namespace xbb {
 namespace {
@@ -166,6 +168,7 @@ ProgressBar MakeBar(Color fg) {
 void GetUsableSize(double page_w, double page_h, double& out_w, double& out_h, double& out_inset) {
     double w = page_w > 1 ? page_w : 1920;
     double h = page_h > 1 ? page_h : 1080;
+    double scale = 1.0;
     try {
         auto bounds = ApplicationView::GetForCurrentView().VisibleBounds();
         if (bounds.Width > 32 && bounds.Height > 32) {
@@ -175,11 +178,26 @@ void GetUsableSize(double page_w, double page_h, double& out_w, double& out_h, d
     } catch (...) {
         // Fallback: Page size (pre-activation / test).
     }
-    // Title-safe inset: max(5% of min dimension, 24 DIP).
-    const double inset = (std::max)(24.0, kSafeFraction * (std::min)(w, h));
+    try {
+        // Xbox/UWP often reports 960×540 DIPs at 200% scale for a 1080p panel.
+        // Density/budget must use effective (scale-corrected) size or Compact
+        // wrongly strips secondary metrics + spark on a full-screen TV.
+        scale = DisplayInformation::GetForCurrentView().RawPixelsPerViewPixel();
+        if (scale < 0.5) {
+            scale = 1.0;
+        }
+    } catch (...) {
+        scale = 1.0;
+    }
+    // Work in effective DIPs (≈ CSS reference pixels at 96dpi * scale).
+    const double eff_w = w * scale;
+    const double eff_h = h * scale;
+    // Title-safe inset in *layout* DIPs (not multiplied twice).
+    const double inset = (std::max)(16.0, kSafeFraction * (std::min)(w, h));
     out_inset = inset;
-    out_w = (std::max)(320.0, w - 2.0 * inset);
-    out_h = (std::max)(240.0, h - 2.0 * inset);
+    // Budget uses effective height so 960×540@2x ≈ 1080p Standard.
+    out_w = (std::max)(320.0, eff_w - 2.0 * inset * scale);
+    out_h = (std::max)(240.0, eff_h - 2.0 * inset * scale);
 }
 
 UiLayout DiscoverLayout(double width, double height) {
@@ -189,10 +207,11 @@ UiLayout DiscoverLayout(double width, double height) {
     L.viewport_w = width > 1 ? width : L.usable_w;
     L.viewport_h = height > 1 ? height : L.usable_h;
     L.safe_inset = inset;
-    // Root padding = safe inset (overscan) + small content pad.
+    // Padding in layout DIPs (page coordinates), not scale-inflated.
     L.pad_x = inset + 8;
-    L.pad_y = inset * 0.75 + 6;
+    L.pad_y = inset * 0.65 + 6;
 
+    // Density from *effective* usable size (scale-aware).
     if (L.usable_h < 820 || L.usable_w < 1000) {
         L.density = UiDensity::Compact;
     } else if (L.usable_h >= 1100 && L.usable_w >= 1500) {
@@ -201,6 +220,7 @@ UiLayout DiscoverLayout(double width, double height) {
         L.density = UiDensity::Standard;
     }
 
+    // Columns from effective width (960@2x → 4 cols on TV).
     L.primary_columns = (L.usable_w < 1100) ? 2 : 4;
 
     switch (L.density) {
@@ -750,9 +770,9 @@ void MainPageController::OnRootSizeChanged(double width, double height) {
     }
 
     ApplyLayout(L, plan);
-    Logf("[ui] layout usable=%.0fx%.0f density=%d primary_cols=%d secondary=%d spark=%d log_min=%.0f",
-         L.usable_w, L.usable_h, static_cast<int>(L.density), L.primary_columns, plan.show_secondary ? 1 : 0,
-         plan.show_spark ? 1 : 0, plan.log_min_h);
+    Logf("[ui] layout view=%.0fx%.0f usable_eff=%.0fx%.0f density=%d cols=%d secondary=%d spark=%d log_min=%.0f",
+         width, height, L.usable_w, L.usable_h, static_cast<int>(L.density), L.primary_columns,
+         plan.show_secondary ? 1 : 0, plan.show_spark ? 1 : 0, plan.log_min_h);
 }
 
 void MainPageController::ApplyLayout(UiLayout const& L, LayoutPlan const& plan) {
@@ -1235,6 +1255,13 @@ void MainPageController::StartProbesAsync() {
         self->m_probe_note = all_ok ? "probes OK" : FormatProbeReport(results);
         dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal, [self]() {
             self->ApplyStatus(NodeStatusSnapshot(), {}, self->m_probe_note);
+            // Auto-start pruned node after probes (WithCore builds).
+            if (NodeCoreLinked() && !NodeStatusSnapshot().running) {
+                Logf("[ui] auto-start after probes");
+                if (NodeStart()) {
+                    self->ApplyStatus(NodeStatusSnapshot(), {}, self->m_probe_note);
+                }
+            }
             self->RefreshAsync();
         });
     });

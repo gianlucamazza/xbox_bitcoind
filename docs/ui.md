@@ -6,7 +6,7 @@ Controller-first **10-foot** status UI for Series S Dev Mode (programmatic XAML)
 
 | Practice | How we apply it |
 |----------|-----------------|
-| **Measure usable surface** | `ApplicationView.VisibleBounds` + ~5% title-safe inset |
+| **Measure usable surface** | `VisibleBounds` × `RawPixelsPerViewPixel` + ~5% title-safe inset (Xbox often reports 960×540@2× for 1080p) |
 | **No silent clipping** | Height **budget** + progressive disclosure (never drop primary KPIs invisibly) |
 | **No page scroll** | Full-viewport Grid shell; only `debug.log` scrolls |
 | **Primary vs secondary data** | P1: Height/Progress/Peers/Behind always; P3 secondary row or folded into meta |
