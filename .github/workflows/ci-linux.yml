@@ -27,6 +27,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: read  # dorny/paths-filter@v4 on pull_request
+
 jobs:
   changes:
     runs-on: ubuntu-24.04
@@ -35,7 +39,7 @@ jobs:
       smoke: ${{ steps.set.outputs.smoke }}
     steps:
       - uses: actions/checkout@v7
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         if: github.event_name != 'workflow_dispatch'
         with:

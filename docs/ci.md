@@ -68,16 +68,21 @@ Smoke uses **Ninja + ccache** when available; caches build dir + `.ccache-linux-
 
 Caches full `build-msvc-baseline` tree + vcpkg archives; `cmake --build --parallel`.
 
-## Action versions
+## Action versions (latest majors as of 2026-07-31)
 
-| Action | Pin |
-|--------|-----|
-| `actions/checkout` | `v7` |
-| `actions/upload-artifact` | `v7` |
-| `actions/cache` / `restore` / `save` | `v6` / `v4` |
-| `dorny/paths-filter` | `v3` |
+| Action | Pin | Latest tag |
+|--------|-----|------------|
+| `actions/checkout` | `v7` | `v7.0.1` |
+| `actions/upload-artifact` | `v7` | `v7.0.1` |
+| `actions/cache` | `v6` | `v6.1.0` |
+| `actions/cache/restore` | `v6` | (same) |
+| `actions/cache/save` | `v6` | (same) |
+| `dorny/paths-filter` | `v4` | `v4.0.2` |
+| `microsoft/setup-msbuild` | `v3` | `v3.0.0` |
+| `nuget/setup-nuget` | `v4` | `v4.0` |
 
-Dependabot (`.github/dependabot.yml`) bumps Actions weekly.
+Dependabot (`.github/dependabot.yml`) opens weekly PRs for further bumps.
+Floating major tags (`@v7`) track the latest compatible patch automatically.
 
 ## Triggers
 
