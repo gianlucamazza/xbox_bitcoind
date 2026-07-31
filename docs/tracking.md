@@ -63,7 +63,14 @@ Full hygiene guide: [ops.md § Ops hygiene](ops.md#ops-hygiene--best-practices).
 
 ### P2 — Pre-Lightning (after P0)
 
-See [roadmap.md § Pre-Lightning](roadmap.md#pre-lightning-standard-node-only).
+**Plan:** [pre-lightning.md](pre-lightning.md) (gates G1–G6, conf tip, options A/B/C, phases PL-0…4).
+
+| Now (IBD) | After tip |
+|-----------|-----------|
+| No conf change for LN | Tip conf, headroom, soft-stop @ tip |
+| No RPC exposure | Decision A/B/C then spike only |
+
+Default: **Xbox = validator appliance**; LN elsewhere until isolation/RAM spikes pass.
 
 ### Out of scope (do not open as v1 work)
 

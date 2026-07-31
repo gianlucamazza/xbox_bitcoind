@@ -1,0 +1,21 @@
+# Tip / pre-Lightning profile for Xbox Series S (UWP / Dev Mode).
+# DO NOT apply during pure IBD unless you intend to enable mempool early.
+# Apply: copy over conf via apply-console-conf (or upload-file) after soft-stop.
+# See docs/pre-lightning.md.
+
+prune=550
+server=1
+rpcallowip=127.0.0.1
+rpcbind=127.0.0.1
+listen=0
+
+dbcache=512
+maxconnections=16
+maxmempool=100
+# blocksonly intentionally omitted — normal mempool at tip / pre-LN
+
+upnp=0
+natpmp=0
+printtoconsole=0
+
+# Still off: txindex (incompatible with prune), public RPC, listen=1

@@ -52,19 +52,23 @@ Mid-IBD `deploy.sh stop-app` may still hit **DELETE** after 180–300s host wait
 
 ## Pre-Lightning (standard node only)
 
+**Full plan:** [pre-lightning.md](pre-lightning.md) (architecture, conf transition, options A/B/C, phases PL-0…PL-4).
+
 Do these **before** any CLN work. Prefer stock Core options and normal operator practice.
 
 | # | Item | Status / how |
 |---|------|----------------|
-| 1 | IBD complete + tip stable 24–48h | Ops — `v1-close-check.sh` |
-| 2 | Soft-stop @ tip documented | Ops — `soft-stop-test.sh` → [persistence.md](persistence.md) |
-| 3 | Disk/RAM headroom at tip | Ops — UI Disk + `node-status` / samples |
-| 4 | Prune policy deliberate (`prune=550` min; raise if space) | Conf — [bitcoin.conf.console](../config/bitcoin.conf.console) |
-| 5 | Keep RPC loopback + cookie; no public RPC | **Done** (defaults) |
-| 6 | Dashboard shows standard node health | **Done** (height/peers/disk/mempool/uptime + bars/ETA) |
-| 7 | Backup/restore story | [ops.md](ops.md) § Backup |
+| 1 | IBD complete + tip stable 24–48h | Ops — `v1-close-check.sh` · gates G1–G2 |
+| 2 | Soft-stop @ tip documented | Ops — `soft-stop-test.sh` → [persistence.md](persistence.md) · G3 |
+| 3 | Disk/RAM headroom at tip | Ops — UI Disk + `node-status` / samples · G5 |
+| 4 | Prune policy deliberate (`prune=550` min; raise if space) | Conf — tip profile in pre-lightning plan |
+| 5 | Keep RPC loopback + cookie; no public RPC | **Done** (defaults) · keep until PL-2 decision |
+| 6 | Dashboard shows standard node health | **Done** |
+| 7 | Backup/restore story | [ops.md](ops.md) § Backup · LN seeds **off** LocalState |
+| 8 | Tip conf (`blocksonly` off) | After G1 — `bitcoin.conf.tip` (planned) |
+| 9 | Integration choice A/B/C | [pre-lightning.md §5](pre-lightning.md#5-integration-options-decision-after-g1g3) |
 
-Only then: CLN spike / sibling `xbox_lightning` (not a conf flag).
+Only then: CLN spike / sibling `xbox_lightning` (not a conf flag). **Default lean:** Xbox stays full node; LN keys/host off-console (option C/A).
 
 ## Out of scope v1 (future)
 
