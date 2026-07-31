@@ -55,8 +55,10 @@ void EnsureDatadirLayout() {
         if (!packaged.empty() && GetFileAttributesW(packaged.c_str()) != INVALID_FILE_ATTRIBUTES) {
             CopyFileW(packaged.c_str(), conf.c_str(), TRUE);
         } else {
+            // Keep in sync with config/bitcoin.conf.console (fallback if package conf missing).
             const char* content =
-                "prune=550\nserver=1\nlisten=0\ndbcache=256\nmaxconnections=8\n"
+                "prune=550\nserver=1\nlisten=0\ndbcache=512\nmaxconnections=16\n"
+                "maxmempool=50\nblocksonly=1\n"
                 "printtoconsole=0\nupnp=0\nnatpmp=0\nrpcallowip=127.0.0.1\nrpcbind=127.0.0.1\n";
             FILE* f = _wfopen(conf.c_str(), L"wb");
             if (f) {

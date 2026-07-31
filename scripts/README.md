@@ -27,6 +27,7 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 | `ibd-report.sh` | Summarize JSONL history and errors |
 | `install-ibd-timer.sh` | Enable hourly user systemd timer |
 | `v1-close-check.sh` | Gate: IBD done + 24h stability (exit 0 = close v1 ops) |
+| `apply-console-conf.sh` | Soft-stop → push `config/bitcoin.conf.console` → start (IBD knobs) |
 
 ```bash
 ./scripts/deploy.sh status
@@ -34,6 +35,7 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 ./scripts/ibd-sample.sh                 # one line to state log
 ./scripts/soft-stop-test.sh
 ./scripts/deploy.sh stop-app            # soft stop only
+./scripts/apply-console-conf.sh         # re-apply conf (dbcache/peers/blocksonly)
 ```
 
 ## Fetch pin

@@ -1,6 +1,11 @@
 # Console defaults for Xbox Series S (UWP / Dev Mode).
 # Host places datadir under ApplicationData LocalFolder (LocalState\bitcoin).
 # Prefer stock Bitcoin Core options only — no custom consensus / forks.
+#
+# Sync policy (Series S, 10 GiB RAM shared with OS/UI/other Dev apps):
+#   - Raise dbcache / peers for IBD; re-measure WS at tip before going higher.
+#   - Conf is copied only when LocalState\bitcoin\bitcoin.conf is missing.
+#     To re-apply: ./scripts/apply-console-conf.sh
 
 # --- Pruned validating full node (standard bitcoind operator setup) ---
 # 550 MiB is Core's practical minimum. Raise (e.g. 2000–5000) only if Dev
@@ -17,13 +22,25 @@ rpcbind=127.0.0.1
 # listen=1 is optional later and not required for validation or for CLN backend.
 listen=0
 
-# Memory: start conservative on Series S AppContainer; re-measure at tip before raising.
-dbcache=256
-maxmempool=50
-maxconnections=8
+# --- IBD / sync performance (stock Core knobs) ---
+# dbcache: MiB of UTXO+LevelDB cache. Core default is 450; we used 256 early
+# for safety. Series S mid-IBD WS was ~0.7–1.0 GiB at 256 → 512 is the
+# primary IBD speed lever (fewer flushes). Try 1024 only if no concurrent
+# heavy Dev apps (e.g. large xllama) and soft-stop still clean.
+dbcache=512
 
-# Relay transactions (default). Do not set blocksonly=1 if you plan Lightning later.
-# blocksonly=0
+# Peer slots for parallel block download. 8 was very conservative; 16 is still
+# mild for outbound-only. Does not open inbound (listen=0).
+maxconnections=16
+
+# Mempool cap (MiB). Small is fine on prune + IBD; raise near tip if you watch
+# unconfirmed traffic. Ignored effectively when blocksonly=1.
+maxmempool=50
+
+# During pure IBD, blocksonly skips mempool + tx relay (less CPU/RAM/bandwidth
+# on non-block traffic). Disable (comment out) before Lightning / when you want
+# a normal mempool at tip.
+blocksonly=1
 
 # Avoid optional services until needed
 upnp=0
@@ -35,3 +52,4 @@ printtoconsole=0
 # Not enabled (standard pruned node):
 # txindex=1          # incompatible with prune; CLN does not require it
 # blockfilterindex=1
+# assumevalid=…      # Core ships a recent assumevalid; override only if you know why

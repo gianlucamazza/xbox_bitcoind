@@ -64,7 +64,7 @@ Captured during mainnet IBD (~height 320–327k, progress ~3.5%):
 |--------|----------|--------|
 | Working set | **~0.7–1.0 GiB** | Peak during active `UpdateTip` |
 | Private WS | **~0.7–0.9 GiB** | |
-| Log `cache=` | **~240–520 MiB** | UTXO/cache lines; conf `dbcache=256` is a floor not a hard cap |
+| Log `cache=` | **~240–520 MiB** | UTXO/cache lines at `dbcache=256`; expect higher with package default 512 |
 | Datadir ≈ | **~1.5–2.0 GiB** mid-IBD | blocks + chainstate via portal listings (grows then prunes) |
 | `debug.log` | **~60 MiB** then rotated/truncated after restart | Expect growth during long IBD |
 | Soft-stop exit | **~36 s** | Clean process exit after suspend (no DELETE needed) |
@@ -73,7 +73,7 @@ Captured during mainnet IBD (~height 320–327k, progress ~3.5%):
 
 | Resource | v1 policy |
 |----------|-----------|
-| RAM | Keep Game class; do not raise `dbcache` until a full-tip WS sample exists |
+| RAM | Keep Game class; package default `dbcache=512` — try 1024 only after WS re-sample |
 | Disk | Dev ~90 GB shared; pruned node still needs headroom for blk* during IBD |
 | CPU | Series S will peg cores during verification — expected |
 | Thermals | Unmeasured; if console throttles, reduce concurrent xllama load |
@@ -140,9 +140,49 @@ Manual one-shot:
 Then tick the last checkbox in [plan-core-uwp.md](plan-core-uwp.md).  
 Roadmap split (engineering vs ops): [roadmap.md](roadmap.md).
 
+## Sync performance (IBD)
+
+IBD speed is mostly **script/UTXO work + peer block download**, not the UWP UI.
+Use **stock** Core options only (see `config/bitcoin.conf.console`).
+
+| Knob | Early default | Current package default | Effect |
+|------|---------------|-------------------------|--------|
+| `dbcache` | 256 | **512** | Primary lever: larger UTXO/LevelDB cache → fewer flushes |
+| `maxconnections` | 8 | **16** | More outbound peers for parallel block fetch (`listen=0`) |
+| `blocksonly` | off | **1** (IBD) | Skip mempool/tx relay until tip / Lightning |
+| `maxmempool` | 50 | 50 | Small; irrelevant while `blocksonly=1` |
+| `prune` | 550 | 550 | Disk, not IBD CPU |
+
+Measured mid-IBD (package `0.1.0.42`, `dbcache=256`): WS ~0.7–1.0 GiB,  
+~30k+ blocks/h early mainnet — rate **falls** as height grows (heavier scripts).
+
+### Apply conf to a live console
+
+`bitcoin.conf` is **not** overwritten on reinstall if LocalState already has one.
+
+```bash
+./scripts/apply-console-conf.sh   # soft-stop → upload conf → start-app
+./scripts/node-status.sh          # confirm running + height still advancing
+```
+
+### Safe further tuning
+
+| Change | When |
+|--------|------|
+| `dbcache=1024` | Tip or mid-IBD with no heavy concurrent Dev apps; re-check WS + soft-stop |
+| Comment out `blocksonly` | Near tip / need mempool / before CLN |
+| `maxconnections=24` | Only if peers stay low and network is healthy |
+| Do **not** set `txindex` with prune | Incompatible |
+
+### What not to expect
+
+- Consensus shortcuts / non-Core clients  
+- `listen=1` for “faster” sync (inbound is optional; download is outbound)  
+- Raising prune to speed IBD (it does not)
+
 ## What not to do mid-IBD
 
 - Redeploy / wipe LocalState  
 - Switch App→Game mid-run without need  
-- Raise `dbcache` without a new WS measurement  
+- Raise `dbcache` past ~1 GiB without a new WS + soft-stop check  
 - USB datadir migration (post-tip task)
