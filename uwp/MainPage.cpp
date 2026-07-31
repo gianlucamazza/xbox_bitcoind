@@ -311,8 +311,8 @@ FrameworkElement MainPageController::BuildHeader() {
     return header;
 }
 
-UIElement MainPageController::BuildMetricGrid(std::array<TextBlock*, 4> values,
-                                              std::array<wchar_t const*, 4> labels) {
+FrameworkElement MainPageController::BuildMetricGrid(std::array<TextBlock*, 4> values,
+                                                     std::array<wchar_t const*, 4> labels) {
     auto grid = Grid{};
     grid.ColumnSpacing(12);
     for (int i = 0; i < 4; ++i) {
@@ -328,7 +328,7 @@ UIElement MainPageController::BuildMetricGrid(std::array<TextBlock*, 4> values,
     return grid;
 }
 
-UIElement MainPageController::BuildProgressSection() {
+FrameworkElement MainPageController::BuildProgressSection() {
     auto panel = StackPanel{};
     panel.Spacing(10);
     panel.Margin(ThicknessHelper::FromLengths(0, 2, 0, 0));
@@ -420,7 +420,7 @@ UIElement MainPageController::BuildProgressSection() {
     return panel;
 }
 
-UIElement MainPageController::BuildActions() {
+FrameworkElement MainPageController::BuildActions() {
     auto actions = StackPanel{};
     actions.Orientation(Orientation::Horizontal);
     actions.Margin(ThicknessHelper::FromLengths(0, 10, 0, 0));
@@ -436,7 +436,7 @@ UIElement MainPageController::BuildActions() {
     return actions;
 }
 
-UIElement MainPageController::BuildLogPanel() {
+FrameworkElement MainPageController::BuildLogPanel() {
     auto border = Border{};
     border.Background(SolidColorBrush{kCard});
     border.BorderBrush(SolidColorBrush{kCardBorder});
