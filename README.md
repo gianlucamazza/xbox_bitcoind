@@ -1,177 +1,134 @@
 # xbox_bitcoind
 
-**Bitcoin Core (`bitcoind`) pruned full node** on **Xbox Series S** (Dev Mode),
-shipped as a **UWP Game package** via Device Portal. Same console as
-[xllama](../xllama/).
+Pruned **Bitcoin Core (`bitcoind`)** full node for **Xbox Series S|X Developer Mode**,
+packaged as a **UWP Game** app and installed over Device Portal.
+
+Same console as [xllama](../xllama/). **Not** affiliated with Microsoft or Bitcoin Core.
 
 [![ci-linux](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-linux.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-linux.yml)
 [![ci-msvc-baseline](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml)
 [![build-uwp](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml)
 [![Release](https://img.shields.io/github/v/release/gianlucamazza/xbox_bitcoind)](https://github.com/gianlucamazza/xbox_bitcoind/releases/latest)
-
-> **Status (2026-07-31):** bitcoind **v31.1** on Series S · package **`0.1.0.42`** ·
-> dashboard UI · soft-stop **PASS** (early + mid IBD ~327k) · mainnet IBD **in progress**
-> (~3.6%, WS ~1 GiB) · ops tooling + path-filtered CI on **VS 2026**.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ![Console dashboard](docs/assets/screenshot-console.png)
 
-## What works today
+## Features
 
-| Capability | Detail |
-|------------|--------|
-| Node | In-process `BitcoindMain` (`BITCOIND_EMBED`), pin **v31.1** |
-| Network | Mainnet, `prune=550`, outbound P2P (`listen=0`) |
-| Data | `LocalState\bitcoin` (LevelDB + block files) |
-| UI | Controller-first XAML dashboard — height, headers, peers, progress, log |
-| RPC | Loopback `127.0.0.1:8332`, cookie auth |
-| Lifecycle | Soft stop: Device Portal suspend → `OnSuspending` → RPC `stop` → flush |
-| Package | `GianlucaMazza.xboxbitcoind`, App Id `App`, type **Game** |
-| Toolchain | WithCore MSIX: **VS 2026 18.3+**; scaffold-only: VS2022 OK |
-| CI | Path-scoped workflows — docs-only commits cost **zero** minutes |
+- **Bitcoin Core v31.1** embedded in-process (`BitcoindMain` / `BITCOIND_EMBED`)
+- Mainnet pruned node (`prune=550`, outbound P2P, local RPC)
+- Controller-first **status dashboard** (height, peers, progress, log tail)
+- **Soft-stop** flush path (suspend → RPC `stop` → durable LevelDB)
+- Path-filtered CI + automated **GitHub Releases** on `v*` tags
 
-Persistence check: [docs/persistence.md](docs/persistence.md) (tip ~102k preserved after soft stop).
+| | |
+|--|--|
+| Package | `GianlucaMazza.xboxbitcoind` · App Id `App` · type **Game** |
+| Datadir | `LocalState\bitcoin` |
+| Pin | [config/bitcoin-core.pin](config/bitcoin-core.pin) |
 
-## Goals (v1)
+## Quick start (console)
 
-- Validate Bitcoin consensus on-console (pruned full node)
-- P2P sync (outbound-first)
-- Local RPC for UI and debugging
-- Minimal controller-friendly status UI
-- Install via Xbox Device Portal (Dev Mode)
+**Requirements:** Series S|X in **Dev Mode**, Device Portal credentials
+(default `~/.config/xllama/xbox-env`), Linux or Windows host with `curl` + `python3`.
 
-## Non-goals (v1)
+1. Download **[latest release](https://github.com/gianlucamazza/xbox_bitcoind/releases/latest)**  
+   (`*.msix` + `xbox_bitcoind-dev.cer`).
+2. Install and run:
 
-- Archival (non-pruned) chain · mining · Microsoft Store · Lightning
-  (sibling `xbox_lightning` later) · original Xbox / 360
+```bash
+source ~/.config/xllama/xbox-env   # or: source scripts/env.sh
+./scripts/deploy.sh install-cert path/to/xbox_bitcoind-dev.cer
+./scripts/deploy.sh path/to/xbox_bitcoind_*.msix
+# Dev Home → package → View details → App type → Game
+./scripts/deploy.sh start-app
+./scripts/deploy.sh status
+```
+
+3. **Stop only** with soft stop (never hard-kill mid-IBD):
+
+```bash
+./scripts/deploy.sh stop-app
+```
+
+Day-to-day ops: **[docs/ops.md](docs/ops.md)**.
+
+## Build from source
+
+| Target | Host | Command |
+|--------|------|---------|
+| Scaffold MSIX (no Core) | Windows + UWP workload | `.\scripts\build-uwp.ps1` |
+| Core libs only | **VS 2026 18.3+**, vcpkg | `.\scripts\build-uwp.ps1 -CoreOnly` |
+| Product MSIX (reuse Core) | same | `.\scripts\build-uwp.ps1 -WithCore -SkipCoreBuild` |
+| Product MSIX (monolithic) | same | `.\scripts\build-uwp.ps1 -WithCore` |
+| Desktop pin baseline | VS 2026 | `.\scripts\build-msvc-baseline.ps1` |
+| Linux pin smoke | Linux | `./scripts/fetch-bitcoin-core.sh && CI_SKIP_TESTS=1 ./scripts/build-linux-smoke.sh` |
+
+Details: [docs/uwp-scaffold.md](docs/uwp-scaffold.md) · [docs/ci.md](docs/ci.md) · [scripts/README.md](scripts/README.md).
 
 ## Architecture
 
 ```
-xbox_bitcoind.exe  (UWP AppContainer, Game class)
-├── MainPage          status dashboard (programmatic XAML)
-├── probes            AppContainer capability checks
-├── rpc_client        loopback JSON-RPC + cookie
-└── node_host  →  BitcoindMain(argc, argv)   [XBB_WITH_CORE]
-        │
-        ├── -datadir=<LocalState>\bitcoin
-        ├── -conf=…\bitcoin\bitcoin.conf
-        ├── prune=550  listen=0  server=1  dbcache=256
-        └── static stack: bitcoin_embed + node + util + common + deps (x64-uwp)
+xbox_bitcoind.exe  (UWP AppContainer, Game)
+├── MainPage / rpc_client / probes
+└── node_host → BitcoindMain  [XBB_WITH_CORE]
+       datadir = LocalState\bitcoin
+       static: bitcoin_embed + node stack (x64-uwp)
 ```
 
-**In-process only** (no `CreateProcess`). Patches: [`patches/uwp/`](patches/uwp/README.md)
-(0001–0010). Defaults: [`config/bitcoin.conf.console`](config/bitcoin.conf.console).
+In-process only (no `CreateProcess`). AppContainer patches: [patches/uwp/](patches/uwp/README.md).  
+Full design + checklist: [docs/plan-core-uwp.md](docs/plan-core-uwp.md).
 
-Details: [docs/plan-core-uwp.md](docs/plan-core-uwp.md).
-
-## Download
-
-Latest packaged build: **[Releases](https://github.com/gianlucamazza/xbox_bitcoind/releases/latest)**  
-(`xbox_bitcoind_*.msix` + `xbox_bitcoind-dev.cer`). Install via `./scripts/deploy.sh` after trusting the cert; set **App type → Game**.
-
-New versions (maintainers):
-
-```bash
-./scripts/cut-release.sh 0.2.0    # tags v0.2.0, pushes → CI builds MSIX + publishes Release
-```
-
-## Console (shared with xllama)
-
-| | |
-|--|--|
-| Hardware | **Xbox Series S** in Dev Mode |
-| Portal | `https://<ip>:11443` — `~/.config/xllama/xbox-env` |
-| Storage | Dev partition ~**90 GB** |
-| After install | Dev Home → package → **App type → Game** |
-
-```bash
-./scripts/probe-console.sh
-./scripts/deploy.sh status            # IBD tip, RAM, datadir
-./scripts/deploy.sh path/to/xbox_bitcoind_*.msix
-./scripts/deploy.sh start-app
-./scripts/deploy.sh stop-app          # soft stop only — never hard-kill
-./scripts/soft-stop-test.sh           # persistence self-check
-```
-
-Ops: [docs/ops.md](docs/ops.md) · [console](docs/console.md) ·
-[device-portal](docs/device-portal.md) · [UI](docs/ui.md)
-
-## Pin + builds
-
-| | |
-|--|--|
-| Pin | **v31.1** (`9be056a8…`) — [config/bitcoin-core.pin](config/bitcoin-core.pin) |
-| Tree | `third_party/bitcoin` via `./scripts/fetch-bitcoin-core.sh` (gitignored) |
-| Desktop MSVC | [docs/build-msvc-baseline.md](docs/build-msvc-baseline.md) |
-| UWP WithCore | `apply-uwp-patches` → `build-core-uwp` → `build-uwp -WithCore` |
-| Linux smoke | `./scripts/build-linux-smoke.sh` |
-| CI | [docs/ci.md](docs/ci.md) — path filters, no workflow overlap |
-
-```bash
-./scripts/fetch-bitcoin-core.sh
-# Windows (VS 2026 Developer PowerShell) — split stages (faster iterate):
-#   .\scripts\fetch-bitcoin-core.ps1
-#   .\scripts\build-uwp.ps1 -CoreOnly                 # Core libs (cached / SkipIfFresh)
-#   .\scripts\build-uwp.ps1 -WithCore -SkipCoreBuild  # MSIX only
-# Monolithic: .\scripts\build-uwp.ps1 -WithCore
-```
-
-## Repo layout
+## Repository layout
 
 ```
-config/                 pin, bitcoin.conf.console, xbox-env.example
-scripts/                fetch, patch, MSVC/UWP build, deploy, probe
-uwp/                    C++/WinRT app (UI, node_host, rpc, probes, manifest)
-patches/uwp/            AppContainer + durability (0001–0010)
-third_party/bitcoin/    fetched pin (gitignored)
-docs/                   index + guides → docs/README.md
-.github/workflows/      ci-linux · ci-msvc-baseline · build-uwp
-LICENSE                 MIT (this repo’s glue)
+config/       pin, bitcoin.conf.console, xbox-env.example
+uwp/          C++/WinRT app (UI, node host, manifest)
+patches/uwp/  Core AppContainer + durability patches
+scripts/      fetch, build, deploy, release helpers
+docs/         guides — start at docs/README.md
+.github/      CI + release automation
 ```
-
-## Roadmap
-
-| Phase | Focus | Status |
-|-------|--------|--------|
-| **0–0d** | Research, pin, baselines, Hello-UWP probes | **done** |
-| **1** | Core in UWP (`-WithCore`, VS2026 CI) | **done** |
-| **2** | Mainnet pruned + dashboard on console | **running** (IBD ~327k) |
-| **2b** | Soft-stop persistence (early + mid IBD) | **verified** |
-| **2c** | Docs map + path-filtered CI | **done** |
-| **2d** | Ops tooling + budgets (`node-status`, soft-stop-test) | **done** |
-| **2e** | Build split (Core vs MSIX, SkipIfFresh, CI stages) | **done** |
-| **3** | IBD to tip + ≥24h stable · optional wallet | **open** |
 
 ## Documentation
 
-| Doc | Topic |
-|-----|--------|
-| [docs/README.md](docs/README.md) | **Index** (start here for depth) |
-| [docs/ops.md](docs/ops.md) | IBD ops, budgets, monitor |
-| [docs/plan-core-uwp.md](docs/plan-core-uwp.md) | Architecture + checklist |
-| [docs/ui.md](docs/ui.md) · [persistence.md](docs/persistence.md) | Runtime |
-| [docs/console.md](docs/console.md) · [device-portal.md](docs/device-portal.md) | Operate Series S |
-| [docs/uwp-scaffold.md](docs/uwp-scaffold.md) · [ci.md](docs/ci.md) | Build & CI |
-| [patches/uwp/README.md](patches/uwp/README.md) | Patch list |
+| Audience | Start here |
+|----------|------------|
+| Run on console | [docs/ops.md](docs/ops.md) |
+| Full doc index | [docs/README.md](docs/README.md) |
+| Architecture | [docs/plan-core-uwp.md](docs/plan-core-uwp.md) |
+| CI / costs | [docs/ci.md](docs/ci.md) |
+| Scripts map | [scripts/README.md](scripts/README.md) |
 
-Research archive: [docs/research/](docs/research/00-feasibility.md).
+Research (phase 0 archive): [docs/research/](docs/research/00-feasibility.md).
 
-## Requirements
+## Status
 
-**Host:** Linux/Windows with `curl` + `python3`; network path to the console.
+| Area | State |
+|------|--------|
+| WithCore on Series S | **Working** (package e.g. `0.1.0.42`) |
+| Soft-stop persistence | **Verified** (early + mid IBD) |
+| Mainnet IBD | **In progress** on fresh sync (long-running) |
+| Wallet / Store / `listen=1` | Out of scope v1 |
 
-**Build (WithCore):** Windows, **VS 2026 18.3+** (C++ desktop + UWP), vcpkg.
-Scaffold-only: VS2022 OK.
+Roadmap detail: [docs/plan-core-uwp.md](docs/plan-core-uwp.md).
 
-**Run:** Series S Dev Mode, free space for pruned datadir, network.
+## Maintainers
+
+```bash
+# New GitHub Release (CI builds MSIX + publishes assets)
+./scripts/cut-release.sh 0.2.0
+```
+
+See [docs/ci.md](docs/ci.md#releases-automated).
 
 ## License
 
-- This repo (code, scripts, docs): [MIT](LICENSE).
-- Bitcoin Core: MIT (upstream); keep notices when redistributing trees or derived patches.
+- This repository (glue, scripts, docs): [MIT](LICENSE).
+- Bitcoin Core remains MIT; preserve upstream notices when redistributing derived trees or patches.
 
 ## Disclaimer
 
-Not affiliated with Microsoft or Bitcoin Core. Dev Mode use is subject to Microsoft
-terms. Running a node is not mining and earns no block rewards. You are responsible
-for legal and network usage in your jurisdiction.
+Dev Mode and console software are subject to Microsoft terms. Running a node is not
+mining and does not earn block rewards. You are responsible for legal and network
+usage in your jurisdiction.
