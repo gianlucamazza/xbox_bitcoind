@@ -24,7 +24,7 @@ Update this file when gates move; use Issues for discussion and assignment.
 | Game class | **Confirmed Game** (user) · `DefaultUWPContentTypeToGame=true` · WS ~0.9–1.0 GiB mid-IBD |
 | Pin | Bitcoin Core **v31.1** |
 | UI on console | **Live** Core **v31.1 · app 0.1.0.75** — tip age, dual bars, spark, ETA (screenshot refreshed) |
-| Soft-stop | Tip conserved; host now **IsRunning-aware** (Wave A) — field smoke still open · [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) |
+| Soft-stop | Mid-IBD **PASS** clean 8s no DELETE + tip conserved (2026-08-01) · [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) mitigated; @ tip still open · [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
 | Mainnet IBD | **In progress** (~**357k**, progress ~**5%**) — leave focused; no further redeploy |
 | 24h stable at tip | **Pending** IBD |
 | Soft-stop at tip | **Pending** tip |
@@ -72,7 +72,7 @@ Full hygiene guide: [ops.md § Ops hygiene](ops.md#ops-hygiene--best-practices).
 
 | ID | Task | Notes |
 |----|------|--------|
-| soft-stop-timeout | Clean exit without DELETE | **Host fix on main** (`IsRunning` + grace + log markers); field-verify once · [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) |
+| soft-stop-timeout | Clean exit without DELETE | **Done mid-IBD** (8s, no DELETE, tip 367530→367533) · [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) |
 | release-hygiene | Monotonic MSIX rev + VCLibs in release | **on main** (`c4e92a2`) — next cut ≥ rev 10000+run_number |
 | package-gc | Stale revisions | **Done** · [#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) closed |
 
@@ -100,7 +100,7 @@ Wallet UI · Store · `listen=1` · CLN on-console · USB datadir UX
 | [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close) | open — ~357k / ~5% |
 | [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) | 24h stability at tip (v1 close) | open |
 | [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) | Soft-stop retest at tip (v1 close) | open |
-| [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop → DELETE fallback | mitigated / field |
+| [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop → DELETE fallback | **mitigated + mid-IBD field PASS** (close when @ tip also clean) |
 | [#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) | package-gc | **closed** |
 
 ```bash
@@ -121,4 +121,4 @@ gh issue list --label v1-close
 
 ---
 
-*Last consolidated: 2026-08-01 — reinstall complete; soft-stop host **IsRunning-aware** (Wave A); IBD mid-progress; leave focused.*
+*Last consolidated: 2026-08-01 — soft-stop mid-IBD field **PASS** (8s, no DELETE); leave focused for IBD.*

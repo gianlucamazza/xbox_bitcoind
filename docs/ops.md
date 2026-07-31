@@ -183,6 +183,7 @@ Re-sample with `./scripts/node-status.sh` after major height milestones
 |------|---------|-----------|--------|
 | Early IBD (~100k) | ~99k | **102031** | PASS ([persistence.md](persistence.md)) |
 | Mid IBD (~327k) | **326716** | **326947** | PASS (2026-07-31, `soft-stop-test.sh`) |
+| Mid IBD + IsRunning host (~367k) | **367530** | **367533** | **PASS clean 8s, no DELETE** (2026-08-01) |
 
 Re-run:
 

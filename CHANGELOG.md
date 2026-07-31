@@ -13,6 +13,10 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ## [Unreleased]
 
+### Changed
+
+- Mid-IBD soft-stop field verify: clean **8s** no DELETE, tip conserved (367530→367533) on package 0.1.0.75
+
 ## [0.1.2] — 2026-08-01
 
 Architecture/UI ops closure after v0.1.1. Bitcoin Core pin remains **v31.1**.

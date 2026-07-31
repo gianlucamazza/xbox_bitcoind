@@ -59,6 +59,23 @@ Soft stop then restart:
 | Live tip shortly after | **452 212** |
 | **Verdict** | **PASS tip conservation**; **FAIL clean exit** (DELETE path — [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
 
+### Mid IBD + IsRunning-aware host (2026-08-01, package `0.1.0.75`)
+
+```bash
+XBB_SOFT_STOP_MAX_WAIT=180 ./scripts/soft-stop-test.sh --wait-load 300
+```
+
+| Metric | Value |
+|--------|--------|
+| Pre-stop tip height | **367 530** |
+| Soft-stop | **8 s** — `IsRunning=false` residual shell; **no DELETE** |
+| Post-restart `nBestHeight` / loaded | **367 533** |
+| Live tip shortly after | **367 538** |
+| Block tree | **960 474** |
+| **Verdict** | **PASS tip conservation** + **PASS clean exit** (host Wave A) |
+
+Mid-IBD persistence with the fixed host path is **closed**. Remaining ops gate: soft-stop **at tip** ([#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3)).
+
 ## How to re-test
 
 ```bash
