@@ -93,6 +93,25 @@ Floating major tags (`@v7`) track the latest compatible patch automatically.
 
 Concurrency: one run per workflow + branch; newer cancels older.
 
+## Warnings policy
+
+CI should **fail** on product quality, not on vendor/runner chatter.
+
+| Class | Examples | Policy |
+|-------|----------|--------|
+| **Fail** | MSVC/UWP compile errors, shellcheck, missing MSIX, pin malformed, `HEAD ≠ COMMIT` | Hard fail |
+| **Signal** | Bitcoin Core pin behind GitHub `latest` release | `::warning` only (bump is a deliberate product decision) |
+| **Quiet / avoid** | VS Installer channel-feed cancels (`aka.ms/vs/channels`), git annotated-tag noise | Fix at source (see below) |
+| **Accept / document** | Upstream vcpkg `vcpkg_replace_string made no changes` (cold cache) | Ignore; disappears with cache hit |
+
+**How we keep logs clean:**
+
+1. **Fetch pin by `COMMIT`** (`scripts/fetch-bitcoin-core.{sh,ps1}`) — never shallow-clone the annotated tag alone, so git does not print `refs/tags/v… is not a commit!`.
+2. **UWP workload step asserts first** (`package-uwp`): multi-probe `vswhere` + package catalog + on-disk MSBuild UWP targets; only if all fail does it run `setup.exe modify`, and installer stdout goes to `$RUNNER_TEMP/vs-uwp-modify.log` (printed only on non-zero exit).
+3. **Pin lag** stays a soft annotation in `ci-linux` lint — do not fail the workflow when Core publishes a newer tag.
+
+If you see long `setup.exe` / channel-feed stacks again, the detection probes regressed or the runner image dropped UWP.VC — treat that as an infrastructure bug, not a product failure.
+
 ## Test policy
 
 | Event | Linux unit tests | MSVC `ctest` |

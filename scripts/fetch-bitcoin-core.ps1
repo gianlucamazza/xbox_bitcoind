@@ -1,10 +1,12 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Clone or update third_party/bitcoin to the pinned tag/commit (Windows).
+  Clone or update third_party/bitcoin to the pinned commit (Windows).
 
 .DESCRIPTION
   Mirror of scripts/fetch-bitcoin-core.sh for native PowerShell / GitHub Actions.
+  Checks out COMMIT (not TAG) so annotated release tags do not emit git's
+  "refs/tags/… is not a commit!" warning on shallow clones.
 #>
 [CmdletBinding()]
 param()
@@ -24,6 +26,22 @@ function Read-Pin {
         }
     }
     return $map
+}
+
+function Fetch-PinnedCommit {
+    param(
+        [Parameter(Mandatory = $true)][string] $Dir,
+        [Parameter(Mandatory = $true)][string] $Commit
+    )
+    Push-Location $Dir
+    try {
+        git fetch --depth 1 origin $Commit
+        if ($LASTEXITCODE -ne 0) { throw "git fetch $Commit failed" }
+        git checkout --detach FETCH_HEAD
+        if ($LASTEXITCODE -ne 0) { throw "git checkout FETCH_HEAD failed" }
+    } finally {
+        Pop-Location
+    }
 }
 
 if (-not (Test-Path $PinFile)) {
@@ -58,14 +76,17 @@ if ((Test-Path $Dest) -and -not (Test-Path (Join-Path $Dest ".git"))) {
 }
 
 if (-not (Test-Path (Join-Path $Dest ".git"))) {
-    Write-Host "Cloning $repo ($tag) -> $Dest"
-    # Clone into a temp dir if Dest already has build-uwp only leftovers after partial clean.
+    Write-Host "Cloning $repo @ $commit ($tag) -> $Dest"
+    # Clone into a temp dir if Dest already has build-uwp leftovers after partial clean.
     if ((Test-Path $Dest) -and (Get-ChildItem $Dest -Force | Measure-Object).Count -gt 0) {
         $tmp = Join-Path $Root "third_party\bitcoin-clone-tmp"
         if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
-        git clone --branch $tag --depth 1 $repo $tmp
-        if ($LASTEXITCODE -ne 0) { throw "git clone failed" }
-        # Merge: keep existing build-uwp, copy source from clone.
+        New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+        git -C $tmp init
+        if ($LASTEXITCODE -ne 0) { throw "git init failed" }
+        git -C $tmp remote add origin $repo
+        if ($LASTEXITCODE -ne 0) { throw "git remote add failed" }
+        Fetch-PinnedCommit -Dir $tmp -Commit $commit
         Get-ChildItem $tmp -Force | ForEach-Object {
             $target = Join-Path $Dest $_.Name
             if (-not (Test-Path $target)) {
@@ -74,41 +95,38 @@ if (-not (Test-Path (Join-Path $Dest ".git"))) {
         }
         Remove-Item -Recurse -Force $tmp
     } else {
-        git clone --branch $tag --depth 1 $repo $Dest
-        if ($LASTEXITCODE -ne 0) { throw "git clone failed" }
+        if (Test-Path $Dest) { Remove-Item -Recurse -Force $Dest }
+        New-Item -ItemType Directory -Force -Path $Dest | Out-Null
+        git -C $Dest init
+        if ($LASTEXITCODE -ne 0) { throw "git init failed" }
+        git -C $Dest remote add origin $repo
+        if ($LASTEXITCODE -ne 0) { throw "git remote add failed" }
+        Fetch-PinnedCommit -Dir $Dest -Commit $commit
     }
 } else {
     Write-Host "Updating existing clone at $Dest"
+    # Ensure origin points at the pin repo (cache/local may differ).
     Push-Location $Dest
     try {
-        git fetch --depth 1 origin "refs/tags/${tag}:refs/tags/${tag}" 2>$null
+        git remote set-url origin $repo 2>$null
         if ($LASTEXITCODE -ne 0) {
-            git fetch --depth 1 origin tag $tag
-        }
-        git checkout --detach $commit 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            git checkout --detach "tags/$tag"
+            git remote add origin $repo
+            if ($LASTEXITCODE -ne 0) { throw "git remote add origin failed" }
         }
     } finally {
         Pop-Location
     }
+    Fetch-PinnedCommit -Dir $Dest -Commit $commit
 }
 
 Push-Location $Dest
 try {
     $head = (git rev-parse HEAD).Trim()
     if ($head -ne $commit) {
-        Write-Host "HEAD $head != pin $commit; fetching commit..."
-        git fetch --depth 1 origin $commit 2>$null
-        git checkout --detach $commit
-        if ($LASTEXITCODE -ne 0) { throw "checkout $commit failed" }
-        $head = (git rev-parse HEAD).Trim()
-    }
-    if ($head -ne $commit) {
         throw "checkout is $head, expected $commit ($tag)"
     }
     Write-Host "OK: Bitcoin Core $tag @ $head"
-    git describe --tags --always
+    git describe --tags --always 2>$null | Out-Host
     Write-Host "Tree: $Dest"
 } finally {
     Pop-Location
