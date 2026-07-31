@@ -266,16 +266,24 @@ Border MainPageController::MakeMetricCard(wchar_t const* label, TextBlock& value
     root.Children().Append(strip);
 
     auto stack = StackPanel{};
-    stack.Spacing(3);
+    stack.Spacing(2);
+    // Slightly more centered than top-left: optical middle of the card body.
+    stack.VerticalAlignment(VerticalAlignment::Center);
+    stack.HorizontalAlignment(HorizontalAlignment::Stretch);
+    stack.Padding(ThicknessHelper::FromLengths(4, 0, 2, 0));
     auto lab = TextBlock{};
     lab.Text(label);
     lab.CharacterSpacing(40);
     lab.Foreground(SolidColorBrush{kMuted});
+    lab.TextAlignment(TextAlignment::Center);
+    lab.HorizontalAlignment(HorizontalAlignment::Stretch);
     value_out = TextBlock{};
     value_out.Text(L"—");
     value_out.FontWeight(winrt::Windows::UI::Text::FontWeights::SemiBold());
     value_out.Foreground(SolidColorBrush{kWhite});
     value_out.TextTrimming(TextTrimming::CharacterEllipsis);
+    value_out.TextAlignment(TextAlignment::Center);
+    value_out.HorizontalAlignment(HorizontalAlignment::Stretch);
     stack.Children().Append(lab);
     stack.Children().Append(value_out);
     Grid::SetColumn(stack, 1);
@@ -704,13 +712,17 @@ void MainPageController::ApplyLayout(UiLayout const& L, LayoutPlan const& plan) 
         for (size_t i = 0; i < cards.size(); ++i) {
             cards[i].MinHeight(L.card_min_h);
             cards[i].Height(L.card_min_h);
+            // Symmetric vertical pad keeps label+value optically centered in the card.
+            const double pad_y = (std::max)(4.0, L.card_pad_y);
             cards[i].Padding(
-                ThicknessHelper::FromLengths(L.card_pad_x, L.card_pad_y, L.card_pad_x, L.card_pad_y));
+                ThicknessHelper::FromLengths(L.card_pad_x * 0.75, pad_y, L.card_pad_x * 0.75, pad_y));
             if (i < labels.size()) {
                 labels[i].FontSize(L.label_fs);
+                labels[i].TextAlignment(TextAlignment::Center);
             }
             if (i < values.size()) {
                 values[i].FontSize(L.value_fs);
+                values[i].TextAlignment(TextAlignment::Center);
             }
         }
     };
