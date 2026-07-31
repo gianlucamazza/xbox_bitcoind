@@ -31,8 +31,9 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 - `ibd-sample.sh`: soft-fail for timers, milestone log, stuck-tip detection
 - Richer `getblockchaininfo` / `getmempoolinfo` / `uptime` in UI path
 - `bitcoin.conf.console` comments for standard pruned operator settings
-- UI refactor: equal-width cards, section labels, gamepad focus, package version
-  subtitle, verification % label, primary Start accent, log panel stretch
+- UI: equal-width cards, section labels, gamepad focus, package version subtitle
+- UI visualization: dual progress (headers vs verified), session sparkline,
+  semantic metric colors, live updated clock, TV safe padding
 
 ## [0.1.0] — 2026-07-31
 

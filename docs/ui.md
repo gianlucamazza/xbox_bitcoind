@@ -1,63 +1,49 @@
 # UI — xbox_bitcoind dashboard
 
-Controller-first **10-foot** status UI for Series S Dev Mode (programmatic XAML,
-no `.xaml` markup). Screenshot: [assets/screenshot-console.png](assets/screenshot-console.png).
+Controller-first **10-foot** status UI for Series S Dev Mode (programmatic XAML).
+Screenshot: [assets/screenshot-console.png](assets/screenshot-console.png).
 
-## Layout (top → bottom)
+## Visualization (modern practices)
 
-| Region | Content |
-|--------|---------|
-| **Header** | Title + package version · status pill · chain labels |
-| **CHAIN** | Height · Headers · Progress · Peers (equal-width cards) |
-| **NODE** | Behind · Disk · Mempool · Uptime |
-| **Verification** | Progress bar + % label + meta line |
-| **Actions** | Start (accent) · Stop soft · Refresh — gamepad focus ring |
-| **Log** | Stretching `debug.log` tail (48 lines), auto-scroll on change |
+| Element | Practice |
+|---------|----------|
+| Dual progress bars | **Headers** (cyan): blocks÷headers · **Verified** (orange): `verificationprogress` |
+| Sparkline | Session trend of verification (last ~90 samples / ~3 min) |
+| Semantic colors | Peers red if 0; behind orange if large; progress green when synced |
+| Metric cards | Equal-width grid, left accent strip, high-contrast type |
+| Status pill + clock | Coarse state + local `updated HH:MM:SS` |
+| Primary action | Orange **Start** only when stopped |
+| Gamepad | XY-focus ring Start ↔ Stop soft ↔ Refresh → log |
+| Overscan | Root padding 40×32 for TV safe area |
+| Redraw thrash | Update text only on change; log scroll only on new content |
+
+## Layout
+
+```
+Header:  ₿ title · version | STATUS PILL | chain labels
+         updated HH:MM:SS
+CHAIN:   Height | Headers | Progress | Peers
+NODE:    Behind | Disk | Mempool | Uptime
+SYNC:    dual bars + sparkline + meta
+Actions: Start | Stop soft | Refresh
+Log:     debug.log (stretch)
+```
 
 ### Status pill
 
-| Pill | Meaning |
-|------|---------|
-| `NO CORE` | Scaffold without `XBB_WITH_CORE` |
-| `STOPPED` / `ERROR` | Not running |
-| `STARTING` | Thread up, RPC not ready |
-| `STOPPING` | Soft stop in progress |
-| `SYNCING` | IBD or progress &lt; 0.999 |
-| `SYNCED` | Near tip |
-| `NET OFF` | `networkactive=false` |
+`NO CORE` · `STOPPED` · `ERROR` · `STARTING` · `STOPPING` · `SYNCING` · `SYNCED` · `NET OFF`
 
-## Design notes (10-foot)
+## Data sources
 
-- Dark Bitcoin-adjacent palette; orange accent on primary **Start**
-- Metric cards: equal columns (`Grid` `*`), 1px border, min height 100px
-- Labels in small caps-style tracking; values 26px semi-bold
-- Gamepad: `XYFocusKeyboardNavigation`, D-pad between actions and log
-- Avoid redraw thrash: metric text only updates when changed; log scroll only on content change
-
-## Data sources (stock bitcoind RPC)
-
-| Field | Source |
-|-------|--------|
-| blocks / headers / progress / IBD / prune / disk / warnings | `getblockchaininfo` |
-| peers / networkactive / subversion | `getconnectioncount` + `getnetworkinfo` |
-| mempool | `getmempoolinfo` |
-| uptime | `uptime` |
-| Stop | `stop` + join |
+| Field | RPC |
+|-------|-----|
+| Chain tip / disk / IBD / warnings | `getblockchaininfo` |
+| Peers / UA / networkactive | `getconnectioncount`, `getnetworkinfo` |
+| Mempool | `getmempoolinfo` |
+| Uptime | `uptime` |
+| Stop | `stop` |
 | Log | `debug.log` tail |
-
-RPC: `http://127.0.0.1:8332`, cookie auth from `datadir\.cookie`.
-
-## Behaviour
-
-1. Launch → probes → auto-start when Core linked  
-2. 2s timer refreshes RPC + log off the UI thread  
-3. Soft stop / suspend → clean shutdown ([persistence.md](persistence.md))  
 
 ## Files
 
-| File | Role |
-|------|------|
-| `uwp/MainPage.h/.cpp` | Layout builders + status binding |
-| `uwp/rpc_client.*` | JSON-RPC |
-| `uwp/node_host.*` | Lifecycle + `NodeStatusLive` |
-| `uwp/App.*` | `OnSuspending` → `NodeStop` |
+`uwp/MainPage.*` · `rpc_client.*` · `node_host.*` · `App.*` (`OnSuspending` → soft stop)
