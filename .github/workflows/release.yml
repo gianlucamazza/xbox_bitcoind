@@ -35,16 +35,22 @@ concurrency:
 jobs:
   # Build product MSIX (reuses build-uwp pipeline).
   build:
+    permissions:
+      contents: read
+      actions: write
     uses: ./.github/workflows/build-uwp.yml
+    secrets: inherit
     with:
       with_core: true
       force_core: true
-      build_revision: ${{ github.run_number }}
+      build_revision: "${{ github.run_number }}"
 
   publish:
     needs: [build]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
         with:

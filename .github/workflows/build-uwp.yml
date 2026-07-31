@@ -55,8 +55,10 @@ on:
         default: "0"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
+  # Include run_id so release-tag reusable calls are not cancelled by main pushes
+  # sharing a coarse ref key (caller context keeps event_name=push).
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ github.run_id }}
+  cancel-in-progress: false
 
 env:
   CORE_CACHE_PREFIX: core-uwp-v4-vs2026
