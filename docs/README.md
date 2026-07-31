@@ -23,6 +23,7 @@ Snapshot (see also [ops.md](ops.md)):
 | Doc | Contents |
 |-----|----------|
 | [ops.md](ops.md) | Golden rules, status/monitor, budgets, soft-stop |
+| [roadmap.md](roadmap.md) | v1 complete vs ops-pending IBD |
 | [console.md](console.md) | Series S baseline, identity, storage |
 | [device-portal.md](device-portal.md) | Portal env, `deploy.sh` surface |
 | [persistence.md](persistence.md) | Soft-stop verification results |

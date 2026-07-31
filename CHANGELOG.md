@@ -19,6 +19,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 - README / docs restructure, `CONTRIBUTING.md`
 - Ops tooling (`node-status`, `soft-stop-test`, `ibd-sample`, `ibd-report`)
 - Hourly **user systemd** IBD sampler (`install-ibd-timer.sh`, `contrib/systemd/user/`)
+- `v1-close-check.sh` + [docs/roadmap.md](docs/roadmap.md) (engineering complete vs ops IBD)
 - Path-filtered CI; Core vs MSIX build split (`SkipIfFresh`, `workflow_call`)
 
 ### Changed

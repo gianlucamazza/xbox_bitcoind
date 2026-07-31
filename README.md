@@ -127,9 +127,10 @@ Research archive (phase 0): [docs/research/](docs/research/00-feasibility.md).
 
 | Area | State |
 |------|--------|
+| **v1 engineering** | **Complete** ([docs/roadmap.md](docs/roadmap.md)) |
 | WithCore on Series S | Working (e.g. package `0.1.0.42`) |
 | Soft-stop persistence | Verified (early + mid IBD) |
-| Mainnet IBD | Long-running on a fresh datadir |
+| Mainnet IBD → tip + 24h stable | **Ops pending** (timer running; `./scripts/v1-close-check.sh`) |
 | Wallet / Store / inbound listen | Out of scope for v1 |
 
 ## Releases (maintainers)

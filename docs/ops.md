@@ -110,8 +110,15 @@ Manual one-shot:
 ./scripts/ibd-sample.sh
 ```
 
-**v1 complete** when: not in IBD, peers > 0, tip near network, soft-stop OK near tip,
-no OOM/corrupt for ≥24h. Then tick the checklist in [plan-core-uwp.md](plan-core-uwp.md).
+### Close v1 ops (when IBD finishes)
+
+```bash
+./scripts/v1-close-check.sh     # exit 0 when progress≈1 and 24h samples look stable
+./scripts/soft-stop-test.sh     # once at tip; record in persistence.md
+```
+
+Then tick the last checkbox in [plan-core-uwp.md](plan-core-uwp.md).  
+Roadmap split (engineering vs ops): [roadmap.md](roadmap.md).
 
 ## What not to do mid-IBD
 

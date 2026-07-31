@@ -50,13 +50,16 @@ toolchain — do **not** paper over it with language hacks in Core headers.
 | 3 | **Embed + UI** | `node_host` + dashboard RPC | **done** |
 | 4 | **Package** | `build-uwp.ps1 -WithCore` MSIX (+ `event.dll`) | **done** |
 | 5 | **CI** | Path-filtered workflows; no scaffold+core double bill on main | **done** |
-| 6 | **Console** | deploy, Game class, mainnet pruned IBD | **running** |
+| 6 | **Console** | deploy, Game class, mainnet pruned node | **done** (IBD ongoing) |
 | 7 | **Persistence** | soft stop + LevelDB durability (early + mid IBD) | **verified** |
-| 8 | **Docs** | README + docs map consolidated | **done** |
-| 9 | **Ops tooling** | `node-status` / `soft-stop-test` / `ibd-sample` + budgets | **done** |
+| 8 | **Docs** | README + docs map + SECURITY/CHANGELOG | **done** |
+| 9 | **Ops tooling** | status / soft-stop-test / ibd-sample / timer | **done** |
 | 10 | **Build pipeline** | Core vs MSIX split, SkipIfFresh, CI stages | **done** |
 | 11 | **IBD monitor** | hourly user timer + report/stuck/milestones | **done** |
-| 12 | **IBD to tip** | long-run mainnet sync (≥24h stable) | **in progress** |
+| 12 | **IBD to tip** | wall-clock mainnet sync + ≥24h stable | **ops pending** |
+
+**Engineering packages 1–11: complete.** Package 12 is not a coding task — see
+[roadmap.md](roadmap.md) and `./scripts/v1-close-check.sh`.
 
 ## Patch set (`patches/uwp/`)
 
@@ -105,7 +108,9 @@ CI matrix and path filters: [ci.md](ci.md).
 - [x] Path-filtered CI (docs free; no scaffold+core on main)
 - [x] Ops tooling + mid-IBD soft-stop retest + RAM/disk samples ([ops.md](ops.md))
 - [x] Build stages split (CoreOnly / SkipCoreBuild / CI core→package) ([ci.md](ci.md))
-- [ ] mainnet IBD complete / long-run stability (≥24h at tip)
+- [x] IBD monitor automation (user timer + report + close-check script)
+- [ ] **Ops only:** mainnet IBD complete + ≥24h stable at tip  
+      (`./scripts/v1-close-check.sh` → exit 0; then soft-stop at tip)
 
 ### Implementation status
 
@@ -115,11 +120,12 @@ CI matrix and path filters: [ci.md](ci.md).
 | Desktop Core pin v31.1 | **Done** (MSVC baseline on VS2026) |
 | UWP patches 0001–0010 | **Done** (API + durability; no language hacks) |
 | `build-core-uwp` / `-WithCore` | **Done** (`bitcoin_embed` + `event.dll`) |
-| CI | **Path-filtered**; `uwp-core` on VS2026 |
-| Package on Series S | **`0.1.0.42`** WithCore, mainnet IBD |
-| Full node sync | **In progress** (~height **327k**, ~3.6% as of 2026-07-31) |
+| CI + release automation | **Done** |
+| Package on Series S | **`0.1.0.42`** WithCore, mainnet IBD running |
+| Full node sync | **Ops pending** (wall-clock; monitor via timer) |
 | Soft-stop persistence | **Verified** early + mid IBD |
-| Ops tooling | **`node-status.sh` / `soft-stop-test.sh`** |
+| Ops tooling | status / soft-stop-test / ibd-sample / **v1-close-check** |
+| **v1 engineering** | **Complete** (2026-07-31) |
 
 ## Risks (known)
 

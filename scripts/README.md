@@ -26,6 +26,7 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 | `ibd-sample.sh` | Append one JSONL sample (+ milestones / stuck detection) |
 | `ibd-report.sh` | Summarize JSONL history and errors |
 | `install-ibd-timer.sh` | Enable hourly user systemd timer |
+| `v1-close-check.sh` | Gate: IBD done + 24h stability (exit 0 = close v1 ops) |
 
 ```bash
 ./scripts/deploy.sh status
