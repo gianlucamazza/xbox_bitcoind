@@ -30,9 +30,14 @@ while [[ $# -gt 0 ]]; do
 	esac
 done
 
+STATE_DIR="${XBB_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/xbox_bitcoind}"
+mkdir -p "${STATE_DIR}"
+PRE_LOG="${STATE_DIR}/soft-stop-pre.txt"
+POST_LOG="${STATE_DIR}/soft-stop-post.txt"
+
 echo "=== soft-stop-test ==="
 echo "1) Pre-stop status"
-"${SCRIPT_DIR}/node-status.sh" | tee /tmp/xbb-soft-pre.txt
+"${SCRIPT_DIR}/node-status.sh" | tee "${PRE_LOG}"
 
 PRE_TIP="$(
 	"${SCRIPT_DIR}/node-status.sh" --json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("tip_height") or "")'
@@ -56,7 +61,7 @@ echo "4) Wait up to ${WAIT_LOAD}s for Loaded best chain / nBestHeight"
 PFN="$("${SCRIPT_DIR}/deploy.sh" pfn | tail -1)"
 LOADED=""
 for ((i = 1; i <= WAIT_LOAD; i++)); do
-	TMP="$(mktemp)"
+	TMP="$(mktemp "${STATE_DIR}/soft-stop-debug.XXXXXX")"
 	if "${SCRIPT_DIR}/deploy.sh" fetch-file "${PFN}" debug.log "${TMP}" bitcoin >/dev/null 2>&1; then
 		LOADED="$(
 			python3 - "${TMP}" <<'PY'
@@ -133,7 +138,7 @@ done
 
 echo
 echo "5) Post-restart status"
-"${SCRIPT_DIR}/node-status.sh" | tee /tmp/xbb-soft-post.txt
+"${SCRIPT_DIR}/node-status.sh" | tee "${POST_LOG}"
 POST_TIP="$(
 	"${SCRIPT_DIR}/node-status.sh" --json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("loaded_height") or d.get("nBestHeight") or d.get("tip_height") or "")'
 )"

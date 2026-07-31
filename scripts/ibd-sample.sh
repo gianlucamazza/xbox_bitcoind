@@ -45,18 +45,19 @@ append_error() {
 }
 
 # Soft-fail for unattended timers: never leave unit in failed state for portal blips.
+ERR_TMP="$(mktemp "${STATE_DIR}/ibd-sample.err.XXXXXX")"
 set +e
-line="$("${SCRIPT_DIR}/node-status.sh" --json 2>/tmp/xbb-ibd-sample.err)"
+line="$("${SCRIPT_DIR}/node-status.sh" --json 2>"${ERR_TMP}")"
 rc=$?
 set -e
 
 if [[ ${rc} -ne 0 || -z "${line}" ]]; then
-	err="$(head -c 400 /tmp/xbb-ibd-sample.err 2>/dev/null || true)"
+	err="$(head -c 400 "${ERR_TMP}" 2>/dev/null || true)"
 	append_error "node-status failed rc=${rc} ${err}"
-	rm -f /tmp/xbb-ibd-sample.err
+	rm -f "${ERR_TMP}"
 	exit 0
 fi
-rm -f /tmp/xbb-ibd-sample.err
+rm -f "${ERR_TMP}"
 
 if ! printf '%s' "${line}" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null; then
 	append_error "invalid json from node-status"

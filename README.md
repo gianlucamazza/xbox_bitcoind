@@ -21,8 +21,9 @@ Companion project on the same console: [xllama](https://github.com/gianlucamazza
 
 - **Bitcoin Core v31.1** embedded in-process (`BitcoindMain` / `BITCOIND_EMBED`)
 - Mainnet pruned node (`prune=550`, outbound P2P, local RPC)
-- Controller-first **status dashboard** (height, peers, disk, mempool, uptime, log)
-- **Soft-stop** flush path (suspend → RPC `stop` → durable LevelDB)
+- Controller-first **10-foot dashboard**: primary/secondary metrics, dual progress bars,
+  session sparkline, rough **ETA**, live log tail
+- **Soft-stop** flush path (suspend → RPC `stop` → durable LevelDB; host wait default 180s)
 - Path-filtered CI + automated **GitHub Releases** on `v*` tags
 
 | | |

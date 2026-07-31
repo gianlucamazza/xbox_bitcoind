@@ -32,7 +32,13 @@ struct MempoolInfo {
     int64_t usage = 0;   // total mempool usage
 };
 
-// JSON-RPC over loopback using cookie auth from <datadir>/.cookie
+// JSON-RPC over loopback using cookie auth from <datadir>/.cookie.
+//
+// Limits: response fields are extracted with a minimal flat-object scanner
+// (not a full JSON parser). Suitable for Core getblockchaininfo / getnetworkinfo /
+// getmempoolinfo / uptime scalar fields. Nested objects, arrays, and complex
+// escape sequences in warnings are best-effort only — do not rely on this for
+// arbitrary RPC methods without hardening the extractors.
 std::optional<std::string> RpcCall(const std::string& datadir_utf8, const std::string& method,
                                    const std::string& params_json = "[]");
 

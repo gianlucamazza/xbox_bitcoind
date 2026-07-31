@@ -1,5 +1,8 @@
 # Phase 0 spike checklist
 
+> **Historical.** Phase 0 is complete; product status lives in [tracking.md](../tracking.md).
+> This file is design archaeology only.
+
 Run these before committing to full Bitcoin Core CMake/UWP integration.  
 Mark results in this file or in linked notes under `docs/research/spikes/`.
 

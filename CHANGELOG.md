@@ -17,6 +17,9 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 - `docs/tracking.md` + GitHub Issue templates (`bug`, `ops`) and labels
 - Responsive 10-foot dashboard: scale-aware density, primary/secondary metrics,
   dual progress bars, session sparkline, title-safe budget layout
+- Session **ETA** on progress label; **STOPPING Ns** elapsed soft-stop feedback
+- Pure layout helpers `uwp/ui_layout.h` + `scripts/test-ui-layout.sh` (Linux CI)
+- `ibd-report.sh` recent rate + rough height/progress ETA
 - IBD console conf defaults (`dbcache=512`, `maxconnections=16`, `blocksonly=1`)
   + `scripts/apply-console-conf.sh`
 - Off-LAN console access via standard OpenSSH LocalForward (Odroid Tailscale)
@@ -30,6 +33,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 - Soft-stop host wait default **180s** (`XBB_SOFT_STOP_MAX_WAIT`), re-suspend at 45s;
   in-app node join wait **150s** (mid-IBD flush)
 - `deploy.sh package-list` / `package-gc` for multi-revision cleanup
+- Ops scripts: temp/logs under `$STATE_DIR` (no hard-coded `/tmp` for soft-stop/sample)
 - Probes no longer overwrite operator `bitcoin.conf`
 - Fetch Bitcoin Core by pin **COMMIT** (quiet annotated-tag noise)
 - package-uwp: assert UWP workload before VS installer when possible

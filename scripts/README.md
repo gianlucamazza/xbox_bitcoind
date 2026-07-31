@@ -24,10 +24,11 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 | `node-status.sh` | IBD tip, RAM, datadir snapshot (`--json`, `--loop N`) |
 | `soft-stop-test.sh` | Automated soft-stop persistence check |
 | `ibd-sample.sh` | Append one JSONL sample (+ milestones / stuck detection) |
-| `ibd-report.sh` | Summarize JSONL history and errors |
+| `ibd-report.sh` | Summarize JSONL history, rate, rough ETA, errors |
 | `install-ibd-timer.sh` | Enable hourly user systemd timer |
 | `v1-close-check.sh` | Gate: IBD done + 24h stability (exit 0 = close v1 ops) |
 | `apply-console-conf.sh` | Soft-stop → push `config/bitcoin.conf.console` → start (IBD knobs) |
+| `test-ui-layout.sh` | Pure layout unit tests (no Xbox; used by ci-linux) |
 
 ```bash
 # Off home LAN: standard SSH local forward (see docs/device-portal.md)

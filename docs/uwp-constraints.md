@@ -105,10 +105,13 @@ dev cert or create `xbox_bitcoind-dev`.
 
 ## Checklist before IBD on console
 
-- [ ] MSIX installs via `deploy.sh`  
-- [ ] App type = **Game**  
-- [ ] LocalState writable; multi-file tree > pruned size works  
-- [ ] Outbound TCP to peers works  
-- [ ] `dbcache` / peak WS measured; no OOM  
-- [ ] No single file ≥ 2 GB in datadir  
-- [ ] Disk free after xllama models still enough for prune target  
+> **Historical research checklist.** v1 console path is done; live status is
+> [tracking.md](tracking.md). Kept for design context only.
+
+- [x] MSIX installs via `deploy.sh`  
+- [x] App type = **Game**  
+- [x] LocalState writable; multi-file tree > pruned size works  
+- [x] Outbound TCP to peers works  
+- [x] `dbcache` / peak WS measured; no OOM (mid-IBD WS ~0.7–1.2 GiB @ dbcache=512)  
+- [x] No single file ≥ 2 GB in datadir (pruned; portal per-file limit noted)  
+- [x] Disk free after xllama models still enough for prune target  

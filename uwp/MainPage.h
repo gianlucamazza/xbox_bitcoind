@@ -5,8 +5,10 @@
 #include "pch.h"
 
 #include "node_host.h"
+#include "ui_layout.h"
 
 #include <array>
+#include <chrono>
 #include <deque>
 #include <memory>
 #include <string>
@@ -14,57 +16,11 @@
 
 namespace xbb {
 
-// Density from usable viewport height (after safe inset).
-enum class UiDensity { Compact, Standard, Comfort };
-
-// Scale tokens (fonts, pads, min heights).
-struct UiLayout {
-    UiDensity density = UiDensity::Standard;
-    double viewport_w = 1920;
-    double viewport_h = 1080;
-    double usable_w = 1920;
-    double usable_h = 1080;
-    double pad_x = 28;
-    double pad_y = 16;
-    double safe_inset = 0; // title-safe pad applied on each side
-    double title_fs = 24;
-    double subtitle_fs = 12;
-    double value_fs = 20;
-    double label_fs = 10;
-    double log_fs = 12;
-    double meta_fs = 12;
-    double btn_fs = 16;
-    double pill_fs = 13;
-    double card_min_h = 64;
-    double card_pad_y = 7;
-    double card_pad_x = 12;
-    double card_gap = 8;
-    double spark_h = 32;
-    double spark_card_h = 52;
-    double bar_h_headers = 6;
-    double bar_h_verify = 9;
-    double log_min_h = 112;
-    double btn_min_h = 44;
-    double btn_min_w = 136;
-    double section_gap = 6;
-    int primary_columns = 4; // 4 or 2
-};
-
-// Progressive disclosure plan from height budget (never silent-clip KPIs).
-struct LayoutPlan {
-    bool show_secondary = true; // Headers, Disk, Mempool, Uptime
-    bool show_spark = true;
-    bool show_subtitle = true;
-    bool show_section_labels = false;
-    bool meta_wrap = false;
-    double log_min_h = 112;
-};
-
-// Pure helpers (testable without XAML).
-UiLayout DiscoverLayout(double width, double height);
-LayoutPlan PlanSections(double usable_h, UiLayout const& L);
-// Usable DIPs: VisibleBounds minus title-safe inset (~5%).
+// Usable DIPs: VisibleBounds minus title-safe inset (~5%). WinRT-backed.
 void GetUsableSize(double page_w, double page_h, double& out_w, double& out_h, double& out_inset);
+// Layout tokens from page size (uses GetUsableSize).
+UiLayout DiscoverLayout(double width, double height);
+// PlanSections is pure — defined in ui_layout.h.
 
 class MainPageController : public std::enable_shared_from_this<MainPageController> {
   public:
@@ -162,6 +118,7 @@ class MainPageController : public std::enable_shared_from_this<MainPageControlle
     std::string m_probe_note;
     std::wstring m_last_log;
     std::deque<double> m_hist_progress;
+    std::deque<int> m_hist_blocks;
     // Cached secondary values for meta fold when secondary grid hidden
     int m_cache_headers = 0;
     int64_t m_cache_disk = 0;
@@ -169,6 +126,7 @@ class MainPageController : public std::enable_shared_from_this<MainPageControlle
     int64_t m_cache_uptime = 0;
     bool m_refreshing = false;
     bool m_stopping = false;
+    std::chrono::steady_clock::time_point m_stop_started{};
 };
 
 } // namespace xbb

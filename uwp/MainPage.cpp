@@ -61,8 +61,8 @@ const Color kLogFg = C(186, 192, 204);
 const Color kSparkFill = C(247, 147, 26, 40);
 
 constexpr size_t kHistMax = 90;
-// Title-safe: ~5% each edge (Xbox TV overscan guidance).
-constexpr double kSafeFraction = 0.05;
+// Matches StartUiTimer interval (used for session ETA).
+constexpr double kRefreshIntervalSec = 2.0;
 
 std::wstring Utf8ToWide(std::string const& text) {
     if (text.empty()) {
@@ -163,12 +163,12 @@ ProgressBar MakeBar(Color fg) {
 
 } // namespace
 
-// --- Self-discovery + budget planner ----------------------------------------------
+// --- Self-discovery (WinRT bounds) + pure planner in ui_layout.h -------------------
 
 void GetUsableSize(double page_w, double page_h, double& out_w, double& out_h, double& out_inset) {
     double w = page_w > 1 ? page_w : 1920;
     double h = page_h > 1 ? page_h : 1080;
-    double scale = 1.0;
+    double raw_scale = 1.0;
     try {
         auto bounds = ApplicationView::GetForCurrentView().VisibleBounds();
         if (bounds.Width > 32 && bounds.Height > 32) {
@@ -180,173 +180,40 @@ void GetUsableSize(double page_w, double page_h, double& out_w, double& out_h, d
     }
     try {
         // Xbox/UWP often reports 960×540 DIPs at 200% scale for a 1080p panel.
-        // Density/budget must use effective (scale-corrected) size or Compact
-        // wrongly strips secondary metrics + spark on a full-screen TV.
-        scale = DisplayInformation::GetForCurrentView().RawPixelsPerViewPixel();
-        if (scale < 0.5) {
-            scale = 1.0;
-        }
+        raw_scale = DisplayInformation::GetForCurrentView().RawPixelsPerViewPixel();
     } catch (...) {
-        scale = 1.0;
+        raw_scale = 1.0;
     }
-    // Heuristic: classic half-1080p / half-1440 DIP sizes when API reports scale=1.
-    if (scale < 1.25) {
-        const double ar = (h > 1.0) ? (w / h) : 0.0;
-        if (ar > 1.5 && ar < 1.9) {
-            if (h >= 500.0 && h <= 560.0) {
-                scale = 2.0; // 960×540 → 1080p
-            } else if (h >= 700.0 && h <= 740.0) {
-                scale = 1.5; // 1280×720 → 1080p
-            }
-        }
-    }
-    // Work in effective DIPs (≈ CSS reference pixels at 96dpi * scale).
-    const double eff_w = w * scale;
-    const double eff_h = h * scale;
-    // Title-safe inset in *layout* DIPs (not multiplied twice).
-    const double inset = (std::max)(16.0, kSafeFraction * (std::min)(w, h));
-    out_inset = inset;
-    // Budget uses effective height so 960×540@2x ≈ 1080p Standard.
-    out_w = (std::max)(320.0, eff_w - 2.0 * inset * scale);
-    out_h = (std::max)(240.0, eff_h - 2.0 * inset * scale);
+    ComputeUsableSize(w, h, raw_scale, out_w, out_h, out_inset);
 }
 
 UiLayout DiscoverLayout(double width, double height) {
-    UiLayout L;
-    double inset = 0;
-    GetUsableSize(width, height, L.usable_w, L.usable_h, inset);
-    L.viewport_w = width > 1 ? width : L.usable_w;
-    L.viewport_h = height > 1 ? height : L.usable_h;
-    L.safe_inset = inset;
-    // Padding in layout DIPs (page coordinates), not scale-inflated.
-    L.pad_x = inset + 8;
-    L.pad_y = inset * 0.65 + 6;
-
-    // Density from *effective* usable size (scale-aware).
-    if (L.usable_h < 820 || L.usable_w < 1000) {
-        L.density = UiDensity::Compact;
-    } else if (L.usable_h >= 1100 && L.usable_w >= 1500) {
-        L.density = UiDensity::Comfort;
-    } else {
-        L.density = UiDensity::Standard;
-    }
-
-    // Columns from effective width (960@2x → 4 cols on TV).
-    L.primary_columns = (L.usable_w < 1100) ? 2 : 4;
-
-    switch (L.density) {
-    case UiDensity::Compact:
-        L.title_fs = 20;
-        L.subtitle_fs = 11;
-        L.value_fs = 18;
-        L.label_fs = 10;
-        L.log_fs = 11;
-        L.meta_fs = 11;
-        L.btn_fs = 15;
-        L.pill_fs = 12;
-        L.card_min_h = 54;
-        L.card_pad_y = 5;
-        L.card_pad_x = 10;
-        L.card_gap = 6;
-        L.spark_h = 26;
-        L.spark_card_h = 42;
-        L.bar_h_headers = 5;
-        L.bar_h_verify = 7;
-        L.log_min_h = 88;
-        L.btn_min_h = 40;
-        L.btn_min_w = 120;
-        L.section_gap = 4;
-        break;
-    case UiDensity::Comfort:
-        L.title_fs = 28;
-        L.subtitle_fs = 13;
-        L.value_fs = 24;
-        L.label_fs = 11;
-        L.log_fs = 13;
-        L.meta_fs = 13;
-        L.btn_fs = 17;
-        L.pill_fs = 14;
-        L.card_min_h = 76;
-        L.card_pad_y = 10;
-        L.card_pad_x = 14;
-        L.card_gap = 10;
-        L.spark_h = 40;
-        L.spark_card_h = 64;
-        L.bar_h_headers = 7;
-        L.bar_h_verify = 10;
-        L.log_min_h = 160;
-        L.btn_min_h = 48;
-        L.btn_min_w = 148;
-        L.section_gap = 8;
-        break;
-    case UiDensity::Standard:
-    default:
-        L.title_fs = 22;
-        L.subtitle_fs = 12;
-        L.value_fs = 20;
-        L.label_fs = 10;
-        L.log_fs = 12;
-        L.meta_fs = 12;
-        L.btn_fs = 16;
-        L.pill_fs = 13;
-        L.card_min_h = 60;
-        L.card_pad_y = 6;
-        L.card_pad_x = 12;
-        L.card_gap = 8;
-        L.spark_h = 30;
-        L.spark_card_h = 48;
-        L.bar_h_headers = 6;
-        L.bar_h_verify = 8;
-        L.log_min_h = 100;
-        L.btn_min_h = 44;
-        L.btn_min_w = 132;
-        L.section_gap = 6;
-        break;
-    }
-    return L;
+    double uw = 0, uh = 0, inset = 0;
+    GetUsableSize(width, height, uw, uh, inset);
+    return MakeLayout(uw, uh, width > 1 ? width : uw, height > 1 ? height : uh, inset);
 }
 
-LayoutPlan PlanSections(double usable_h, UiLayout const& L) {
-    LayoutPlan plan;
-    plan.show_subtitle = (L.density != UiDensity::Compact);
-    plan.show_section_labels = (L.density == UiDensity::Comfort);
-    plan.meta_wrap = (L.density == UiDensity::Comfort);
-    plan.log_min_h = L.log_min_h;
-
-    // Estimated block heights (DIP) for budget.
-    const double header_h = L.title_fs + (plan.show_subtitle ? L.subtitle_fs + 8 : 4) + 12;
-    const int prow = (L.primary_columns >= 4) ? 1 : 2;
-    const double primary_h = prow * L.card_min_h + (prow - 1) * L.card_gap + L.section_gap;
-    const double secondary_h = L.card_min_h + L.section_gap; // always one row of 4 (or 2×2)
-    const double sync_bars = 18 + L.bar_h_headers + L.bar_h_verify + 16 + L.meta_fs + 12;
-    const double spark_h = L.spark_card_h + 6;
-    const double actions_h = L.btn_min_h + L.section_gap * 2;
-    const double log_floor = L.log_min_h;
-
-    // P0+P1+P2+P5 fixed budget; P3 secondary; P4 spark.
-    const double base = header_h + primary_h + sync_bars + actions_h + log_floor;
-
-    plan.show_secondary = true;
-    plan.show_spark = true;
-
-    if (base + secondary_h + spark_h > usable_h) {
-        plan.show_spark = false;
+std::wstring FormatEtaHours(double hours) {
+    if (!(hours >= 0.0) || !std::isfinite(hours)) {
+        return {};
     }
-    if (base + secondary_h + (plan.show_spark ? spark_h : 0) > usable_h) {
-        plan.show_secondary = false;
+    if (hours <= 0.0) {
+        return L"~now";
     }
-    // If still tight, shrink log floor (never below 72).
-    double used = header_h + primary_h + sync_bars + actions_h +
-                  (plan.show_secondary ? secondary_h : 0) + (plan.show_spark ? spark_h : 0);
-    if (used + plan.log_min_h > usable_h) {
-        plan.log_min_h = (std::max)(72.0, usable_h - used);
+    if (hours < 1.0 / 60.0) {
+        return L"<1m";
     }
-    // Compact density: default secondary off unless plenty of height.
-    if (L.density == UiDensity::Compact && usable_h < 900) {
-        plan.show_secondary = (base + secondary_h + 80 <= usable_h);
-        plan.show_spark = false;
+    if (hours < 1.0) {
+        return L"~" + std::to_wstring((std::max)(1, static_cast<int>(hours * 60.0 + 0.5))) + L"m";
     }
-    return plan;
+    if (hours < 48.0) {
+        std::wostringstream os;
+        os << L"~" << std::fixed << std::setprecision(1) << hours << L"h";
+        return os.str();
+    }
+    std::wostringstream os;
+    os << L"~" << std::fixed << std::setprecision(1) << (hours / 24.0) << L"d";
+    return os.str();
 }
 
 // --- Controller -------------------------------------------------------------------
@@ -947,9 +814,18 @@ void MainPageController::WireGamepadFocus() {
 
 void MainPageController::StartUiTimer() {
     m_timer = DispatcherTimer{};
-    m_timer.Interval(std::chrono::milliseconds(2000));
+    m_timer.Interval(std::chrono::milliseconds(static_cast<int>(kRefreshIntervalSec * 1000.0)));
     auto self = shared_from_this();
-    m_timer.Tick([self](IInspectable const&, IInspectable const&) { self->RefreshAsync(); });
+    m_timer.Tick([self](IInspectable const&, IInspectable const&) {
+        // Keep STOPPING pill elapsed even if RefreshAsync is busy.
+        if (self->m_stopping) {
+            const auto sec = std::chrono::duration_cast<std::chrono::seconds>(
+                                 std::chrono::steady_clock::now() - self->m_stop_started)
+                                 .count();
+            self->SetPill(L"STOPPING " + std::to_wstring(sec) + L"s", kYellow);
+        }
+        self->RefreshAsync();
+    });
     m_timer.Start();
     RefreshAsync();
 }
@@ -972,10 +848,14 @@ void MainPageController::SetMetric(TextBlock const& value, std::wstring const& t
     value.Foreground(SolidColorBrush{color});
 }
 
-void MainPageController::PushHistory(double verification, int /*blocks*/) {
+void MainPageController::PushHistory(double verification, int blocks) {
     m_hist_progress.push_back(std::clamp(verification, 0.0, 1.0));
+    m_hist_blocks.push_back(blocks);
     while (m_hist_progress.size() > kHistMax) {
         m_hist_progress.pop_front();
+    }
+    while (m_hist_blocks.size() > kHistMax) {
+        m_hist_blocks.pop_front();
     }
     RedrawSparkline();
 }
@@ -1072,7 +952,10 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
     }
 
     if (m_stopping) {
-        SetPill(L"STOPPING", kYellow);
+        const auto sec = std::chrono::duration_cast<std::chrono::seconds>(
+                             std::chrono::steady_clock::now() - m_stop_started)
+                             .count();
+        SetPill(L"STOPPING " + std::to_wstring(sec) + L"s", kYellow);
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(false);
         StylePrimaryButton(m_btn_start, false);
@@ -1140,17 +1023,27 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
             m_bar_verify.Value(verify);
             m_bar_verify.Foreground(SolidColorBrush{prog_c});
         }
+        PushHistory(verify, st.blocks);
+
+        std::wstring eta;
+        if (syncing && m_hist_progress.size() >= 5) {
+            const double hours = EstimateEtaHours(m_hist_progress.back(), m_hist_progress.front(),
+                                                  m_hist_progress.size(), kRefreshIntervalSec);
+            eta = FormatEtaHours(hours);
+        }
+
         if (m_progress_label) {
             std::wostringstream os;
             os << FormatPct(verify);
             if (behind > 0) {
                 os << L"  ·  " << FormatInt(behind) << L" behind";
             }
+            if (!eta.empty()) {
+                os << L"  ·  ETA " << eta;
+            }
             m_progress_label.Text(os.str());
             m_progress_label.Foreground(SolidColorBrush{prog_c});
         }
-
-        PushHistory(verify, st.blocks);
 
         std::wstring net = Utf8ToWide(st.chain.empty() ? "main" : st.chain);
         if (st.pruned) {
@@ -1259,9 +1152,10 @@ void MainPageController::OnStopClick() {
     auto self = shared_from_this();
     auto dispatcher = winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread().Dispatcher();
     m_stopping = true;
+    m_stop_started = std::chrono::steady_clock::now();
     m_btn_stop.IsEnabled(false);
     m_btn_start.IsEnabled(false);
-    SetPill(L"STOPPING", kYellow);
+    SetPill(L"STOPPING 0s", kYellow);
     winrt::Windows::System::Threading::ThreadPool::RunAsync([self, dispatcher](auto&&) {
         NodeStop();
         dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal, [self]() {

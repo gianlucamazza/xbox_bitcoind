@@ -65,8 +65,9 @@ Secondary: **HEADERS · DISK · MEMPOOL · UPTIME** (or meta line when hidden)
 |---------|----------|
 | Dual progress bars | Headers (cyan) = blocks÷headers; Verified (orange) = `verificationprogress` |
 | Sparkline | Session trend; optional under budget |
+| ETA | Rough remaining time from session progress samples (meta line / progress label) |
 | Semantic colors | Peers red if 0; behind orange if large; progress green when synced |
-| Status pill | Coarse state + `updated HH:MM:SS` |
+| Status pill | Coarse state + `updated HH:MM:SS`; **STOPPING Ns** while soft-stop joins |
 
 ### Status pill
 
@@ -94,4 +95,7 @@ Secondary: **HEADERS · DISK · MEMPOOL · UPTIME** (or meta line when hidden)
 
 ## Files
 
-`uwp/MainPage.h` · `uwp/MainPage.cpp` · `rpc_client.*` · `node_host.*` · `App.*`
+`uwp/ui_layout.h` (pure density/plan/ETA helpers) · `uwp/MainPage.h` · `uwp/MainPage.cpp` ·
+`rpc_client.*` · `node_host.*` · `App.*`
+
+Host unit test (no Xbox): `./scripts/test-ui-layout.sh`

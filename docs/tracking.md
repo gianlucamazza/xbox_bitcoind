@@ -62,6 +62,16 @@ Track on GitHub: labels `ops`, `v1-close`.
 
 See [roadmap.md § Pre-Lightning](roadmap.md#pre-lightning-standard-node-only).
 
+### Polishing (non-blocking)
+
+| Wave | Items | Status |
+|------|--------|--------|
+| **A** host/docs | shellcheck SC2028; sample/soft-stop temp under `$STATE_DIR`; `ibd-report` rate+ETA; README feature parity; research checklists historical | **done** |
+| **B** next package | in-app join 150s + UI ETA + `STOPPING Ns` (code on main); field-verify #4; screenshot after deploy | **code done** — deploy deferred mid-IBD |
+| **C** code health | pure `ui_layout.h` + `test-ui-layout.sh`; conf fallback documented; rpc_client limits documented | **done** |
+
+Do **not** redeploy mid-IBD solely for polish. Host tools apply immediately.
+
 ### Out of scope (do not open as v1 work)
 
 Wallet UI · Store · `listen=1` · CLN on-console · USB datadir UX

@@ -9,11 +9,13 @@ on:
     branches: [main]
     paths:
       - "scripts/**"
+      - "uwp/ui_layout.h"
       - "config/bitcoin-core.pin"
       - ".github/workflows/ci-linux.yml"
   pull_request:
     paths:
       - "scripts/**"
+      - "uwp/ui_layout.h"
       - "config/bitcoin-core.pin"
       - ".github/workflows/ci-linux.yml"
   workflow_dispatch:
@@ -72,6 +74,9 @@ jobs:
 
       - name: shellcheck
         run: shellcheck -x -S warning scripts/*.sh
+
+      - name: Pure UI layout unit tests
+        run: ./scripts/test-ui-layout.sh
 
       - name: Validate bitcoin-core.pin
         run: |

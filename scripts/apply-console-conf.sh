@@ -33,7 +33,7 @@ echo "Soft-stopping app (flush chainstate) ..."
 "${DEPLOY}" stop-app "${PFN}" || true
 sleep 2
 
-echo "Uploading bitcoin.conf → LocalState\\bitcoin\\ ..."
+printf 'Uploading bitcoin.conf → LocalState\\bitcoin\\ ...\n'
 "${DEPLOY}" upload-file "${CONF_SRC}" "${PFN}" "bitcoin" "bitcoin.conf"
 
 echo "Starting app ..."

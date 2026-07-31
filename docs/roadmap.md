@@ -71,9 +71,11 @@ Only then: CLN spike / sibling `xbox_lightning` (not a conf flag).
 
 ## v1.1+ ideas (not scheduled)
 
-- UI ETA / richer metrics  
 - Formal CODE_OF_CONDUCT  
-- Automated soft-stop on milestone via notify (human still confirms)
+- Automated soft-stop on milestone via notify (human still confirms)  
+- Richer mempool / peer detail panels  
+
+Session **ETA** + **STOPPING Ns** polish landed on main (next package after deploy).
 
 ---
 

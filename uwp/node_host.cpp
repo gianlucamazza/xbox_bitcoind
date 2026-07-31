@@ -59,7 +59,9 @@ void EnsureDatadirLayout() {
         if (!packaged.empty() && GetFileAttributesW(packaged.c_str()) != INVALID_FILE_ATTRIBUTES) {
             CopyFileW(packaged.c_str(), conf.c_str(), TRUE);
         } else {
-            // Keep in sync with config/bitcoin.conf.console (fallback if package conf missing).
+            // Last-resort only: package should ship config/bitcoin.conf.console as
+            // bitcoin.conf.console (vcxproj). Keep key knobs aligned with that file.
+            // Prefer: ./scripts/apply-console-conf.sh for operator updates.
             const char* content =
                 "prune=550\nserver=1\nlisten=0\ndbcache=512\nmaxconnections=16\n"
                 "maxmempool=50\nblocksonly=1\n"
@@ -69,6 +71,7 @@ void EnsureDatadirLayout() {
                 fwrite(content, 1, strlen(content), f);
                 fclose(f);
             }
+            Logf("[node] bitcoin.conf missing package seed; wrote embedded fallback");
         }
     }
 }
