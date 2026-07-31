@@ -163,11 +163,12 @@ CI_SKIP_TESTS=1 ./scripts/build-linux-smoke.sh
 
 | Trigger | Effect |
 |---------|--------|
-| `git push origin vX.Y.Z` | `release.yml`: build WithCore MSIX → GitHub Release + assets |
+| `git push origin vX.Y.Z` | `release.yml` → **`build-product-msix.yml`** (Core+MSIX) → GitHub Release |
 | Actions → **release** → Run workflow | Rebuild/publish for an **existing** tag |
+| Actions → **build-product-msix** | Manual product MSIX without cutting a tag |
 
-`build-uwp` reusable jobs must allow **tag refs** (`refs/tags/v*`) as well as `main`
-(caller context keeps `event_name=push` on the tag, not `workflow_call`).
+Day-to-day app iteration stays on **`build-uwp.yml`** (path-filtered, SkipIfFresh).  
+Releases use **`build-product-msix.yml`** (no PR/path gates; always Core + package).
 
 Local helper:
 

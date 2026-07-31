@@ -225,15 +225,15 @@ stop_app() {
 	echo "Soft-stop ${pfn} (suspend → wait up to ${max_wait}s for process exit)…"
 	suspend_package "${pkg_b64}"
 	local waited=0
-	local re_suspend_at=45
+	# Re-post suspend periodically: Xbox may drop the first suspend before OnSuspending runs.
+	local re_suspend_every=45
 	while (( waited < max_wait )); do
 		if ! process_running; then
 			echo "Process exited after ${waited}s (clean soft stop)."
 			echo "Stopped ${pfn}."
 			return 0
 		fi
-		# One re-suspend mid-wait: first suspend can race before OnSuspending wires up.
-		if (( waited == re_suspend_at )); then
+		if (( waited > 0 && waited % re_suspend_every == 0 )); then
 			echo "Still running at ${waited}s — re-posting suspend…"
 			suspend_package "${pkg_b64}"
 		fi
@@ -241,7 +241,7 @@ stop_app() {
 		sleep 1
 	done
 	echo "Warning: process still running after ${max_wait}s suspend; sending taskmanager DELETE (may skip final flush)." >&2
-	echo "  Tip: raise wait with XBB_SOFT_STOP_MAX_WAIT=300 for deep IBD." >&2
+	echo "  Tip: raise wait with XBB_SOFT_STOP_MAX_WAIT=300 (or 600) for deep IBD." >&2
 	curl "${CURL_AUTH[@]}" \
 		-H "X-CSRF-Token:${CSRF_TOKEN}" \
 		-H "Content-Length: 0" \

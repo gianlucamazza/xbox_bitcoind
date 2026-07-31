@@ -1,0 +1,204 @@
+name: build-product-msix
+
+# Dedicated reusable workflow for releases (and manual product builds).
+# No job-level `if` gates — every call always builds Core + packages WithCore MSIX.
+# Do not use for PRs (use build-uwp.yml scaffold path).
+
+on:
+  workflow_call:
+    inputs:
+      force_core:
+        description: "Force Core UWP rebuild (ignore SkipIfFresh)"
+        type: boolean
+        default: true
+      build_revision:
+        description: "MSIX version 4th component (0 → caller run_number)"
+        type: string
+        default: "0"
+  workflow_dispatch:
+    inputs:
+      force_core:
+        description: "Force Core UWP rebuild"
+        type: boolean
+        default: true
+      build_revision:
+        description: "MSIX version 4th component (0 → this run_number)"
+        type: string
+        default: "0"
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: build-product-msix-${{ github.ref }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+env:
+  CORE_CACHE_PREFIX: core-uwp-v4-vs2026
+
+jobs:
+  core-uwp:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 300
+    env:
+      VCPKG_ROOT: C:\vcpkg
+      VCPKG_INSTALLATION_ROOT: C:\vcpkg
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Restore Core / vcpkg cache
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            third_party/bitcoin/build-uwp
+            ~/AppData/Local/vcpkg/archives
+            C:/vcpkg/installed/x64-uwp
+            C:/vcpkg-bt
+          key: ${{ env.CORE_CACHE_PREFIX }}-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}-${{ github.run_id }}
+          restore-keys: |
+            ${{ env.CORE_CACHE_PREFIX }}-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}-
+            ${{ env.CORE_CACHE_PREFIX }}-
+
+      - name: Build Core UWP libraries
+        shell: pwsh
+        run: |
+          $force = ("${{ inputs.force_core }}" -eq "true")
+          if ($force) {
+            Write-Host "ForceCore rebuild"
+            .\scripts\build-uwp.ps1 -Configuration Release -CoreOnly -ForceCore
+          } else {
+            $env:XBB_CORE_SKIP_IF_FRESH = "1"
+            .\scripts\build-uwp.ps1 -Configuration Release -CoreOnly
+          }
+          if (-not (Test-Path "third_party\bitcoin\build-uwp\xbb-core-libs.props")) {
+            throw "missing xbb-core-libs.props after core build"
+          }
+          if (-not (Get-ChildItem "third_party\bitcoin\build-uwp" -Recurse -Filter "bitcoin_embed.lib" -EA SilentlyContinue)) {
+            throw "missing bitcoin_embed.lib after core build"
+          }
+
+      - name: Save Core / vcpkg cache
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            third_party/bitcoin/build-uwp
+            ~/AppData/Local/vcpkg/archives
+            C:/vcpkg/installed/x64-uwp
+            C:/vcpkg-bt
+          key: ${{ env.CORE_CACHE_PREFIX }}-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}-${{ github.run_id }}
+
+  package-uwp:
+    needs: [core-uwp]
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 90
+    env:
+      VCPKG_ROOT: C:\vcpkg
+      VCPKG_INSTALLATION_ROOT: C:\vcpkg
+    steps:
+      - uses: actions/checkout@v7
+      - uses: microsoft/setup-msbuild@v3
+      - uses: nuget/setup-nuget@v4
+
+      - name: Ensure UWP C++ workload if missing
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found" }
+
+          function Get-VsInstallPath {
+            param([string[]] $ExtraArgs = @())
+            $out = & $vswhere -latest -products * -prerelease @ExtraArgs -property installationPath 2>$null
+            if ($out) { return ($out | Select-Object -First 1).ToString().Trim() }
+            return $null
+          }
+
+          $ip = Get-VsInstallPath
+          if (-not $ip) { throw "Visual Studio installation not found" }
+          Write-Host "VS install: $ip"
+
+          $uwp = Get-VsInstallPath -ExtraArgs @("-requires", "Microsoft.VisualStudio.ComponentGroup.UWP.VC")
+          if (-not $uwp) {
+            try {
+              $jsonRaw = & $vswhere -latest -products * -prerelease -format json -include packages 2>$null
+              if ($jsonRaw) {
+                $inst = ($jsonRaw | ConvertFrom-Json) | Select-Object -First 1
+                $pkgText = if ($inst.packages) { ($inst.packages | ForEach-Object { "$_" }) -join " " } else { "" }
+                if ($pkgText -match 'ComponentGroup\.UWP\.VC') {
+                  $uwp = $inst.installationPath
+                  Write-Host "UWP.VC found via vswhere package catalog"
+                }
+              }
+            } catch {
+              Write-Host "package-catalog probe skipped: $($_.Exception.Message)"
+            }
+          }
+          if (-not $uwp) {
+            $probe = Get-ChildItem -Path (Join-Path $ip "MSBuild") -Recurse -Filter "*UWP*" -ErrorAction SilentlyContinue |
+              Select-Object -First 1
+            if ($probe) {
+              $uwp = $ip
+              Write-Host "UWP tooling found on disk: $($probe.FullName)"
+            }
+          }
+
+          if ($uwp) {
+            Write-Host "UWP.VC present — skip Visual Studio Installer"
+            exit 0
+          }
+
+          $setup = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\setup.exe"
+          if (-not (Test-Path $setup)) { throw "VS setup.exe not found at $setup" }
+          $log = Join-Path $env:RUNNER_TEMP "vs-uwp-modify.log"
+          Write-Host "UWP.VC not detected; running setup modify (log: $log) ..."
+          & $setup modify --installPath $ip `
+            --add Microsoft.VisualStudio.ComponentGroup.UWP.VC `
+            --add Microsoft.VisualStudio.ComponentGroup.WindowsAppDevelopment.Prerequisites `
+            --add Microsoft.VisualStudio.Workload.Universal `
+            --quiet --norestart --wait --force *>&1 |
+            Tee-Object -FilePath $log | Out-Null
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            Write-Host "--- last 80 lines of $log ---"
+            if (Test-Path $log) { Get-Content $log -Tail 80 }
+            throw "VS UWP modify failed with exit code $code"
+          }
+          Write-Host "VS UWP modify OK (exit 0)"
+
+      - name: Restore Core cache from this run
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            third_party/bitcoin/build-uwp
+            ~/AppData/Local/vcpkg/archives
+            C:/vcpkg/installed/x64-uwp
+            C:/vcpkg-bt
+          key: ${{ env.CORE_CACHE_PREFIX }}-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}-${{ github.run_id }}
+          fail-on-cache-miss: true
+
+      - name: Resolve BuildRevision
+        id: rev
+        shell: bash
+        run: |
+          rev="${{ inputs.build_revision }}"
+          if [[ -z "$rev" || "$rev" == "0" ]]; then
+            rev="${{ github.run_number }}"
+          fi
+          echo "build_revision=$rev" >> "$GITHUB_OUTPUT"
+          echo "Using BuildRevision=$rev"
+
+      - name: Package MSIX (SkipCoreBuild)
+        shell: pwsh
+        run: |
+          .\scripts\build-uwp.ps1 -Configuration Release -BuildRevision ${{ steps.rev.outputs.build_revision }} -WithCore -SkipCoreBuild
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: xbox_bitcoind-msix-core
+          path: |
+            uwp/AppPackages/**/*.msix
+            uwp/AppPackages/**/*.appx
+            uwp/xbox_bitcoind-dev.cer
+          if-no-files-found: error
+          retention-days: 14

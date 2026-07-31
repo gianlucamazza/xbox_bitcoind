@@ -33,15 +33,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Build product MSIX (reuses build-uwp pipeline).
+  # Dedicated product pipeline (no PR gates / no path filters).
   build:
     permissions:
       contents: read
       actions: write
-    uses: ./.github/workflows/build-uwp.yml
+    uses: ./.github/workflows/build-product-msix.yml
     secrets: inherit
     with:
-      with_core: true
       force_core: true
       build_revision: "${{ github.run_number }}"
 
