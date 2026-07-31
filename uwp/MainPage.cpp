@@ -149,10 +149,11 @@ Border MakeMetricCard(hstring const& label, TextBlock& value_out) {
     border.BorderBrush(SolidColorBrush{kCardBorder});
     border.BorderThickness(ThicknessHelper::FromUniformLength(1));
     border.CornerRadius(CornerRadiusHelper::FromUniformRadius(12));
-    border.Padding(ThicknessHelper::FromLengths(18, 14, 18, 14));
+    border.Padding(ThicknessHelper::FromLengths(14, 10, 14, 10));
     border.HorizontalAlignment(HorizontalAlignment::Stretch);
     border.VerticalAlignment(VerticalAlignment::Stretch);
-    border.MinHeight(104);
+    // Compact for 1080p 10-foot: two metric rows + progress + log must fit
+    border.MinHeight(88);
 
     // Left accent strip (visual anchor)
     auto root = Grid{};
@@ -182,7 +183,7 @@ Border MakeMetricCard(hstring const& label, TextBlock& value_out) {
 
     value_out = TextBlock{};
     value_out.Text(L"—");
-    value_out.FontSize(28);
+    value_out.FontSize(24);
     value_out.FontWeight(winrt::Windows::UI::Text::FontWeights::SemiBold());
     value_out.Foreground(SolidColorBrush{kWhite});
     value_out.TextTrimming(TextTrimming::CharacterEllipsis);
@@ -198,10 +199,10 @@ Border MakeMetricCard(hstring const& label, TextBlock& value_out) {
 Button MakeActionButton(hstring const& label) {
     auto btn = Button{};
     btn.Content(box_value(label));
-    btn.MinHeight(58);
-    btn.MinWidth(168);
-    btn.Padding(ThicknessHelper::FromLengths(26, 12, 26, 12));
-    btn.FontSize(18);
+    btn.MinHeight(52);
+    btn.MinWidth(152);
+    btn.Padding(ThicknessHelper::FromLengths(22, 10, 22, 10));
+    btn.FontSize(17);
     btn.FontWeight(winrt::Windows::UI::Text::FontWeights::SemiBold());
     btn.Margin(ThicknessHelper::FromLengths(0, 0, 14, 0));
     btn.Background(SolidColorBrush{kCard});
@@ -261,7 +262,7 @@ FrameworkElement MainPageController::BuildHeader() {
     title_col.Spacing(2);
     m_title = TextBlock{};
     m_title.Text(L"₿  xbox_bitcoind");
-    m_title.FontSize(30);
+    m_title.FontSize(28);
     m_title.FontWeight(winrt::Windows::UI::Text::FontWeights::Bold());
     m_title.Foreground(SolidColorBrush{kOrange});
     m_subtitle = TextBlock{};
@@ -368,26 +369,25 @@ FrameworkElement MainPageController::BuildProgressSection() {
     m_bar_headers.Height(8);
     m_bar_verify.Height(12);
 
-    // Sparkline card
+    // Sparkline card — Canvas does not stretch; set Width from parent SizeChanged.
     auto spark_border = Border{};
     spark_border.Background(SolidColorBrush{kCard});
     spark_border.BorderBrush(SolidColorBrush{kCardBorder});
     spark_border.BorderThickness(ThicknessHelper::FromUniformLength(1));
     spark_border.CornerRadius(CornerRadiusHelper::FromUniformRadius(10));
-    spark_border.Padding(ThicknessHelper::FromLengths(12, 8, 12, 8));
-    spark_border.Height(72);
+    spark_border.Padding(ThicknessHelper::FromLengths(12, 6, 12, 6));
+    spark_border.Height(64);
+    spark_border.HorizontalAlignment(HorizontalAlignment::Stretch);
 
     auto spark_stack = StackPanel{};
     auto spark_lab = TextBlock{};
     spark_lab.Text(L"Verification trend (session)");
     spark_lab.FontSize(11);
     spark_lab.Foreground(SolidColorBrush{kMuted});
-    spark_lab.Margin(ThicknessHelper::FromLengths(0, 0, 0, 4));
+    spark_lab.Margin(ThicknessHelper::FromLengths(0, 0, 0, 2));
 
     m_spark_canvas = Canvas{};
-    m_spark_canvas.Height(44);
-    m_spark_canvas.HorizontalAlignment(HorizontalAlignment::Stretch);
-    // Width filled on SizeChanged
+    m_spark_canvas.Height(40);
     m_spark_fill = Polyline{};
     m_spark_fill.StrokeThickness(0);
     m_spark_fill.Fill(SolidColorBrush{kSparkFill});
@@ -397,13 +397,20 @@ FrameworkElement MainPageController::BuildProgressSection() {
     m_spark_line.StrokeLineJoin(PenLineJoin::Round);
     m_spark_canvas.Children().Append(m_spark_fill);
     m_spark_canvas.Children().Append(m_spark_line);
-    m_spark_canvas.SizeChanged([this](IInspectable const&, SizeChangedEventArgs const&) {
-        RedrawSparkline();
-    });
 
     spark_stack.Children().Append(spark_lab);
     spark_stack.Children().Append(m_spark_canvas);
     spark_border.Child(spark_stack);
+    spark_border.SizeChanged([this](IInspectable const& sender, SizeChangedEventArgs const&) {
+        if (!m_spark_canvas) {
+            return;
+        }
+        auto border = sender.as<Border>();
+        // Inner width ≈ ActualWidth − horizontal padding (12+12)
+        const double inner = (std::max)(8.0, border.ActualWidth() - 24.0);
+        m_spark_canvas.Width(inner);
+        RedrawSparkline();
+    });
 
     m_meta = TextBlock{};
     m_meta.Text(L"Datadir —");
@@ -423,7 +430,7 @@ FrameworkElement MainPageController::BuildProgressSection() {
 FrameworkElement MainPageController::BuildActions() {
     auto actions = StackPanel{};
     actions.Orientation(Orientation::Horizontal);
-    actions.Margin(ThicknessHelper::FromLengths(0, 10, 0, 0));
+    actions.Margin(ThicknessHelper::FromLengths(0, 6, 0, 8));
     m_btn_start = MakeActionButton(L"Start");
     m_btn_stop = MakeActionButton(L"Stop soft");
     m_btn_refresh = MakeActionButton(L"Refresh");
@@ -442,9 +449,11 @@ FrameworkElement MainPageController::BuildLogPanel() {
     border.BorderBrush(SolidColorBrush{kCardBorder});
     border.BorderThickness(ThicknessHelper::FromUniformLength(1));
     border.CornerRadius(CornerRadiusHelper::FromUniformRadius(12));
-    border.Padding(ThicknessHelper::FromUniformLength(14));
+    border.Padding(ThicknessHelper::FromUniformLength(12));
     border.HorizontalAlignment(HorizontalAlignment::Stretch);
     border.VerticalAlignment(VerticalAlignment::Stretch);
+    // Prevent log row from collapsing to ~1 line when Auto rows eat the viewport
+    border.MinHeight(168);
 
     auto inner = Grid{};
     inner.RowDefinitions().Append(RowDefinition{});
@@ -498,14 +507,15 @@ void MainPageController::BuildUI() {
 
     auto root_grid = Grid{};
     root_grid.Background(SolidColorBrush{kBg});
-    // Safe margins for 10-foot overscan
-    root_grid.Padding(ThicknessHelper::FromLengths(40, 32, 40, 32));
+    // Safe margins for 10-foot overscan (keep modest so log keeps height on 1080p)
+    root_grid.Padding(ThicknessHelper::FromLengths(36, 24, 36, 24));
 
     for (int i = 0; i < 5; ++i) {
         root_grid.RowDefinitions().Append(RowDefinition{});
     }
     auto log_row = RowDefinition{};
     log_row.Height(GridLengthHelper::FromValueAndType(1, GridUnitType::Star));
+    log_row.MinHeight(168);
     root_grid.RowDefinitions().Append(log_row);
 
     auto header = BuildHeader();
@@ -513,7 +523,7 @@ void MainPageController::BuildUI() {
     root_grid.Children().Append(header);
 
     auto chain_block = StackPanel{};
-    chain_block.Margin(ThicknessHelper::FromLengths(0, 0, 0, 12));
+    chain_block.Margin(ThicknessHelper::FromLengths(0, 0, 0, 8));
     chain_block.Children().Append(MakeSectionLabel(L"CHAIN"));
     chain_block.Children().Append(BuildMetricGrid(
         {&m_val_height, &m_val_headers, &m_val_progress, &m_val_peers},
@@ -522,7 +532,7 @@ void MainPageController::BuildUI() {
     root_grid.Children().Append(chain_block);
 
     auto health_block = StackPanel{};
-    health_block.Margin(ThicknessHelper::FromLengths(0, 0, 0, 14));
+    health_block.Margin(ThicknessHelper::FromLengths(0, 0, 0, 8));
     health_block.Children().Append(MakeSectionLabel(L"NODE"));
     health_block.Children().Append(BuildMetricGrid(
         {&m_val_behind, &m_val_disk, &m_val_mempool, &m_val_uptime},
@@ -542,7 +552,25 @@ void MainPageController::BuildUI() {
     Grid::SetRow(log, 5);
     root_grid.Children().Append(log);
 
-    m_root.Content(root_grid);
+    // ScrollViewer as safety net if TV safe-area is tighter than 1080p content.
+    auto scroll = ScrollViewer{};
+    scroll.VerticalScrollBarVisibility(ScrollBarVisibility::Auto);
+    scroll.HorizontalScrollBarVisibility(ScrollBarVisibility::Disabled);
+    scroll.VerticalScrollMode(ScrollMode::Enabled);
+    scroll.ZoomMode(ZoomMode::Disabled);
+    scroll.IsTabStop(false);
+    scroll.Content(root_grid);
+    // Stretch grid to at least the viewport so the log * row still expands.
+    root_grid.MinHeight(0);
+    scroll.SizeChanged([root_grid](IInspectable const& sender, SizeChangedEventArgs const&) {
+        auto sv = sender.as<ScrollViewer>();
+        const double h = sv.ViewportHeight();
+        if (h > 0) {
+            root_grid.MinHeight(h);
+        }
+    });
+
+    m_root.Content(scroll);
     SetPill(L"INIT", kGray);
 }
 
