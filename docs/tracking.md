@@ -31,12 +31,14 @@ Update this file when gates move; use Issues for discussion and assignment.
 Verify live:
 
 ```bash
+./scripts/health-check.sh          # ops hygiene (prefer first)
 ./scripts/node-status.sh
 ./scripts/v1-close-check.sh
 ./scripts/ibd-report.sh
 ```
 
-**Ops stance:** leave app open; hourly timer enabled; soft-stop only; no uninstall (wipes LocalState).
+**Ops stance:** leave app **focused** (Home suspends IBD); hourly timer enabled; soft-stop only; no uninstall (wipes LocalState).  
+Full hygiene guide: [ops.md § Ops hygiene](ops.md#ops-hygiene--best-practices).
 
 ---
 

@@ -21,10 +21,11 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 | `env.sh` | Resolve Device Portal credentials + package identity |
 | `probe-console.sh` | OS/packages smoke probe |
 | `deploy.sh` | Install MSIX, start/stop, logs, **status**, **package-gc**, **soft-stop-test** |
+| `health-check.sh` | **Ops hygiene** one-shot (portal, process, tip, timer, stuck) exit 0/1/2 |
 | `node-status.sh` | IBD tip, RAM, datadir snapshot (`--json`, `--loop N`) |
 | `soft-stop-test.sh` | Automated soft-stop persistence check |
 | `ibd-sample.sh` | Append one JSONL sample (+ milestones / stuck detection) |
-| `ibd-report.sh` | Summarize JSONL history, rate, rough ETA, errors |
+| `ibd-report.sh` | Summarize JSONL history, rate, rough ETA, errors (wipe-aware) |
 | `install-ibd-timer.sh` | Enable hourly user systemd timer |
 | `v1-close-check.sh` | Gate: IBD done + 24h stability (exit 0 = close v1 ops) |
 | `apply-console-conf.sh` | Soft-stop → push `config/bitcoin.conf.console` → start (IBD knobs) |
@@ -37,6 +38,7 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 ssh -N -L 127.0.0.1:11443:192.168.1.44:11443 odroid-ts   # other terminal
 export XBOX_IP_OVERRIDE=127.0.0.1
 
+./scripts/health-check.sh               # green/amber/red
 ./scripts/deploy.sh status
 ./scripts/node-status.sh --loop 3600
 ./scripts/ibd-sample.sh                 # one line to state log
@@ -44,6 +46,8 @@ export XBOX_IP_OVERRIDE=127.0.0.1
 ./scripts/deploy.sh stop-app            # soft stop only
 ./scripts/apply-console-conf.sh         # re-apply conf (dbcache/peers/blocksonly)
 ```
+
+Best practices write-up: [docs/ops.md § Ops hygiene](../docs/ops.md#ops-hygiene--best-practices).
 
 ## Fetch pin
 

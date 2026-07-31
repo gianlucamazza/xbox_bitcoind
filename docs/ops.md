@@ -1,7 +1,75 @@
 # Operations (IBD + lifecycle)
 
 How to run and care for the Series S node day-to-day. Product overview:
-root [README](../README.md). Architecture: [plan-core-uwp.md](plan-core-uwp.md).
+root [README](../README.md). Architecture: [plan-core-uwp.md](plan-core-uwp.md).  
+Live checklist: [tracking.md](tracking.md).
+
+## Ops hygiene & best practices
+
+**Hygiene** = habits and checks that keep the node **running, measurable, and
+not self-sabotaged** on Xbox Dev Mode (not a Linux systemd daemon).
+
+### One-shot health (host)
+
+```bash
+./scripts/health-check.sh           # human; exit 0/1/2
+./scripts/health-check.sh --json    # monitoring
+./scripts/health-check.sh --strict  # warn → exit 2
+```
+
+| Exit | Meaning |
+|------|---------|
+| **0** | Healthy — portal up, package present, process running |
+| **1** | Degraded — running but timer off, stale samples, stuck tip, … |
+| **2** | Critical — portal down, package missing, process stopped |
+
+### Daily / weekly
+
+| Cadence | Action |
+|---------|--------|
+| Daily | `./scripts/health-check.sh` (or `--json` for automation) |
+| Daily | Glance `./scripts/ibd-report.sh` during IBD |
+| After Home | Re-open title; if stopped → `deploy.sh start-app` (or wait for resume auto-restart on next package) |
+| Weekly | `v1-close-check.sh` when near tip; timer still enabled |
+| Never mid-IBD “for fun” | Redeploy, uninstall, hard DELETE |
+
+### Lifecycle (Xbox-specific)
+
+| Do | Don't |
+|----|--------|
+| Keep **xbox_bitcoind focused** during long IBD | Expect sync while in **Home** (UWP **suspends**; Game ≠ background daemon) |
+| Soft-stop: `deploy.sh stop-app` | Taskmanager DELETE / hard kill as normal path |
+| Re-open app after leaving Home | Leave suspended for hours without noticing |
+| **Game** class after every reinstall | Confuse Game with “always running” |
+
+### Deploy / package
+
+| Do | Don't |
+|----|--------|
+| Prefer GitHub **Release** assets | Uninstall to install a **lower** MSIX revision (wipes **LocalState**/chain) |
+| Soft-stop before deploy; wait long enough mid-IBD (`XBB_SOFT_STOP_MAX_WAIT`) | Redeploy continuously during IBD |
+| Keep `Dependencies/x64/*.appx` (VCLibs) next to the `.msix` for `deploy.sh` | Deploy bare MSIX then wonder why launch fails (HTTP 400 / file not found) |
+| Set **App type → Game** after install | Skip Game under memory pressure |
+
+### Observability
+
+| Tool | Role |
+|------|------|
+| `health-check.sh` | Single green/amber/red signal |
+| `node-status.sh` | Live tip / RAM / errors |
+| Hourly timer + `ibd-sample` | History, stuck, milestones |
+| `ibd-report.sh` | Rate/ETA (wipe-aware segments) |
+| `v1-close-check.sh` | “Can we close v1 ops?” |
+
+### Conf & data
+
+| Do | Don't |
+|----|--------|
+| Change conf via `apply-console-conf.sh` | Expect MSIX reinstall to refresh conf (it won't if LocalState conf exists) |
+| Treat pruned chain as **not** a full backup | Assume uninstall keeps datadir |
+| Watch Dev storage (~90 GB shared with xllama) | Fill disk silently |
+
+---
 
 ## Backup & restore (standard node practice)
 
@@ -47,20 +115,21 @@ PFN=$(./scripts/deploy.sh pfn)
 
 ```bash
 source scripts/env.sh   # or rely on scripts that source env.sh
+
+./scripts/health-check.sh               # ops hygiene one-shot (prefer this first)
 ./scripts/node-status.sh
-./scripts/ibd-report.sh           # rate + rough ETA from hourly samples
+./scripts/ibd-report.sh                 # rate + rough ETA from hourly samples
 ./scripts/v1-close-check.sh
 
 ./scripts/deploy.sh status              # alias → node-status.sh
-./scripts/node-status.sh                # human
-./scripts/node-status.sh --json         # machine
-./scripts/node-status.sh --loop 3600    # hourly sample (Ctrl-C)
+./scripts/node-status.sh --json
+./scripts/node-status.sh --loop 3600    # sample every hour (Ctrl-C)
 
 ./scripts/deploy.sh start-app
 ./scripts/deploy.sh stop-app            # soft stop (default wait 180s)
-# XBB_SOFT_STOP_MAX_WAIT=300 ./scripts/deploy.sh stop-app   # deep IBD
-./scripts/soft-stop-test.sh             # full persistence self-check
-./scripts/deploy.sh soft-stop-test      # same
+# XBB_SOFT_STOP_MAX_WAIT=300 ./scripts/deploy.sh stop-app
+./scripts/soft-stop-test.sh
+./scripts/deploy.sh soft-stop-test
 ```
 
 Fetch node log:

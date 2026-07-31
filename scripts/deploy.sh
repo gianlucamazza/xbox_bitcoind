@@ -19,6 +19,7 @@
 #   deploy.sh package-list                               List installed xbox_bitcoind package full names
 #   deploy.sh package-gc [--keep N] [--yes]              Uninstall older revisions (keep newest N)
 #   deploy.sh status                                     Node/IBD snapshot (see node-status.sh)
+#   deploy.sh health                                     Ops hygiene one-shot (see health-check.sh)
 #   deploy.sh soft-stop-test                             Persistence self-check
 #   deploy.sh diagnose-startup [pfn]
 #
@@ -375,7 +376,7 @@ Usage:
   $0 mkdir-localstate <pfn> <relpath>
   $0 start-app [pfn] | stop-app [pfn] | diagnose-startup [pfn]
   $0 package-list | package-gc [--keep N] [--yes]
-  $0 status | soft-stop-test
+  $0 status | health | soft-stop-test
 
 Env: XBB_SOFT_STOP_MAX_WAIT (default 180) — seconds after suspend before DELETE.
 EOF
@@ -463,6 +464,10 @@ fi
 
 if [[ "${cmd}" == "status" ]]; then
 	exec "${SCRIPT_DIR}/node-status.sh" "${@:2}"
+fi
+
+if [[ "${cmd}" == "health" ]]; then
+	exec "${SCRIPT_DIR}/health-check.sh" "${@:2}"
 fi
 
 if [[ "${cmd}" == "soft-stop-test" ]]; then

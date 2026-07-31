@@ -16,10 +16,12 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 ### Added
 
 - Auto-restart bitcoind on **resume** after Xbox Home suspend (if it was running)
+- `scripts/health-check.sh` (+ `deploy.sh health`) — ops hygiene one-shot (exit 0/1/2)
 
 ### Changed
 
 - Document Home suspend: Game class does not keep IBD running in background
+- Ops hygiene / best practices section in `docs/ops.md`
 - Docs screenshot refreshed for package **0.1.0.6** / release **v0.1.1**
 
 ## [0.1.1] — 2026-07-31
