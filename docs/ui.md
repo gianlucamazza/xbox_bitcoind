@@ -2,6 +2,10 @@
 
 Controller-first **10-foot** status UI for Series S Dev Mode (programmatic XAML).
 
+![Status dashboard on console](assets/screenshot-console.png)
+
+*Live capture, package **0.1.0.63** (responsive primary/secondary metrics, dual bars, sparkline, log).*
+
 ## Best practices (10-foot / TV)
 
 | Practice | How we apply it |

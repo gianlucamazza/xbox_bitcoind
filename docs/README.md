@@ -60,7 +60,7 @@ Snapshot (see also [ops.md](ops.md)):
 | [`../scripts/`](../scripts/) | Fetch, build, deploy, release |
 | [`../config/`](../config/) | Pin, conf defaults, env example |
 | [`../patches/uwp/`](../patches/uwp/) | Core UWP patches |
-| [`assets/screenshot-console.png`](assets/screenshot-console.png) | README screenshot |
+| [`assets/screenshot-console.png`](assets/screenshot-console.png) | Console dashboard (README + [ui.md](ui.md); keep current package) |
 
 ---
 
