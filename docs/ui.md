@@ -68,6 +68,7 @@ Secondary: **HEADERS · DISK · MEMPOOL · UPTIME** (or meta line when hidden)
 | ETA | Rough remaining time from session progress samples (meta line / progress label) |
 | Semantic colors | Peers red if 0; behind orange if large; progress green when synced |
 | Status pill | Coarse state + `updated HH:MM:SS`; **STOPPING Ns** while soft-stop joins |
+| Header subtitle | **Bitcoin Core v31.1 · app 0.1.0.xx** — Core pin (build-time) + MSIX package (runtime) |
 
 ### Status pill
 

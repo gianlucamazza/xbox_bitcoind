@@ -8,6 +8,7 @@
 #include "node_host.h"
 #include "probes.h"
 #include "rpc_client.h"
+#include "xbb_version.generated.h"
 
 #include <winrt/Windows.Graphics.Display.h>
 #include <winrt/Windows.System.Threading.h>
@@ -131,15 +132,29 @@ std::wstring FormatUptime(int64_t sec) {
     return os.str();
 }
 
-std::wstring PackageVersionLabel() {
+// MSIX package identity (app), e.g. "0.1.0.65" — not Bitcoin Core.
+std::wstring PackageVersionDigits() {
     try {
         auto v = winrt::Windows::ApplicationModel::Package::Current().Id().Version();
         std::wostringstream os;
-        os << L"v" << v.Major << L"." << v.Minor << L"." << v.Build << L"." << v.Revision;
+        os << v.Major << L"." << v.Minor << L"." << v.Build << L"." << v.Revision;
         return os.str();
     } catch (...) {
         return L"";
     }
+}
+
+// "Bitcoin Core v31.1 · app 0.1.0.65" — Core from pin header; app from package.
+std::wstring HeaderVersionSubtitle() {
+    std::wostringstream os;
+    os << L"Bitcoin Core " << XBB_CORE_TAG_W;
+    const auto pkg = PackageVersionDigits();
+    if (!pkg.empty()) {
+        os << L" · app " << pkg;
+    } else {
+        os << L" · Dev Mode";
+    }
+    return os.str();
 }
 
 std::wstring NowClockLocal() {
@@ -310,8 +325,7 @@ FrameworkElement MainPageController::BuildHeader() {
     m_title.FontWeight(winrt::Windows::UI::Text::FontWeights::Bold());
     m_title.Foreground(SolidColorBrush{kOrange});
     m_subtitle = TextBlock{};
-    auto ver = PackageVersionLabel();
-    m_subtitle.Text(ver.empty() ? L"Bitcoin Core · Dev Mode" : (L"Bitcoin Core · " + ver));
+    m_subtitle.Text(HeaderVersionSubtitle());
     m_subtitle.Foreground(SolidColorBrush{kMuted});
     m_title_col.Children().Append(m_title);
     m_title_col.Children().Append(m_subtitle);

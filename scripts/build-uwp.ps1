@@ -57,6 +57,14 @@ $CerPath = Join-Path $UwpDir "xbox_bitcoind-dev.cer"
 $CertPwd = "xbox_bitcoind-test"
 $CertSubject = "CN=xbox_bitcoind-dev"
 
+# Pin → UI header (Bitcoin Core vX.Y vs MSIX app a.b.c.d).
+$genVer = Join-Path $PSScriptRoot "generate-version-header.py"
+if (Test-Path $genVer) {
+    Write-Host "=== generate-version-header.py (from config/bitcoin-core.pin) ==="
+    python $genVer
+    if ($LASTEXITCODE -ne 0) { throw "generate-version-header.py failed" }
+}
+
 if (-not $IsWindows -and $PSVersionTable.PSEdition -eq "Core" -and -not $env:OS.StartsWith("Windows")) {
     # PowerShell 5 on Windows has no $IsWindows
 }

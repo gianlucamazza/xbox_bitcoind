@@ -209,6 +209,7 @@
     <ClInclude Include="App.h" />
     <ClInclude Include="MainPage.h" />
     <ClInclude Include="ui_layout.h" />
+    <ClInclude Include="xbb_version.generated.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="probes.h" />

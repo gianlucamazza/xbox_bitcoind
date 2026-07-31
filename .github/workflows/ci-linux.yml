@@ -10,12 +10,14 @@ on:
     paths:
       - "scripts/**"
       - "uwp/ui_layout.h"
+      - "uwp/xbb_version.generated.h"
       - "config/bitcoin-core.pin"
       - ".github/workflows/ci-linux.yml"
   pull_request:
     paths:
       - "scripts/**"
       - "uwp/ui_layout.h"
+      - "uwp/xbb_version.generated.h"
       - "config/bitcoin-core.pin"
       - ".github/workflows/ci-linux.yml"
   workflow_dispatch:
@@ -78,15 +80,21 @@ jobs:
       - name: Pure UI layout unit tests
         run: ./scripts/test-ui-layout.sh
 
-      - name: Validate bitcoin-core.pin
+      - name: Validate bitcoin-core.pin + generated version header
         run: |
           set -euo pipefail
           test -f config/bitcoin-core.pin
           grep -E '^TAG=v[0-9]' config/bitcoin-core.pin
           grep -E '^COMMIT=[0-9a-f]{40}$' config/bitcoin-core.pin
           grep -E '^REPO_URL=https://' config/bitcoin-core.pin
-          LATEST=$(curl -fsSL https://api.github.com/repos/bitcoin/bitcoin/releases/latest | jq -r .tag_name)
           PIN=$(grep -E '^TAG=' config/bitcoin-core.pin | cut -d= -f2)
+          COMMIT=$(grep -E '^COMMIT=' config/bitcoin-core.pin | cut -d= -f2)
+          python3 scripts/generate-version-header.py
+          grep -F "XBB_CORE_TAG \"$PIN\"" uwp/xbb_version.generated.h
+          grep -F "XBB_CORE_COMMIT \"$COMMIT\"" uwp/xbb_version.generated.h
+          # Fail if generated header drifted from pin without regenerate/commit.
+          git diff --exit-code -- uwp/xbb_version.generated.h
+          LATEST=$(curl -fsSL https://api.github.com/repos/bitcoin/bitcoin/releases/latest | jq -r .tag_name)
           echo "pin=$PIN latest_release=$LATEST"
           if [[ "$PIN" != "$LATEST" ]]; then
             echo "::warning::Bitcoin Core pin $PIN is behind latest release $LATEST — bump config/bitcoin-core.pin when ready"

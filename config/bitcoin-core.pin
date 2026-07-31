@@ -6,7 +6,8 @@
 #   2. git ls-remote --tags https://github.com/bitcoin/bitcoin.git 'vX.Y*'
 #   3. Set TAG + COMMIT (peeled commit of the annotated tag: refs/tags/vX.Y^{})
 #   4. ./scripts/fetch-bitcoin-core.sh
-#   5. Re-run MSVC baseline on Windows; record results in docs/research/spikes/
+#   5. ./scripts/generate-version-header.py   # UI subtitle Core version
+#   6. Re-run MSVC baseline on Windows; record results in docs/research/spikes/
 
 TAG=v31.1
 COMMIT=9be056a8a72b624dae9623b2f7bded92c2a21c91
