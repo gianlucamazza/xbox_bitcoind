@@ -13,11 +13,16 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ## [Unreleased]
 
+## [0.1.3] — 2026-08-01
+
+Docs and field-verify closure after v0.1.2. Bitcoin Core pin remains **v31.1**.  
+Product code same lineage as v0.1.2 (tip-age UI, IsRunning soft-stop, resume).
+
 ### Changed
 
-- Mid-IBD soft-stop field verify: clean **8s** no DELETE, tip conserved (367530→367533) on package 0.1.0.75
-- Console deployed **v0.1.2** package **0.1.0.10017** (upgrade soft-stop clean; tip conserved)
-- README + ops: measured **sync benchmarks** (throughput, RAM, soft-stop)
+- Mid-IBD soft-stop field verify: clean **8s** no DELETE, tip conserved (367530→367533); [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) closed
+- Console on **v0.1.2** package **0.1.0.10017** documented
+- README + ops: measured **sync benchmarks** (throughput ~43k blk/h mid-IBD, WS ~0.7–1.1 GiB, soft-stop timing)
 
 ## [0.1.2] — 2026-08-01
 
