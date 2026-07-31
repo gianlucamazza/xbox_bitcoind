@@ -127,6 +127,7 @@ LICENSE                 MIT (this repo’s glue)
 | **2b** | Soft-stop persistence (early + mid IBD) | **verified** |
 | **2c** | Docs map + path-filtered CI | **done** |
 | **2d** | Ops tooling + budgets (`node-status`, soft-stop-test) | **done** |
+| **2e** | Build split (Core vs MSIX, SkipIfFresh, CI stages) | **done** |
 | **3** | IBD to tip + ≥24h stable · optional wallet | **open** |
 
 ## Documentation

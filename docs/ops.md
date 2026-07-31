@@ -78,10 +78,19 @@ Re-run:
 
 | Cadence | Action |
 |---------|--------|
-| Hourly (optional) | `node-status.sh --loop 3600` on the Linux host |
+| Hourly (optional) | `node-status.sh --loop 3600` **or** `ibd-sample.sh` (JSONL history) |
 | Daily | Confirm process running + progress increasing |
 | Milestone | Soft-stop test at ~500k and near tip |
 | On error | Capture `node-status.sh --json`, `bitcoind.log`, tail of `debug.log` |
+
+### JSONL history
+
+```bash
+./scripts/ibd-sample.sh
+# appends to ~/.local/state/xbox_bitcoind/ibd.jsonl
+# optional timer (user systemd):
+#   ExecStart=%h/Workspace/tooling/xbox_bitcoind/scripts/ibd-sample.sh -q
+```
 
 **v1 complete** when: not in IBD, peers > 0, tip near network, soft-stop OK near tip,
 no OOM/corrupt for ≥24h. Then tick the checklist in [plan-core-uwp.md](plan-core-uwp.md).

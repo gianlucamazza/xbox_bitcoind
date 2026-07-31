@@ -43,7 +43,7 @@
 | Path | Role |
 |------|------|
 | [`../uwp/`](../uwp/) | C++/WinRT app |
-| [`../scripts/`](../scripts/) | Fetch, patch, build, deploy |
+| [`../scripts/`](../scripts/) | Fetch, patch, build, deploy — [scripts/README.md](../scripts/README.md) |
 | [`../config/`](../config/) | Pin, `bitcoin.conf.console`, env example |
 
 ### Research archive (phase 0)

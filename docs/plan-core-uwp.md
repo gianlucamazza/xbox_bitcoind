@@ -53,8 +53,9 @@ toolchain — do **not** paper over it with language hacks in Core headers.
 | 6 | **Console** | deploy, Game class, mainnet pruned IBD | **running** |
 | 7 | **Persistence** | soft stop + LevelDB durability (early + mid IBD) | **verified** |
 | 8 | **Docs** | README + docs map consolidated | **done** |
-| 9 | **Ops tooling** | `node-status` / `soft-stop-test` + budgets | **done** |
-| 10 | **IBD to tip** | long-run mainnet sync | **in progress** |
+| 9 | **Ops tooling** | `node-status` / `soft-stop-test` / `ibd-sample` + budgets | **done** |
+| 10 | **Build pipeline** | Core vs MSIX split, SkipIfFresh, CI stages | **done** |
+| 11 | **IBD to tip** | long-run mainnet sync | **in progress** |
 
 ## Patch set (`patches/uwp/`)
 
@@ -102,6 +103,7 @@ CI matrix and path filters: [ci.md](ci.md).
 - [x] Chain state conserved across soft stop ([persistence.md](persistence.md))
 - [x] Path-filtered CI (docs free; no scaffold+core on main)
 - [x] Ops tooling + mid-IBD soft-stop retest + RAM/disk samples ([ops.md](ops.md))
+- [x] Build stages split (CoreOnly / SkipCoreBuild / CI core→package) ([ci.md](ci.md))
 - [ ] mainnet IBD complete / long-run stability (≥24h at tip)
 
 ### Implementation status
