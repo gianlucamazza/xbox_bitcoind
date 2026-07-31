@@ -1,9 +1,21 @@
 name: ci-linux
 
+# Path-scoped: docs/UI-only commits do not start this workflow.
+# Inside the workflow, full Core smoke runs only when pin/fetch/smoke scripts change
+# (not on every deploy.sh / env.sh edit — those only need shellcheck).
+
 on:
   push:
     branches: [main]
+    paths:
+      - "scripts/**"
+      - "config/bitcoin-core.pin"
+      - ".github/workflows/ci-linux.yml"
   pull_request:
+    paths:
+      - "scripts/**"
+      - "config/bitcoin-core.pin"
+      - ".github/workflows/ci-linux.yml"
   workflow_dispatch:
     inputs:
       run_tests:
@@ -16,6 +28,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      smoke: ${{ steps.set.outputs.smoke }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          filters: |
+            smoke:
+              - 'config/bitcoin-core.pin'
+              - 'scripts/fetch-bitcoin-core.sh'
+              - 'scripts/build-linux-smoke.sh'
+              - '.github/workflows/ci-linux.yml'
+      - name: Export smoke flag
+        id: set
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "smoke=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "smoke=${{ steps.filter.outputs.smoke }}" >> "$GITHUB_OUTPUT"
+          fi
+
   lint:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -29,7 +67,6 @@ jobs:
           shellcheck --version
 
       - name: shellcheck
-        # -x follows source= directives; severity warning+ fails on real issues only
         run: shellcheck -x -S warning scripts/*.sh
 
       - name: Validate bitcoin-core.pin
@@ -39,7 +76,6 @@ jobs:
           grep -E '^TAG=v[0-9]' config/bitcoin-core.pin
           grep -E '^COMMIT=[0-9a-f]{40}$' config/bitcoin-core.pin
           grep -E '^REPO_URL=https://' config/bitcoin-core.pin
-          # Pin must still be latest stable unless intentionally lagged
           LATEST=$(curl -fsSL https://api.github.com/repos/bitcoin/bitcoin/releases/latest | jq -r .tag_name)
           PIN=$(grep -E '^TAG=' config/bitcoin-core.pin | cut -d= -f2)
           echo "pin=$PIN latest_release=$LATEST"
@@ -49,7 +85,8 @@ jobs:
 
   smoke:
     runs-on: ubuntu-24.04
-    needs: lint
+    needs: [changes, lint]
+    if: needs.changes.outputs.smoke == 'true'
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
@@ -64,10 +101,17 @@ jobs:
       - name: Fetch pinned Bitcoin Core
         run: ./scripts/fetch-bitcoin-core.sh
 
+      - name: Cache Linux smoke build
+        uses: actions/cache@v6
+        with:
+          path: third_party/bitcoin/build-linux-smoke
+          key: linux-smoke-${{ hashFiles('config/bitcoin-core.pin') }}-${{ runner.os }}
+          restore-keys: |
+            linux-smoke-${{ hashFiles('config/bitcoin-core.pin') }}-
+
       - name: Linux smoke build
         id: build
         env:
-          # PR/push default: no unit tests (fast). Dispatch may enable via input.
           CI_SKIP_TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.run_tests && '0' || '1' }}
           BUILD_TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.run_tests && 'ON' || 'OFF' }}
           CMAKE_BUILD_TYPE: Release
@@ -94,4 +138,4 @@ jobs:
             third_party/bitcoin/build-linux-smoke/bin/bitcoind
             third_party/bitcoin/build-linux-smoke/bin/bitcoin-cli
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 7

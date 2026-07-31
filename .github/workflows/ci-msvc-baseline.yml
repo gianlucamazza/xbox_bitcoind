@@ -1,9 +1,22 @@
 name: ci-msvc-baseline
 
+# Desktop MSVC pin check only — not an Xbox/UWP build.
+# Skip docs, UWP app sources, patches (those are covered by build-uwp).
+
 on:
   push:
     branches: [main]
+    paths:
+      - "config/bitcoin-core.pin"
+      - "scripts/fetch-bitcoin-core.ps1"
+      - "scripts/build-msvc-baseline.ps1"
+      - ".github/workflows/ci-msvc-baseline.yml"
   pull_request:
+    paths:
+      - "config/bitcoin-core.pin"
+      - "scripts/fetch-bitcoin-core.ps1"
+      - "scripts/build-msvc-baseline.ps1"
+      - ".github/workflows/ci-msvc-baseline.yml"
   workflow_dispatch:
     inputs:
       run_tests:
@@ -52,7 +65,7 @@ jobs:
         id: policy
         shell: pwsh
         run: |
-          # PR: skip ctest by default (minutes). main + dispatch: run tests unless overridden.
+          # PR: skip ctest by default. main push + dispatch: run tests unless overridden.
           $runTests = $false
           if ("${{ github.event_name }}" -eq "workflow_dispatch") {
             $runTests = [System.Convert]::ToBoolean("${{ inputs.run_tests }}")
@@ -72,7 +85,6 @@ jobs:
         shell: pwsh
         env:
           CI: "true"
-          # GHA windows-2025-vs2026 sets VCPKG_INSTALLATION_ROOT=C:\vcpkg
         run: |
           $args = @()
           if ("${{ steps.policy.outputs.run_tests }}" -ne "True") {
@@ -108,4 +120,4 @@ jobs:
             third_party/bitcoin/build-msvc-baseline/**/bitcoind.exe
             third_party/bitcoin/build-msvc-baseline/**/bitcoin-cli.exe
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7

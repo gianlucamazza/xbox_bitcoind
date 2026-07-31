@@ -1,11 +1,14 @@
 name: build-uwp
 
+# UWP package only. Does not rebuild the desktop MSVC baseline (see ci-msvc-baseline).
+# Path filters exclude docs and bitcoin.conf.console (runtime defaults, not build inputs).
+
 on:
   push:
     branches: [main]
     paths:
       - "uwp/**"
-      - "config/**"
+      - "config/bitcoin-core.pin"
       - "patches/**"
       - "scripts/build-uwp.ps1"
       - "scripts/build-core-uwp.ps1"
@@ -15,7 +18,7 @@ on:
   pull_request:
     paths:
       - "uwp/**"
-      - "config/**"
+      - "config/bitcoin-core.pin"
       - "patches/**"
       - "scripts/build-uwp.ps1"
       - "scripts/build-core-uwp.ps1"
@@ -34,10 +37,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Fast path: Hello-UWP scaffold (no Core).
-  # windows-2022: VS2022 v143 + UWP C++ workload preinstalled (same as xllama).
+  # Fast path: scaffold without Core.
+  # PR: always (validates UI/probes package).
+  # Dispatch with with_core=false: scaffold only.
+  # main push: skipped — uwp-core already produces the product MSIX (avoids double Windows bill).
   uwp-scaffold:
-    if: github.event_name != 'workflow_dispatch' || inputs.with_core == false
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.with_core == false)
     runs-on: windows-2022
     timeout-minutes: 60
     steps:
@@ -55,15 +62,15 @@ jobs:
             uwp/AppPackages/**/*.appx
             uwp/xbox_bitcoind-dev.cer
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
 
-  # Full path: Core UWP libs + linked package.
-  # Bitcoin Core v31.1 requires VS 2026 18.3+ (consteval / C++20); building
-  # Core on VS2022 causes C7595. Same runner as ci-msvc-baseline.
+  # Full path: Core UWP libs + linked package (product artifact).
+  # Bitcoin Core v31.1 requires VS 2026 18.3+. Same runner family as ci-msvc-baseline
+  # but different target (WindowsStore / x64-uwp) — not interchangeable with desktop MSVC.
   uwp-core:
     if: |
-      github.event_name == 'workflow_dispatch' && inputs.with_core == true ||
-      github.event_name == 'push' && github.ref == 'refs/heads/main'
+      (github.event_name == 'workflow_dispatch' && inputs.with_core == true) ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: windows-2025-vs2026
     timeout-minutes: 360
     steps:
@@ -79,12 +86,10 @@ jobs:
           $ip = & $vswhere -latest -products * -property installationPath
           if (-not $ip) { throw "Visual Studio installation not found" }
           Write-Host "VS install: $ip"
-          # Log toolsets / UWP-related packages for diagnosis
           & $vswhere -latest -products * -requires Microsoft.VisualStudio.ComponentGroup.UWP.VC -property installationPath 2>$null
           $setup = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\setup.exe"
           if (Test-Path $setup) {
             Write-Host "Adding UWP VC + Windows app development components if missing ..."
-            # Idempotent modify; may no-op when already present.
             & $setup modify --installPath $ip `
               --add Microsoft.VisualStudio.ComponentGroup.UWP.VC `
               --add Microsoft.VisualStudio.ComponentGroup.WindowsAppDevelopment.Prerequisites `
@@ -102,7 +107,6 @@ jobs:
             ~/AppData/Local/vcpkg/archives
             C:/vcpkg/installed/x64-uwp
             C:/vcpkg-bt
-          # v3: VS2026 runner (do not restore VS2022 object caches)
           key: core-uwp-v3-vs2026-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}
           restore-keys: |
             core-uwp-v3-vs2026-
@@ -130,4 +134,4 @@ jobs:
             uwp/AppPackages/**/*.appx
             uwp/xbox_bitcoind-dev.cer
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
