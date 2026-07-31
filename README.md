@@ -155,8 +155,9 @@ UWP), vcpkg, signing cert. Scaffold-only packages can build on VS2022.
 
 ## License
 
-- Original docs and glue in this repo: TBD.
-- Bitcoin Core remains under its own license (MIT); preserve upstream notices.
+- Original code, scripts, and docs in this repo: [MIT](LICENSE).
+- Bitcoin Core remains under its own license (MIT); preserve upstream notices
+  when redistributing a built tree or patches derived from it.
 
 ## Disclaimer
 

@@ -1,0 +1,20 @@
+# Normalize text; keep shell/patches LF for Linux CI + patch(1).
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.dll binary
+*.lib binary
+*.exe binary
+*.msix binary
+*.appx binary
+*.cer binary
+*.pfx binary
+
+# Windows PowerShell scripts stay LF (run fine under pwsh on Windows).
+*.ps1 text eol=lf
+*.sh text eol=lf
+*.patch text eol=lf
