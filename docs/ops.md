@@ -29,15 +29,21 @@ PFN=$(./scripts/deploy.sh pfn)
    as the OS allows). Closing the title from the Xbox UI may kill without flush.
 2. **Stop only via soft stop**: `./scripts/deploy.sh stop-app`  
    (suspend → `OnSuspending` → RPC `stop` → LevelDB flush; DELETE only after  
-   `XBB_SOFT_STOP_MAX_WAIT` seconds, default **180**).
+   `XBB_SOFT_STOP_MAX_WAIT` seconds, default **180**). Mid-IBD may still need
+   DELETE after long waits — tip is usually conserved; see [persistence.md](persistence.md).
 3. **Never** use raw taskmanager DELETE / hard kill as the normal path.
 4. After every MSIX reinstall: Dev Home → **App type → Game**.
 5. Watch free space on the shared Dev partition (xllama + bitcoind).
+6. **Versions:** package `0.1.0.N` is the **app**; Bitcoin Core pin is **v31.1**.  
+   Live package: `./scripts/node-status.sh` · gates: [tracking.md](tracking.md).
 
 ## Quick commands
 
 ```bash
 source scripts/env.sh   # or rely on scripts that source env.sh
+./scripts/node-status.sh
+./scripts/ibd-report.sh           # rate + rough ETA from hourly samples
+./scripts/v1-close-check.sh
 
 ./scripts/deploy.sh status              # alias → node-status.sh
 ./scripts/node-status.sh                # human

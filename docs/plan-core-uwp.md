@@ -121,10 +121,11 @@ CI matrix and path filters: [ci.md](ci.md).
 | UWP patches 0001–0010 | **Done** (API + durability; no language hacks) |
 | `build-core-uwp` / `-WithCore` | **Done** (`bitcoin_embed` + `event.dll`) |
 | CI + release automation | **Done** |
-| Package on Series S | **`0.1.0.63`** WithCore, mainnet IBD ~13% |
+| Package on Series S | **`0.1.0.65`** WithCore, mainnet IBD ~14% / ~453k |
 | Full node sync | **Ops pending** — [tracking.md](tracking.md) · issues #1–#3 |
-| Soft-stop persistence | **Verified** early + mid IBD |
-| Ops tooling | status / soft-stop-test / ibd-sample / **v1-close-check** |
+| Soft-stop persistence | Tip conserved early + mid IBD; DELETE path still seen mid-IBD ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
+| Ops tooling | status / soft-stop-test / ibd-sample / ibd-report / **v1-close-check** |
+| Version automation | pin → `xbb_version.generated.h` · package identity at runtime |
 | **v1 engineering** | **Complete** (2026-07-31) |
 
 ## Risks (known)

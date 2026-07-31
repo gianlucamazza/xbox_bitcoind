@@ -19,21 +19,23 @@ Update this file when gates move; use Issues for discussion and assignment.
 |------|--------|
 | Engineering v1 | **Complete** |
 | Git tag / Release | **v0.1.0** published |
-| Console package | **0.1.0.65** WithCore · App type **Game** (set after reinstall) |
-| Pin | Bitcoin Core **v31.1** |
-| Dashboard | Responsive 10-foot UI (primary/secondary metrics, dual bars, sparkline, ETA) |
-| Soft-stop (early / mid IBD) | Early/mid **PASS** tip conservation; mid-IBD stop may still hit **DELETE** after 300s ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
-| Mainnet IBD | **In progress** (~14.0% tip progress, height ~**452k**) |
+| Console package | **0.1.0.65** WithCore · App type **Game** |
+| Pin | Bitcoin Core **v31.1** (`config/bitcoin-core.pin`) |
+| Version labeling | UI must show **Core pin** vs **app MSIX** separately (`xbb_version.generated.h` + package identity) — on `main`; console until next deploy still older subtitle |
+| Dashboard | 10-foot UI: primary/secondary metrics, dual bars, sparkline, ETA, centered KPI text |
+| Splash / tiles | Core official icons (regenerate: `scripts/generate-uwp-assets.py`) — on `main` |
+| Soft-stop (early / mid IBD) | Tip conservation **PASS**; mid-IBD host stop may still **DELETE** after 300s ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
+| Mainnet IBD | **In progress** (~14.2% tip progress, height ~**453k**) |
 | 24h stable at tip | **Pending** IBD |
 | Soft-stop at tip | **Pending** tip |
 | Pre-Lightning | Blocked on IBD closure gates |
-| Soft-stop wait mitigation | Host **180s** (tried **300s** on deploy); in-app join **150s** on **0.1.0.65** — DELETE still used mid-IBD |
 
 Verify live:
 
 ```bash
 ./scripts/node-status.sh
 ./scripts/v1-close-check.sh
+./scripts/ibd-report.sh
 ```
 
 ---
@@ -54,23 +56,23 @@ Track on GitHub: labels `ops`, `v1-close`.
 
 | ID | Task | Notes |
 |----|------|--------|
-| soft-stop-timeout | Soft-stop wait / DELETE fallback | **Mitigated** — default wait 180s + re-suspend @45s + in-app join 150s ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
-| package-gc | Remove stale package revisions | **Tooling** — `deploy.sh package-gc` ([#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5)) |
+| soft-stop-timeout | Soft-stop wait / DELETE fallback | **Mitigated** (180s host + 150s join); mid-IBD field still DELETE @300s — leave open ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
+| package-gc | Remove stale package revisions | **Done** tooling — `deploy.sh package-gc` ([#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) closed) |
 | conf-apply | Conf only via `apply-console-conf` after MSIX | Done; probes must not overwrite |
+| next-msix | Deploy `main` (icons, centered metrics, Core·app subtitle) | Optional — prefer after IBD milestone or when needed |
 
 ### P2 — Pre-Lightning (after P0)
 
 See [roadmap.md § Pre-Lightning](roadmap.md#pre-lightning-standard-node-only).
 
-### Polishing (non-blocking)
+### Polishing (closed on main)
 
-| Wave | Items | Status |
-|------|--------|--------|
-| **A** host/docs | shellcheck SC2028; sample/soft-stop temp under `$STATE_DIR`; `ibd-report` rate+ETA; README feature parity; research checklists historical | **done** |
-| **B** next package | in-app join 150s + UI ETA + `STOPPING Ns` (code on main); field-verify #4; screenshot after deploy | **code done** — deploy deferred mid-IBD |
-| **C** code health | pure `ui_layout.h` + `test-ui-layout.sh`; conf fallback documented; rpc_client limits documented | **done** |
-
-Do **not** redeploy mid-IBD solely for polish. Host tools apply immediately.
+| Wave | Status |
+|------|--------|
+| A host/docs | **done** |
+| B package UI (ETA, STOPPING Ns, join 150s) | **on console 0.1.0.65** |
+| C layout tests / conf docs | **done** |
+| Icons + metric center + version subtitle | **on main** — next package |
 
 ### Out of scope (do not open as v1 work)
 
@@ -79,8 +81,6 @@ Wallet UI · Store · `listen=1` · CLN on-console · USB datadir UX
 ---
 
 ## GitHub Issues
-
-Issues are created with labels:
 
 | Label | Use |
 |-------|-----|
@@ -95,8 +95,8 @@ Issues are created with labels:
 | [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close) | open |
 | [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) | 24h stability at tip (v1 close) | open |
 | [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) | Soft-stop retest at tip (v1 close) | open |
-| [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop >90s → DELETE fallback | mitigated (field-verify) |
-| [#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) | Remove stale package revisions on console | **closed** |
+| [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop → DELETE fallback mid-IBD | mitigated / field notes |
+| [#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) | Remove stale package revisions | **closed** |
 
 ```bash
 gh issue list --label v1-close
@@ -114,7 +114,8 @@ gh issue list --label ops
 | Architecture | plan-core-uwp.md |
 | Console identity / package rev | console.md + this snapshot |
 | UI behaviour | ui.md (+ screenshot if visual) |
-| CI / release process | ci.md |
+| CI / release / pin process | ci.md |
+| Core pin bump | `config/bitcoin-core.pin` + `./scripts/generate-version-header.py` |
 
 **Rule:** Prefer editing an existing doc over adding a top-level file ([docs/README.md](README.md)).
 
@@ -133,4 +134,4 @@ gh issue list --label ops
 
 ---
 
-*Last consolidated: 2026-07-31.*
+*Last consolidated: 2026-07-31 (docs pass — IBD ~453k / package 0.1.0.65 / main polish noted).*

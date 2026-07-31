@@ -15,8 +15,11 @@ Same **Xbox Series S** as [`xllama`](../../xllama/) (Dev Mode + Device Portal).
 | Sibling | `GianlucaMazza.xllama_1.5.2.836_x64__pj67f1fcj4n14` |
 | This package | `GianlucaMazza.xboxbitcoind_0.1.0.65_x64__m0e4707sws2jw` |
 
-**Last full ops check:** 2026-07-31 deploy **0.1.0.65** (polish: ETA + STOPPING Ns + join 150s); tip ~**452k** / ~14% IBD; soft-stop at deploy used DELETE after 300s but tip conserved (452198→452201). Host wait default **180s**. Live tracking [tracking.md](tracking.md).
-Day-to-day: [ops.md](ops.md).
+**Last full ops check:** 2026-07-31 package **0.1.0.65** (ETA + STOPPING Ns + join 150s). Live tip ~**453k** / ~14% IBD. Soft-stop at deploy used DELETE after 300s but tip conserved (452198→452201). Host wait default **180s**.
+
+**Version labels:** Bitcoin Core pin is **v31.1**; `0.1.0.65` is the **MSIX app** revision only. UI on `main` shows both (`Bitcoin Core v31.1 · app …`); console may lag until next package.
+
+Live tracking [tracking.md](tracking.md). Day-to-day: [ops.md](ops.md).
 
 ```bash
 ./scripts/probe-console.sh

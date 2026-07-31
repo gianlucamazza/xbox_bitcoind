@@ -7,7 +7,7 @@ deploy to the Xbox (use `scripts/deploy.sh` locally).
 
 | Workflow | Runner(s) | What it proves | What it does **not** do |
 |----------|-----------|----------------|-------------------------|
-| [`ci-linux.yml`](../.github/workflows/ci-linux.yml) | `ubuntu-24.04` | shellcheck, pure UI layout tests, pin, optional Linux smoke | MSVC, UWP, Xbox |
+| [`ci-linux.yml`](../.github/workflows/ci-linux.yml) | `ubuntu-24.04` | shellcheck, UI layout tests, pin + `xbb_version.generated.h` sync, optional Linux smoke | MSVC, UWP, Xbox |
 | [`ci-msvc-baseline.yml`](../.github/workflows/ci-msvc-baseline.yml) | `windows-2025-vs2026` | Desktop MSVC pin (unpatched) | UWP / MSIX |
 | [`build-uwp.yml`](../.github/workflows/build-uwp.yml) | scaffold `windows-2022`; core/package `windows-2025-vs2026` | UWP product pipeline (also `workflow_call`) | Desktop MSVC |
 | [`release.yml`](../.github/workflows/release.yml) | calls `build-uwp` + `ubuntu-24.04` publish | Tag `v*` → MSIX + GitHub Release | Xbox deploy |

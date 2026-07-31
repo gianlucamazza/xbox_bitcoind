@@ -4,7 +4,7 @@ Controller-first **10-foot** status UI for Series S Dev Mode (programmatic XAML)
 
 ![Status dashboard on console](assets/screenshot-console.png)
 
-*Live capture, package **0.1.0.63** (responsive primary/secondary metrics, dual bars, sparkline, log).*
+*Screenshot package may lag console; live rev in [tracking.md](tracking.md). Dashboard: primary/secondary metrics, dual bars, sparkline, ETA.*
 
 ## Best practices (10-foot / TV)
 
@@ -68,7 +68,10 @@ Secondary: **HEADERS · DISK · MEMPOOL · UPTIME** (or meta line when hidden)
 | ETA | Rough remaining time from session progress samples (meta line / progress label) |
 | Semantic colors | Peers red if 0; behind orange if large; progress green when synced |
 | Status pill | Coarse state + `updated HH:MM:SS`; **STOPPING Ns** while soft-stop joins |
-| Header subtitle | **Bitcoin Core v31.1 · app 0.1.0.xx** — Core pin (build-time) + MSIX package (runtime) |
+| Header subtitle | **Bitcoin Core v31.1 · app 0.1.0.xx** — Core pin (build-time via `xbb_version.generated.h`) + MSIX package (runtime). Do not confuse app rev with Core. |
+| Progress % | One decimal while syncing (`14.0%`); whole percent near tip |
+| KPI cards | Label + value centered in each metric box |
+| Splash / tiles | Official Core mark from `share/pixmaps` (`scripts/generate-uwp-assets.py`) |
 
 ### Status pill
 

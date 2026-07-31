@@ -15,7 +15,9 @@ Companion project on the same console: [xllama](https://github.com/gianlucamazza
 [![GitHub release](https://img.shields.io/github/v/release/gianlucamazza/xbox_bitcoind)](https://github.com/gianlucamazza/xbox_bitcoind/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-![Status dashboard on Xbox Series S (package 0.1.0.63)](docs/assets/screenshot-console.png)
+![Status dashboard on Xbox Series S](docs/assets/screenshot-console.png)
+
+*Screenshot may lag the live package revision; check [docs/tracking.md](docs/tracking.md).*
 
 ## Features
 
@@ -23,14 +25,16 @@ Companion project on the same console: [xllama](https://github.com/gianlucamazza
 - Mainnet pruned node (`prune=550`, outbound P2P, local RPC)
 - Controller-first **10-foot dashboard**: primary/secondary metrics, dual progress bars,
   session sparkline, rough **ETA**, live log tail
+- Clear versioning: **Core pin** vs **app MSIX** (e.g. `Bitcoin Core v31.1 · app 0.1.0.65`)
 - **Soft-stop** flush path (suspend → RPC `stop` → durable LevelDB; host wait default 180s)
 - Path-filtered CI + automated **GitHub Releases** on `v*` tags
 
 | | |
 |--|--|
-| Package | `GianlucaMazza.xboxbitcoind` · App Id `App` · type **Game** |
+| Package identity | `GianlucaMazza.xboxbitcoind` · App Id `App` · type **Game** |
+| Live console rev | see [docs/tracking.md](docs/tracking.md) / `./scripts/node-status.sh` |
 | Datadir | `LocalState\bitcoin` |
-| Pin | [config/bitcoin-core.pin](config/bitcoin-core.pin) |
+| Core pin | [config/bitcoin-core.pin](config/bitcoin-core.pin) (**v31.1**) |
 
 ## Quick start
 
@@ -130,10 +134,12 @@ Research archive (phase 0): [docs/research/](docs/research/00-feasibility.md).
 | Area | State |
 |------|--------|
 | **v1 engineering** | **Complete** ([docs/roadmap.md](docs/roadmap.md)) |
-| WithCore on Series S | Working (package **0.1.0.63**) |
-| Soft-stop persistence | Verified (early + mid IBD) |
+| WithCore on Series S | Working (package **0.1.0.65**; IBD ~14% / ~453k) |
+| Soft-stop persistence | Tip conserved early + mid IBD; mid-IBD DELETE fallback still possible ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
 | Mainnet IBD → tip + 24h stable | **Ops pending** (timer running; `./scripts/v1-close-check.sh`) |
 | Wallet / Store / inbound listen | Out of scope for v1 |
+
+Live checklist: [docs/tracking.md](docs/tracking.md).
 
 ## Releases (maintainers)
 

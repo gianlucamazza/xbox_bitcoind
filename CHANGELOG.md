@@ -42,7 +42,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 - Fetch Bitcoin Core by pin **COMMIT** (quiet annotated-tag noise)
 - package-uwp: assert UWP workload before VS installer when possible
 - Soft-stop UI state (`STOPPING`, “Stop soft”); richer RPC metrics
-- Docs reconciled to package **0.1.0.63** / live IBD tracking
+- Docs reconciled to package **0.1.0.65** / IBD ~14% · Core-vs-app versioning · roadmap/tracking
 
 ## [0.1.0] — 2026-07-31
 

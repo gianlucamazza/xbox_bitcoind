@@ -6,14 +6,15 @@
 | **Language** | English |
 | **SSOT** | README = status & quick start · this file = navigation |
 
-Snapshot (see also [ops.md](ops.md)):
+Snapshot (see also [ops.md](ops.md) · [tracking.md](tracking.md)):
 
 | | |
 |--|--|
-| Pin | Bitcoin Core **v31.1** |
-| Package | `GianlucaMazza.xboxbitcoind` **0.1.0.63** (WithCore, **Game**) |
+| Pin | Bitcoin Core **v31.1** (not the MSIX revision) |
+| Console package | `GianlucaMazza.xboxbitcoind` **0.1.0.65** (WithCore, **Game**) |
 | Datadir | `LocalState\bitcoin` |
-| Tracking | [tracking.md](tracking.md) (status + GitHub Issues) |
+| IBD | Mainnet in progress — live gates in [tracking.md](tracking.md) |
+| Version labels | **Core pin** vs **app package** — see [ui.md](ui.md) · `generate-version-header.py` |
 
 ---
 
