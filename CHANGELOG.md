@@ -13,6 +13,10 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-08-01
+
+Architecture/UI ops closure after v0.1.1. Bitcoin Core pin remains **v31.1**.
+
 ### Added
 
 - Auto-restart bitcoind on **resume** after Xbox Home suspend (if it was running)
@@ -23,16 +27,12 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ### Changed
 
-- Architecture doc: lifecycle, host ops plane, UI consensus scope ([plan-core-uwp.md](docs/plan-core-uwp.md))
-- README architecture diagram + features aligned with SSOT (resume, tip age, pills)
-- Document Home suspend: Game class does not keep IBD running in background
-- Ops hygiene / best practices section in `docs/ops.md`
-- `apply-console-conf` guards tip profile until progress ≥ 0.99 (override `--force`)
-- Docs screenshot refreshed for package **0.1.0.6** / release **v0.1.1**
-- Tracking/roadmap: architecture+UI complete; console package **0.1.0.75**
+- Architecture SSOT: lifecycle state machine, host ops plane, UI consensus scope
+- **`deploy.sh stop-app`**: Device Portal `IsRunning` (not ImageName alone); residual shell OK; DELETE only if still active ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4))
 - `release.yml`: compute MSIX revision offset in shell (GHA expressions have no `+`)
-- Console screenshot + docs for reinstall complete (**0.1.0.75**, ~5% IBD)
-- **`deploy.sh stop-app`**: treat Device Portal `IsRunning` (not ImageName alone); residual shell OK; DELETE only if still active ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4))
+- Document Home suspend: Game class does not keep IBD running in background
+- Ops hygiene / best practices; conf tip profile guard until progress ≥ 0.99
+- Console screenshot + tracking for package **0.1.0.75** path; Game class confirmed
 
 ## [0.1.1] — 2026-07-31
 
