@@ -28,11 +28,12 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 | `install-ibd-timer.sh` | Enable hourly user systemd timer |
 | `v1-close-check.sh` | Gate: IBD done + 24h stability (exit 0 = close v1 ops) |
 | `apply-console-conf.sh` | Soft-stop → push `config/bitcoin.conf.console` → start (IBD knobs) |
-| `console-via-odroid.sh` | Off-LAN: socat bridge via `ssh odroid-ts` → Device Portal |
 
 ```bash
-# Off home LAN (Tailscale → Odroid → Xbox):
-source scripts/console-via-odroid.sh    # 127.0.0.1:11443 tunnel
+# Off home LAN: standard SSH local forward (see docs/device-portal.md)
+ssh -N -L 127.0.0.1:11443:192.168.1.44:11443 odroid-ts   # other terminal
+export XBOX_IP_OVERRIDE=127.0.0.1
+
 ./scripts/deploy.sh status
 ./scripts/node-status.sh --loop 3600
 ./scripts/ibd-sample.sh                 # one line to state log

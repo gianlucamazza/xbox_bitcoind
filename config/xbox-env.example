@@ -10,9 +10,10 @@
 #
 # Never commit real passwords.
 
-# LAN IP of the Series S (Device Portal). Off-LAN: use
-#   source scripts/console-via-odroid.sh
-# which sets XBOX_IP_OVERRIDE=127.0.0.1 through a Tailscale/Odroid bridge.
+# LAN IP of the Series S (Device Portal).
+# Off-LAN via Odroid (standard OpenSSH):
+#   ssh -N -L 127.0.0.1:11443:192.168.1.44:11443 odroid-ts
+#   export XBOX_IP_OVERRIDE=127.0.0.1
 export XBOX_IP=192.168.1.44
 export XBOX_PORT=11443
 export XBOX_USER=Xbox

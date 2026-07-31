@@ -15,8 +15,8 @@
 
 _xbox_bitcoind_env_loaded=1
 
-# Optional overrides (set before source scripts/env.sh):
-#   XBOX_IP_OVERRIDE / XBOX_PORT_OVERRIDE  — e.g. tunnel via Odroid (127.0.0.1)
+# Optional overrides (set before source / before running tools):
+#   XBOX_IP_OVERRIDE / XBOX_PORT_OVERRIDE  — e.g. 127.0.0.1 after ssh -L
 #   XBOX_ENV_FILE                          — explicit credentials path
 _xbox_ip_override="${XBOX_IP_OVERRIDE:-}"
 _xbox_port_override="${XBOX_PORT_OVERRIDE:-}"
