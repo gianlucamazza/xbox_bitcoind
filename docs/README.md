@@ -7,7 +7,7 @@
 | Pin | Bitcoin Core **v31.1** |
 | Console package | `GianlucaMazza.xboxbitcoind` **0.1.0.42** (WithCore, Game) |
 | Datadir | `LocalState\bitcoin` |
-| Last status pass | 2026-07-31 — IBD ~height **318k**, soft-stop OK |
+| Last status pass | 2026-07-31 — IBD ~height **327k**, soft-stop mid-IBD **PASS**, WS ~1 GiB |
 
 ## Map
 
@@ -15,6 +15,7 @@
 
 | Doc | Contents |
 |-----|----------|
+| [ops.md](ops.md) | **Day-to-day IBD ops**, budgets, monitor commands |
 | [console.md](console.md) | Shared Series S baseline, package identity |
 | [device-portal.md](device-portal.md) | Portal env, `deploy.sh` / soft stop / screenshots |
 | [ui.md](ui.md) | Dashboard metrics, RPC sources |
@@ -60,10 +61,11 @@ Historical only — not day-to-day ops.
 ## Reading order
 
 1. Root README  
-2. `plan-core-uwp.md`  
-3. `persistence.md` + `ui.md`  
-4. `device-portal.md` + `console.md`  
-5. When building: `uwp-scaffold.md` → `ci.md` → `patches/uwp/README.md`
+2. `ops.md` (if running the console node)  
+3. `plan-core-uwp.md`  
+4. `persistence.md` + `ui.md`  
+5. `device-portal.md` + `console.md`  
+6. When building: `uwp-scaffold.md` → `ci.md` → `patches/uwp/README.md`
 
 ## Doc conventions
 

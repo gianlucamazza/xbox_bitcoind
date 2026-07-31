@@ -1,46 +1,56 @@
 # Chain state persistence (Xbox / UWP)
 
-Soft stop is the supported lifecycle path. See also [device-portal.md](device-portal.md)
-(`deploy.sh stop-app`) and [ui.md](ui.md) (Stop / suspend).
+Soft stop is the supported lifecycle path. Ops guide: [ops.md](ops.md).
+Portal: [device-portal.md](device-portal.md). UI Stop / suspend: [ui.md](ui.md).
 
-## Result (2026-07-31, package `0.1.0.42`)
+## Mitigations in tree
 
-Soft stop (Device Portal **suspend** → `App::OnSuspending` → RPC `stop`) then restart:
+1. **`App::OnSuspending`** → `NodeStop()` (RPC `stop` + join) with deferral  
+2. **`deploy.sh stop-app`**: POST suspend, wait up to **90s** for process exit, then DELETE only if needed  
+3. **Patch 0009**: LevelDB no-mmap + WRITE_THROUGH on UWP  
+4. **Patch 0010**: UWP write interval **30–60 s**
+
+## Verified results (package `0.1.0.42`)
+
+### Early IBD (2026-07-31)
+
+Soft stop then restart:
 
 | Metric | Before stop | After restart (load) |
 |--------|-------------|----------------------|
 | Validated tip (`nBestHeight`) | ~99 004 | **102 031** |
 | Block tree (headers) | — | **960 375** |
-| Next `UpdateTip` | — | **102 032+** (continues IBD) |
+| Next `UpdateTip` | — | **102 032+** |
 
-**Verdict: chain state is conserved** under clean shutdown.
+### Mid IBD (2026-07-31, automated)
 
-Post-restart IBD continued on the same package (e.g. tip past **~318k** the same day).
+```bash
+./scripts/soft-stop-test.sh --wait-load 240
+```
 
-## What failed earlier
-
-Hard kill via `taskmanager` DELETE **without** flush:
-
-- Bitcoin Core keeps block index / chainstate in memory until
-  `DATABASE_WRITE_INTERVAL` (upstream **50–70 min**) or clean shutdown.
-- After kill: `nBestHeight = 0`, `block tree size = 1`, orphan `blk*.dat`.
-
-## Mitigations in tree
-
-1. **`App::OnSuspending`** → `NodeStop()` (RPC `stop` + join) with deferral  
-2. **`deploy.sh stop-app`**: POST `suspend` first, wait for process exit, then DELETE  
-3. **Patch 0009**: LevelDB no-mmap + WRITE_THROUGH on UWP  
-4. **Patch 0010**: UWP write interval **30–60 s** (crash-friendlier flushes)
+| Metric | Value |
+|--------|--------|
+| Pre-stop tip height | **326 716** |
+| Soft-stop duration | **36 s** clean exit (no DELETE) |
+| Post-restart `Loaded best chain` | **326 947** |
+| Block tree | **960 384** |
+| **Verdict** | **PASS** (tip conserved; IBD resumed) |
 
 ## How to re-test
 
 ```bash
+./scripts/soft-stop-test.sh
+# or manually:
+./scripts/deploy.sh status          # note tip
+./scripts/deploy.sh stop-app
 ./scripts/deploy.sh start-app
-# wait until debug.log shows UpdateTip height >> 0
-./scripts/deploy.sh stop-app    # soft stop
-./scripts/deploy.sh start-app
-./scripts/deploy.sh fetch-file $(./scripts/deploy.sh pfn) debug.log /tmp/d.log bitcoin
-rg "nBestHeight|Loaded best chain|block tree size" /tmp/d.log | tail
+# wait for load, then:
+./scripts/deploy.sh status
 ```
 
-Expect `Loaded best chain` / `nBestHeight` near the pre-stop tip, not genesis-only.
+Expect `loaded` / `nBestHeight` near the pre-stop tip, not genesis-only.
+
+## What failed earlier (hard kill)
+
+Hard DELETE without flush: `nBestHeight = 0`, orphan `blk*.dat`. Expected when
+Core has not written the index (upstream interval 50–70 min without patch 0010).

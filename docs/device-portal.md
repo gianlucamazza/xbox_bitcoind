@@ -45,7 +45,9 @@ Resolution order is documented in `scripts/env.sh`.
 | `./scripts/deploy.sh fetch-file <pfn> <name> <out> [subdir]` | Pull a LocalState file |
 | `./scripts/deploy.sh upload-file …` | Push files into LocalState |
 | `./scripts/deploy.sh start-app` | Launch package |
-| `./scripts/deploy.sh stop-app` | **Soft stop**: suspend → wait → DELETE |
+| `./scripts/deploy.sh stop-app` | **Soft stop**: suspend → wait ≤90s → DELETE if needed |
+| `./scripts/deploy.sh status` | IBD/process snapshot (`node-status.sh`) |
+| `./scripts/deploy.sh soft-stop-test` | Persistence self-check |
 | `./scripts/deploy.sh diagnose-startup` | Startup diagnostics |
 
 WDP POST/DELETE need a CSRF token; `deploy.sh` extracts it from the portal cookie

@@ -15,7 +15,9 @@
 #   deploy.sh upload-file <local> <pfn> [remote-dir] [remote-name]
 #   deploy.sh mkdir-localstate <pfn> <relpath>
 #   deploy.sh start-app [pfn]
-#   deploy.sh stop-app [pfn]
+#   deploy.sh stop-app [pfn]                             Soft stop (suspend → flush → DELETE)
+#   deploy.sh status                                     Node/IBD snapshot (see node-status.sh)
+#   deploy.sh soft-stop-test                             Persistence self-check
 #   deploy.sh diagnose-startup [pfn]
 #
 # Required: source scripts/env.sh credentials (XBOX_IP, XBOX_USER, XBOX_PASS)
@@ -202,16 +204,21 @@ stop_app() {
 		-X POST \
 		-d "" \
 		"${BASE_URL}/api/taskmanager/app/state?package=${pkg_b64}&state=suspend" >/dev/null 2>&1 || true
-	# Allow bitcoind shutdown + flush (NodeStop waits up to ~45s; poll ~40s).
+	# Allow bitcoind shutdown + flush. Mid-IBD chainstate can take longer than
+	# early tips; poll up to 90s before hard DELETE as last resort.
 	local waited=0
-	while (( waited < 40 )); do
+	local max_wait=90
+	while (( waited < max_wait )); do
 		if ! curl "${CURL_AUTH[@]}" "${BASE_URL}/api/resourcemanager/processes" 2>/dev/null |
 			python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if any('xbox_bitcoind' in (p.get('ImageName') or '') for p in d.get('Processes',[])) else 1)"; then
-			break
+			echo "Process exited after ${waited}s (clean soft stop)."
+			echo "Stopped ${pfn}."
+			return 0
 		fi
 		waited=$((waited + 1))
 		sleep 1
 	done
+	echo "Warning: process still running after ${max_wait}s suspend; sending taskmanager DELETE (may skip final flush)." >&2
 	curl "${CURL_AUTH[@]}" \
 		-H "X-CSRF-Token:${CSRF_TOKEN}" \
 		-H "Content-Length: 0" \
@@ -233,6 +240,7 @@ Usage:
   $0 upload-file <local> <pfn> [remote-dir] [remote-name]
   $0 mkdir-localstate <pfn> <relpath>
   $0 start-app [pfn] | stop-app [pfn] | diagnose-startup [pfn]
+  $0 status | soft-stop-test
 EOF
 }
 
@@ -303,6 +311,14 @@ fi
 if [[ "${cmd}" == "stop-app" ]]; then
 	stop_app "${2:-}"
 	exit 0
+fi
+
+if [[ "${cmd}" == "status" ]]; then
+	exec "${SCRIPT_DIR}/node-status.sh" "${@:2}"
+fi
+
+if [[ "${cmd}" == "soft-stop-test" ]]; then
+	exec "${SCRIPT_DIR}/soft-stop-test.sh" "${@:2}"
 fi
 
 if [[ "${cmd}" == "diagnose-startup" ]]; then

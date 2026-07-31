@@ -51,8 +51,10 @@ toolchain — do **not** paper over it with language hacks in Core headers.
 | 4 | **Package** | `build-uwp.ps1 -WithCore` MSIX (+ `event.dll`) | **done** |
 | 5 | **CI** | Path-filtered workflows; no scaffold+core double bill on main | **done** |
 | 6 | **Console** | deploy, Game class, mainnet pruned IBD | **running** |
-| 7 | **Persistence** | soft stop + LevelDB durability | **verified** |
+| 7 | **Persistence** | soft stop + LevelDB durability (early + mid IBD) | **verified** |
 | 8 | **Docs** | README + docs map consolidated | **done** |
+| 9 | **Ops tooling** | `node-status` / `soft-stop-test` + budgets | **done** |
+| 10 | **IBD to tip** | long-run mainnet sync | **in progress** |
 
 ## Patch set (`patches/uwp/`)
 
@@ -99,7 +101,8 @@ CI matrix and path filters: [ci.md](ci.md).
 - [x] Status dashboard (RPC live metrics, Start/Stop, log tail)
 - [x] Chain state conserved across soft stop ([persistence.md](persistence.md))
 - [x] Path-filtered CI (docs free; no scaffold+core on main)
-- [ ] mainnet IBD complete / long-run stability
+- [x] Ops tooling + mid-IBD soft-stop retest + RAM/disk samples ([ops.md](ops.md))
+- [ ] mainnet IBD complete / long-run stability (≥24h at tip)
 
 ### Implementation status
 
@@ -111,8 +114,9 @@ CI matrix and path filters: [ci.md](ci.md).
 | `build-core-uwp` / `-WithCore` | **Done** (`bitcoin_embed` + `event.dll`) |
 | CI | **Path-filtered**; `uwp-core` on VS2026 |
 | Package on Series S | **`0.1.0.42`** WithCore, mainnet IBD |
-| Full node sync | **In progress** (~height 318k as of 2026-07-31) |
-| Soft-stop persistence | **Verified** 2026-07-31 |
+| Full node sync | **In progress** (~height **327k**, ~3.6% as of 2026-07-31) |
+| Soft-stop persistence | **Verified** early + mid IBD |
+| Ops tooling | **`node-status.sh` / `soft-stop-test.sh`** |
 
 ## Risks (known)
 

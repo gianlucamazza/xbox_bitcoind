@@ -15,8 +15,8 @@ Same **Xbox Series S** as [`xllama`](../../xllama/) (Dev Mode + Device Portal).
 | Sibling | `GianlucaMazza.xllama_1.5.2.836_x64__pj67f1fcj4n14` |
 | This package | `GianlucaMazza.xboxbitcoind_0.1.0.42_x64__m0e4707sws2jw` |
 
-**Last full ops check:** 2026-07-31 — portal HTTP 200; node process
-`xbox_bitcoind.exe` running; mainnet IBD ~height **318k**.
+**Last full ops check:**  mid-IBD soft-stop PASS; tip ~**327k**; WS ~**1 GiB**.
+Day-to-day: [ops.md](ops.md).
 
 ```bash
 ./scripts/probe-console.sh
@@ -72,4 +72,6 @@ Start with `dbcache=256` (`config/bitcoin.conf.console`).
 2. DHCP may change IP — update `xbox-env` if probe fails.
 3. xllama and xbox_bitcoind share the Dev partition — watch free space during IBD.
 4. After every MSIX install: **App type → Game**.
-5. Prefer `./scripts/deploy.sh stop-app` (soft stop) — [persistence.md](persistence.md).
+5. Prefer `./scripts/deploy.sh stop-app` (soft stop) — never hard-kill mid-IBD.
+6. Leave the app open while syncing; use `./scripts/deploy.sh status` to sample progress.
+7. Full ops playbook: [ops.md](ops.md) · persistence: [persistence.md](persistence.md).

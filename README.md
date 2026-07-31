@@ -9,8 +9,8 @@ shipped as a **UWP Game package** via Device Portal. Same console as
 [![build-uwp](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml)
 
 > **Status (2026-07-31):** bitcoind **v31.1** on Series S · package **`0.1.0.42`** ·
-> dashboard UI · soft-stop persistence **verified** · mainnet IBD **in progress**
-> (~height 318k, ~3% progress) · CI path-filtered on **VS 2026**.
+> dashboard UI · soft-stop **PASS** (early + mid IBD ~327k) · mainnet IBD **in progress**
+> (~3.6%, WS ~1 GiB) · ops tooling + path-filtered CI on **VS 2026**.
 
 ![Console dashboard](docs/assets/screenshot-console.png)
 
@@ -74,13 +74,15 @@ Details: [docs/plan-core-uwp.md](docs/plan-core-uwp.md).
 
 ```bash
 ./scripts/probe-console.sh
+./scripts/deploy.sh status            # IBD tip, RAM, datadir
 ./scripts/deploy.sh path/to/xbox_bitcoind_*.msix
 ./scripts/deploy.sh start-app
-./scripts/deploy.sh stop-app          # soft stop (suspend first)
+./scripts/deploy.sh stop-app          # soft stop only — never hard-kill
+./scripts/soft-stop-test.sh           # persistence self-check
 ```
 
-[console](docs/console.md) · [device-portal](docs/device-portal.md) ·
-[constraints](docs/uwp-constraints.md) · [UI](docs/ui.md)
+Ops: [docs/ops.md](docs/ops.md) · [console](docs/console.md) ·
+[device-portal](docs/device-portal.md) · [UI](docs/ui.md)
 
 ## Pin + builds
 
@@ -121,16 +123,18 @@ LICENSE                 MIT (this repo’s glue)
 |-------|--------|--------|
 | **0–0d** | Research, pin, baselines, Hello-UWP probes | **done** |
 | **1** | Core in UWP (`-WithCore`, VS2026 CI) | **done** |
-| **2** | Mainnet pruned + dashboard on console | **running** (IBD) |
-| **2b** | Soft-stop chain persistence | **verified** |
-| **2c** | Docs map + path-filtered CI (no overlap/extra cost) | **done** |
-| **3** | IBD complete / long-run stability · optional wallet | **open** |
+| **2** | Mainnet pruned + dashboard on console | **running** (IBD ~327k) |
+| **2b** | Soft-stop persistence (early + mid IBD) | **verified** |
+| **2c** | Docs map + path-filtered CI | **done** |
+| **2d** | Ops tooling + budgets (`node-status`, soft-stop-test) | **done** |
+| **3** | IBD to tip + ≥24h stable · optional wallet | **open** |
 
 ## Documentation
 
 | Doc | Topic |
 |-----|--------|
 | [docs/README.md](docs/README.md) | **Index** (start here for depth) |
+| [docs/ops.md](docs/ops.md) | IBD ops, budgets, monitor |
 | [docs/plan-core-uwp.md](docs/plan-core-uwp.md) | Architecture + checklist |
 | [docs/ui.md](docs/ui.md) · [persistence.md](docs/persistence.md) | Runtime |
 | [docs/console.md](docs/console.md) · [device-portal.md](docs/device-portal.md) | Operate Series S |
