@@ -235,15 +235,17 @@ void NodeStop() {
         }
     }
     if (g_thread.joinable()) {
-        // Wait up to ~45s for clean shutdown
-        for (int i = 0; i < 90 && g_running.load(); ++i) {
+        // Mid-IBD LevelDB flush can exceed 45s; wait up to ~150s before detach.
+        constexpr int kMaxHalfSec = 300; // 300 * 500ms = 150s
+        for (int i = 0; i < kMaxHalfSec && g_running.load(); ++i) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
         if (!g_running.load()) {
             g_thread.join();
             Logf("[node] node thread joined");
         } else {
-            Logf("[node] node still running after wait; detaching");
+            Logf("[node] node still running after %ds wait; detaching (host may DELETE process)",
+                 kMaxHalfSec / 2);
             g_thread.detach();
         }
     }

@@ -15,10 +15,15 @@
 #   deploy.sh upload-file <local> <pfn> [remote-dir] [remote-name]
 #   deploy.sh mkdir-localstate <pfn> <relpath>
 #   deploy.sh start-app [pfn]
-#   deploy.sh stop-app [pfn]                             Soft stop (suspend → flush → DELETE)
+#   deploy.sh stop-app [pfn]                             Soft stop (suspend → flush → optional DELETE)
+#   deploy.sh package-list                               List installed xbox_bitcoind package full names
+#   deploy.sh package-gc [--keep N] [--yes]              Uninstall older revisions (keep newest N)
 #   deploy.sh status                                     Node/IBD snapshot (see node-status.sh)
 #   deploy.sh soft-stop-test                             Persistence self-check
 #   deploy.sh diagnose-startup [pfn]
+#
+# Env:
+#   XBB_SOFT_STOP_MAX_WAIT   Seconds to wait after suspend before DELETE (default 180)
 #
 # Required: source scripts/env.sh credentials (XBOX_IP, XBOX_USER, XBOX_PASS)
 
@@ -190,42 +195,171 @@ start_app() {
 	echo "Started ${pfn}."
 }
 
-stop_app() {
-	local pfn
-	pfn="$(require_pfn "${1:-}")"
-	# Device Portal expects base64-encoded package full name.
-	local pkg_b64
-	pkg_b64=$(printf '%s' "${pfn}" | base64 -w0)
-	# Soft-stop first: suspend triggers App::OnSuspending → RPC stop → LevelDB flush.
-	# Hard kill alone loses unflushed block index (Bitcoin write interval is long).
+process_running() {
+	curl "${CURL_AUTH[@]}" "${BASE_URL}/api/resourcemanager/processes" 2>/dev/null |
+		python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if any('xbox_bitcoind' in (p.get('ImageName') or '') for p in d.get('Processes',[])) else 1)"
+}
+
+suspend_package() {
+	local pkg_b64="$1"
 	curl "${CURL_AUTH[@]}" \
 		-H "X-CSRF-Token:${CSRF_TOKEN}" \
 		-H "Content-Length: 0" \
 		-X POST \
 		-d "" \
 		"${BASE_URL}/api/taskmanager/app/state?package=${pkg_b64}&state=suspend" >/dev/null 2>&1 || true
-	# Allow bitcoind shutdown + flush. Mid-IBD chainstate can take longer than
-	# early tips; poll up to 90s before hard DELETE as last resort.
+}
+
+stop_app() {
+	local pfn
+	pfn="$(require_pfn "${1:-}")"
+	# Device Portal expects base64-encoded package full name.
+	local pkg_b64
+	pkg_b64=$(printf '%s' "${pfn}" | base64 -w0)
+	# Soft-stop: suspend → OnSuspending → RPC stop → LevelDB flush.
+	# Mid-IBD chainstate can take minutes; default wait 180s (override XBB_SOFT_STOP_MAX_WAIT).
+	local max_wait="${XBB_SOFT_STOP_MAX_WAIT:-180}"
+	if ! [[ "${max_wait}" =~ ^[0-9]+$ ]] || (( max_wait < 30 )); then
+		max_wait=180
+	fi
+	echo "Soft-stop ${pfn} (suspend → wait up to ${max_wait}s for process exit)…"
+	suspend_package "${pkg_b64}"
 	local waited=0
-	local max_wait=90
+	local re_suspend_at=45
 	while (( waited < max_wait )); do
-		if ! curl "${CURL_AUTH[@]}" "${BASE_URL}/api/resourcemanager/processes" 2>/dev/null |
-			python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if any('xbox_bitcoind' in (p.get('ImageName') or '') for p in d.get('Processes',[])) else 1)"; then
+		if ! process_running; then
 			echo "Process exited after ${waited}s (clean soft stop)."
 			echo "Stopped ${pfn}."
 			return 0
+		fi
+		# One re-suspend mid-wait: first suspend can race before OnSuspending wires up.
+		if (( waited == re_suspend_at )); then
+			echo "Still running at ${waited}s — re-posting suspend…"
+			suspend_package "${pkg_b64}"
 		fi
 		waited=$((waited + 1))
 		sleep 1
 	done
 	echo "Warning: process still running after ${max_wait}s suspend; sending taskmanager DELETE (may skip final flush)." >&2
+	echo "  Tip: raise wait with XBB_SOFT_STOP_MAX_WAIT=300 for deep IBD." >&2
 	curl "${CURL_AUTH[@]}" \
 		-H "X-CSRF-Token:${CSRF_TOKEN}" \
 		-H "Content-Length: 0" \
 		-X DELETE \
 		-d "" \
 		"${BASE_URL}/api/taskmanager/app?package=${pkg_b64}" >/dev/null 2>&1 || true
+	# Give DELETE a moment; report residual process if any.
+	sleep 2
+	if process_running; then
+		echo "Warning: process still listed after DELETE." >&2
+	else
+		echo "Process gone after DELETE fallback."
+	fi
 	echo "Stopped ${pfn}."
+}
+
+list_bitcoind_packages() {
+	curl "${CURL_AUTH[@]}" "${BASE_URL}/api/app/packagemanager/packages" |
+		APP_ID="${APP_ID}" python3 -c '
+import json, os, re, sys
+app_id = os.environ["APP_ID"]
+data = json.load(sys.stdin)
+matches = [p for p in data.get("InstalledPackages", [])
+           if app_id in p.get("PackageRelativeId", "")
+           or app_id in p.get("PackageFullName", "")]
+
+def version_key(package):
+    name = package.get("PackageFullName", "")
+    m = re.search(r"_(\d+(?:\.\d+)*)_", name)
+    return tuple(int(x) for x in m.group(1).split(".")) if m else ()
+
+matches.sort(key=version_key, reverse=True)
+for p in matches:
+    print(p.get("PackageFullName", ""))
+'
+}
+
+uninstall_package() {
+	local pfn="$1"
+	# WDP: DELETE package by full name (URL-encoded).
+	local enc
+	enc=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "${pfn}")
+	local http
+	http=$(curl "${CURL_AUTH[@]}" \
+		-H "X-CSRF-Token:${CSRF_TOKEN}" \
+		-H "Content-Length: 0" \
+		-X DELETE \
+		-d "" \
+		-o /tmp/xbb-uninstall-body.txt \
+		-w "%{http_code}" \
+		"${BASE_URL}/api/app/packagemanager/package?package=${enc}" 2>/dev/null || echo "000")
+	if [[ "${http}" != "200" && "${http}" != "204" ]]; then
+		echo "Error: uninstall ${pfn} HTTP ${http}: $(cat /tmp/xbb-uninstall-body.txt 2>/dev/null || true)" >&2
+		return 1
+	fi
+	echo "Uninstalled ${pfn} (HTTP ${http})."
+}
+
+package_gc() {
+	local keep=1
+	local yes=0
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--keep)
+			keep="${2:-1}"
+			shift 2
+			;;
+		--yes | -y)
+			yes=1
+			shift
+			;;
+		*)
+			echo "Usage: $0 package-gc [--keep N] [--yes]" >&2
+			return 1
+			;;
+		esac
+	done
+	if ! [[ "${keep}" =~ ^[0-9]+$ ]] || (( keep < 1 )); then
+		echo "Error: --keep must be integer >= 1" >&2
+		return 1
+	fi
+	mapfile -t pkgs < <(list_bitcoind_packages)
+	if [[ ${#pkgs[@]} -eq 0 ]]; then
+		echo "No ${APP_ID} packages installed."
+		return 0
+	fi
+	echo "Installed (${#pkgs[@]}), newest first:"
+	local i=0
+	for p in "${pkgs[@]}"; do
+		if (( i < keep )); then
+			echo "  KEEP  ${p}"
+		else
+			echo "  DROP  ${p}"
+		fi
+		i=$((i + 1))
+	done
+	if (( ${#pkgs[@]} <= keep )); then
+		echo "Nothing to remove (keep=${keep})."
+		return 0
+	fi
+	if (( yes != 1 )); then
+		echo "Re-run with --yes to uninstall DROP entries."
+		return 0
+	fi
+	# Never uninstall while that package process is active — stop newest first.
+	if process_running; then
+		echo "Stopping running app before GC…"
+		stop_app "${pkgs[0]}"
+	fi
+	i=0
+	for p in "${pkgs[@]}"; do
+		if (( i >= keep )); then
+			uninstall_package "${p}" || true
+		fi
+		i=$((i + 1))
+	done
+	echo "Remaining:"
+	list_bitcoind_packages || true
 }
 
 usage() {
@@ -240,7 +374,10 @@ Usage:
   $0 upload-file <local> <pfn> [remote-dir] [remote-name]
   $0 mkdir-localstate <pfn> <relpath>
   $0 start-app [pfn] | stop-app [pfn] | diagnose-startup [pfn]
+  $0 package-list | package-gc [--keep N] [--yes]
   $0 status | soft-stop-test
+
+Env: XBB_SOFT_STOP_MAX_WAIT (default 180) — seconds after suspend before DELETE.
 EOF
 }
 
@@ -310,6 +447,17 @@ fi
 
 if [[ "${cmd}" == "stop-app" ]]; then
 	stop_app "${2:-}"
+	exit 0
+fi
+
+if [[ "${cmd}" == "package-list" ]]; then
+	list_bitcoind_packages
+	exit 0
+fi
+
+if [[ "${cmd}" == "package-gc" ]]; then
+	shift
+	package_gc "$@"
 	exit 0
 fi
 

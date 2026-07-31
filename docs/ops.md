@@ -28,7 +28,8 @@ PFN=$(./scripts/deploy.sh pfn)
 1. **Leave the app open** during IBD (Game class package foreground/background
    as the OS allows). Closing the title from the Xbox UI may kill without flush.
 2. **Stop only via soft stop**: `./scripts/deploy.sh stop-app`  
-   (suspend → `OnSuspending` → RPC `stop` → LevelDB flush → DELETE).
+   (suspend → `OnSuspending` → RPC `stop` → LevelDB flush; DELETE only after  
+   `XBB_SOFT_STOP_MAX_WAIT` seconds, default **180**).
 3. **Never** use raw taskmanager DELETE / hard kill as the normal path.
 4. After every MSIX reinstall: Dev Home → **App type → Game**.
 5. Watch free space on the shared Dev partition (xllama + bitcoind).
@@ -44,7 +45,8 @@ source scripts/env.sh   # or rely on scripts that source env.sh
 ./scripts/node-status.sh --loop 3600    # hourly sample (Ctrl-C)
 
 ./scripts/deploy.sh start-app
-./scripts/deploy.sh stop-app            # soft stop (up to ~90s wait)
+./scripts/deploy.sh stop-app            # soft stop (default wait 180s)
+# XBB_SOFT_STOP_MAX_WAIT=300 ./scripts/deploy.sh stop-app   # deep IBD
 ./scripts/soft-stop-test.sh             # full persistence self-check
 ./scripts/deploy.sh soft-stop-test      # same
 ```
@@ -57,6 +59,14 @@ PFN=$(./scripts/deploy.sh pfn)
 ```
 
 Live open work: [tracking.md](tracking.md).
+
+### Package revisions on console
+
+```bash
+./scripts/deploy.sh package-list
+./scripts/deploy.sh package-gc --keep 1          # dry-run
+./scripts/deploy.sh package-gc --keep 1 --yes    # uninstall older
+```
 
 ## Measured budgets (package `0.1.0.42`, 2026-07-31; re-sample at tip)
 

@@ -53,9 +53,9 @@ Track on GitHub: labels `ops`, `v1-close`.
 
 | ID | Task | Notes |
 |----|------|--------|
-| soft-stop-timeout | Soft-stop sometimes >90s → hard DELETE | Tune wait / UI feedback; avoid mid-IBD risk |
-| package-gc | Remove stale package revisions on console | Only keep latest Game package |
-| conf-apply | Conf only via `apply-console-conf` after MSIX | Documented; probes must not overwrite |
+| soft-stop-timeout | Soft-stop wait / DELETE fallback | **Mitigated** — default wait 180s + re-suspend @45s + in-app join 150s ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
+| package-gc | Remove stale package revisions | **Tooling** — `deploy.sh package-gc` ([#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5)) |
+| conf-apply | Conf only via `apply-console-conf` after MSIX | Done; probes must not overwrite |
 
 ### P2 — Pre-Lightning (after P0)
 
@@ -84,8 +84,8 @@ Issues are created with labels:
 | [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close) | open |
 | [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) | 24h stability at tip (v1 close) | open |
 | [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) | Soft-stop retest at tip (v1 close) | open |
-| [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop >90s → DELETE fallback | open |
-| [#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) | Remove stale package revisions on console | open |
+| [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop >90s → DELETE fallback | mitigated (field-verify) |
+| [#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) | Remove stale package revisions on console | tooling landed |
 
 ```bash
 gh issue list --label v1-close

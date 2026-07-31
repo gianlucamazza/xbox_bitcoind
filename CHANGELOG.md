@@ -27,6 +27,9 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ### Changed
 
+- Soft-stop host wait default **180s** (`XBB_SOFT_STOP_MAX_WAIT`), re-suspend at 45s;
+  in-app node join wait **150s** (mid-IBD flush)
+- `deploy.sh package-list` / `package-gc` for multi-revision cleanup
 - Probes no longer overwrite operator `bitcoin.conf`
 - Fetch Bitcoin Core by pin **COMMIT** (quiet annotated-tag noise)
 - package-uwp: assert UWP workload before VS installer when possible

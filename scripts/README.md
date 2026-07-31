@@ -20,7 +20,7 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 |--------|---------|
 | `env.sh` | Resolve Device Portal credentials + package identity |
 | `probe-console.sh` | OS/packages smoke probe |
-| `deploy.sh` | Install MSIX, start/stop, logs, **status**, **soft-stop-test** |
+| `deploy.sh` | Install MSIX, start/stop, logs, **status**, **package-gc**, **soft-stop-test** |
 | `node-status.sh` | IBD tip, RAM, datadir snapshot (`--json`, `--loop N`) |
 | `soft-stop-test.sh` | Automated soft-stop persistence check |
 | `ibd-sample.sh` | Append one JSONL sample (+ milestones / stuck detection) |
