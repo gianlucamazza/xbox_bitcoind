@@ -81,26 +81,22 @@ CI_SKIP_TESTS=1 ./scripts/build-linux-smoke.sh
 | `xbox_bitcoind-msix-core` | WithCore MSIX (`uwp-core` job) |
 
 Download the MSIX from the Actions run and install with `./scripts/deploy.sh <msix>`.
-| `xbox_bitcoind-msix-core` | WithCore MSIX (when `uwp-core` green) |
-
-Retention: 14 days. Download from the Actions run UI.
+Retention: 14 days.
 
 ## Caching
 
-MSVC job caches:
+| Job | Cached paths | Key inputs |
+|-----|--------------|------------|
+| MSVC baseline | `build-msvc-baseline/vcpkg_installed`, vcpkg archives | pin + Core `vcpkg.json` |
+| UWP core | `build-uwp`, vcpkg archives / `x64-uwp` | pin + `patches/uwp/**` |
 
-- `third_party/bitcoin/build-msvc-baseline/vcpkg_installed`
-- `~/AppData/Local/vcpkg/archives`
-
-Cache key includes `config/bitcoin-core.pin` and Core’s `vcpkg.json` after fetch.
-Cold first run can take **1–3 hours**; warm runs should be much faster.
+Cold first run can take **1–3 hours**; warm runs are much faster.
 
 ## Secrets
 
-Phase A: **none**.
-
-Later (UWP): signing cert / password (document when `build-uwp.yml` lands).
-Device Portal credentials stay on the operator machine (`~/.config/xllama/xbox-env`).
+**None required in GitHub Actions.** MSIX is signed with a CI-generated dev cert
+packaged as artifact (`xbox_bitcoind-dev.cer`). Device Portal credentials stay on
+the operator machine (`~/.config/xllama/xbox-env`).
 
 ## Pin bumps
 
@@ -110,4 +106,4 @@ Device Portal credentials stay on the operator machine (`~/.config/xllama/xbox-e
 
 ## Badges
 
-See [README](../README.md) (replace `OWNER/REPO` if the remote path differs).
+See root [README](../README.md) (`gianlucamazza/xbox_bitcoind`).
