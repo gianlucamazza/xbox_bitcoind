@@ -33,7 +33,7 @@ Companion project on the same console: [xllama](https://github.com/gianlucamazza
 | | |
 |--|--|
 | Package identity | `GianlucaMazza.xboxbitcoind` · App Id `App` · type **Game** |
-| Latest release | **[v0.1.2](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.2)** (MSIX e.g. `0.1.0.10017`) |
+| Latest release | **[v0.1.3](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.3)** (MSIX e.g. `0.1.0.10018`) |
 | Live console | `./scripts/node-status.sh` · [docs/tracking.md](docs/tracking.md) |
 | Datadir | `LocalState\bitcoin` |
 | Core pin | [config/bitcoin-core.pin](config/bitcoin-core.pin) (**v31.1**) |

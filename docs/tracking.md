@@ -19,8 +19,8 @@ Update this file when gates move; use Issues for discussion and assignment.
 |------|--------|
 | Engineering v1 | **Complete** |
 | Architecture + UI | **Complete** (lifecycle SSOT, tip age, HEADERS/STALE) — [plan-core-uwp.md](plan-core-uwp.md) · [ui.md](ui.md) |
-| Git tag / Release | **[v0.1.2](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.2)** · MSIX `0.1.0.10017` |
-| Console package | **0.1.0.10017** WithCore (v0.1.2) · soft-stop clean + tip conserved on upgrade |
+| Git tag / Release | **[v0.1.3](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.3)** · MSIX `0.1.0.10018` (docs/benchmarks; product = v0.1.2 lineage) |
+| Console package | **0.1.0.10017** (v0.1.2) — leave running; optional upgrade to **10018** when convenient |
 | Game class | **Confirm App type → Game** after this reinstall (user) · `DefaultUWPContentTypeToGame=true` |
 | Pin | Bitcoin Core **v31.1** |
 | UI on console | **Live** Core **v31.1 · app 0.1.0.75** — tip age, dual bars, spark, ETA (screenshot refreshed) |
