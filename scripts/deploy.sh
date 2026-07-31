@@ -140,26 +140,26 @@ mkdir_localstate() {
 
 print_process_status() {
 	curl "${CURL_AUTH[@]}" "${BASE_URL}/api/resourcemanager/processes" |
-		APP_ID="${APP_ID}" APP_ENTRY="${APP_ENTRY}" python3 -c '
+		APP_ID="${APP_ID}" python3 -c '
 import json, os, sys
 app_id = os.environ["APP_ID"].lower()
-entry = os.environ["APP_ENTRY"].lower()
 data = json.load(sys.stdin)
 matches = [
     p for p in data.get("Processes", [])
-    if entry in p.get("ImageName", "").lower()
-    or app_id in p.get("PackageFullName", "").lower()
+    if app_id in (p.get("PackageFullName") or "").lower()
+    or "xbox_bitcoind" in (p.get("ImageName") or "").lower()
 ]
 if not matches:
     print("process: not running")
 else:
     for p in matches:
         print(
-            "process: pid={pid} image={image} running={running} ws={ws}".format(
+            "process: pid={pid} image={image} running={running} ws={ws} pkg={pkg}".format(
                 pid=p.get("ProcessId", ""),
                 image=p.get("ImageName", ""),
                 running=p.get("IsRunning", ""),
                 ws=p.get("WorkingSetSize", ""),
+                pkg=p.get("PackageFullName", ""),
             )
         )
 '
@@ -170,21 +170,36 @@ start_app() {
 	pfn="$(require_pfn "${1:-}")"
 	local aumid
 	aumid="$(aumid_for_pfn "${pfn}")"
-	curl "${CURL_AUTH[@]}" \
+	local resp http
+	resp=$(curl "${CURL_AUTH[@]}" \
 		-H "X-CSRF-Token:${CSRF_TOKEN}" \
+		-H "Content-Length: 0" \
 		-X POST \
 		-d "" \
-		"${BASE_URL}/api/taskmanager/app?appid=${aumid}" >/dev/null
+		-w "\n%{http_code}" \
+		"${BASE_URL}/api/taskmanager/app?appid=${aumid}" 2>/dev/null || true)
+	http=$(printf '%s\n' "${resp}" | tail -n1)
+	body=$(printf '%s\n' "${resp}" | sed '$d')
+	if [[ "${http}" != "200" && "${http}" != "204" ]]; then
+		echo "Error: start-app failed HTTP ${http}: ${body}" >&2
+		echo "AUMID (base64)=${aumid}" >&2
+		exit 1
+	fi
 	echo "Started ${pfn}."
 }
 
 stop_app() {
 	local pfn
 	pfn="$(require_pfn "${1:-}")"
+	# Device Portal expects base64-encoded package full name.
+	local pkg_b64
+	pkg_b64=$(printf '%s' "${pfn}" | base64 -w0)
 	curl "${CURL_AUTH[@]}" \
 		-H "X-CSRF-Token:${CSRF_TOKEN}" \
+		-H "Content-Length: 0" \
 		-X DELETE \
-		"${BASE_URL}/api/taskmanager/app?package=${pfn}" >/dev/null 2>&1 || true
+		-d "" \
+		"${BASE_URL}/api/taskmanager/app?package=${pkg_b64}" >/dev/null 2>&1 || true
 	echo "Stopped ${pfn}."
 }
 

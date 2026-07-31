@@ -135,7 +135,7 @@ if (-not $found) { throw "bitcoin_embed.lib / bitcoin_node.lib missing after bui
 Write-Host "Primary Core lib dir: $found"
 Write-Host "All Core lib dirs: $($libDirs -join ';')"
 
-# vcpkg installed libs (libevent, etc.) for final UWP link
+# vcpkg installed libs/bin (libevent, etc.) for final UWP link + MSIX packaging
 $vcpkgLibCandidates = @(
     (Join-Path $BuildDir "vcpkg_installed\$Triplet\lib"),
     (Join-Path $env:VCPKG_ROOT "installed\$Triplet\lib")
@@ -144,11 +144,25 @@ $vcpkgLib = $null
 foreach ($c in $vcpkgLibCandidates) {
     if (Test-Path $c) { $vcpkgLib = $c; break }
 }
+$vcpkgBinCandidates = @(
+    (Join-Path $BuildDir "vcpkg_installed\$Triplet\bin"),
+    (Join-Path $env:VCPKG_ROOT "installed\$Triplet\bin")
+)
+$vcpkgBin = $null
+foreach ($c in $vcpkgBinCandidates) {
+    if (Test-Path $c) { $vcpkgBin = $c; break }
+}
 if ($vcpkgLib) {
     Write-Host "vcpkg libs: $vcpkgLib"
     Get-ChildItem $vcpkgLib -Filter "*.lib" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ("  vcpkg: " + $_.Name) }
 } else {
     Write-Warning "vcpkg lib dir not found (link may miss libevent)"
+}
+if ($vcpkgBin) {
+    Write-Host "vcpkg bin: $vcpkgBin"
+    Get-ChildItem $vcpkgBin -Filter "*.dll" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ("  vcpkg dll: " + $_.Name) }
+} else {
+    Write-Warning "vcpkg bin dir not found (MSIX may miss event.dll — app will fail to launch)"
 }
 
 # Semicolon-separated path list for MSBuild AdditionalLibraryDirectories.
@@ -171,6 +185,7 @@ $libDirsXml = ($allLibDirs | ForEach-Object { "      $_;" }) -join "`n"
   <PropertyGroup>
     <XbbCoreLibDir>$found</XbbCoreLibDir>
     <XbbVcpkgLibDir>$vcpkgLib</XbbVcpkgLibDir>
+    <XbbVcpkgBinDir>$vcpkgBin</XbbVcpkgBinDir>
     <XbbWithCore>true</XbbWithCore>
   </PropertyGroup>
   <ItemDefinitionGroup>

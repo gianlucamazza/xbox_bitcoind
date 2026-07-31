@@ -173,6 +173,23 @@
     </None>
   </ItemGroup>
 
+  <!-- libevent DLLs from vcpkg x64-uwp (required at load-time for WithCore builds).
+       Paths come from xbb-core-libs.props / build-uwp.ps1 (XbbVcpkgBinDir). -->
+  <ItemGroup Condition="'$(XbbWithCore)' == 'true' and '$(XbbVcpkgBinDir)' != ''">
+    <None Include="$(XbbVcpkgBinDir)\event.dll" Condition="Exists('$(XbbVcpkgBinDir)\event.dll')">
+      <DeploymentContent>true</DeploymentContent>
+      <TargetPath>event.dll</TargetPath>
+    </None>
+    <None Include="$(XbbVcpkgBinDir)\event_core.dll" Condition="Exists('$(XbbVcpkgBinDir)\event_core.dll')">
+      <DeploymentContent>true</DeploymentContent>
+      <TargetPath>event_core.dll</TargetPath>
+    </None>
+    <None Include="$(XbbVcpkgBinDir)\event_extra.dll" Condition="Exists('$(XbbVcpkgBinDir)\event_extra.dll')">
+      <DeploymentContent>true</DeploymentContent>
+      <TargetPath>event_extra.dll</TargetPath>
+    </None>
+  </ItemGroup>
+
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="MainPage.cpp" />

@@ -208,7 +208,18 @@ if ($WithCore -and $CoreProps) {
     $MsBuildArgs += "/p:XbbWithCore=true"
     $MsBuildArgs += "/p:XbbCoreProps=$CoreProps"
     $MsBuildArgs += "/p:XbbCoreSrcDir=$(Join-Path $RepoRoot 'third_party\bitcoin\src')"
-    $MsBuildArgs += "/p:XbbCoreBuildDir=$(if ($CoreBuildDir) { $CoreBuildDir } else { Join-Path $RepoRoot 'third_party\bitcoin\build-uwp' })"
+    $coreRootForMs = if ($CoreBuildDir) { $CoreBuildDir } else { Join-Path $RepoRoot 'third_party\bitcoin\build-uwp' }
+    $MsBuildArgs += "/p:XbbCoreBuildDir=$coreRootForMs"
+    # Also surface vcpkg bin for event.dll packaging (props may set this too).
+    $vcpkgBin = Join-Path $coreRootForMs "vcpkg_installed\x64-uwp\bin"
+    if (Test-Path $vcpkgBin) {
+        $MsBuildArgs += "/p:XbbVcpkgBinDir=$vcpkgBin"
+        if (-not (Test-Path (Join-Path $vcpkgBin "event.dll"))) {
+            Write-Warning "event.dll not found under $vcpkgBin — WithCore MSIX will fail to launch on console"
+        } else {
+            Write-Host "Packaging libevent from $vcpkgBin"
+        }
+    }
 }
 
 & $MsBuild @MsBuildArgs
