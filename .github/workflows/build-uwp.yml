@@ -1,11 +1,11 @@
 name: build-uwp
 
 # Split pipeline (fast path when only the UWP app changes):
-#   core-uwp    — Core static libs; SkipIfFresh if pin/patches cache warm
+#   core-uwp    — Core static libs; SkipIfFresh when pin/patches cache warm
 #   package-uwp — MSIX only (SkipCoreBuild); reuses this run's core cache entry
 #   uwp-scaffold — PR-only, no Core
 #
-# Cache key includes github.run_id on save so package always sees this run's libs.
+# Also reusable via workflow_call (release.yml).
 
 on:
   push:
@@ -39,17 +39,29 @@ on:
         description: "Force Core rebuild (ignore SkipIfFresh stamp)"
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      with_core:
+        description: "Build WithCore product path"
+        type: boolean
+        default: true
+      force_core:
+        description: "Force Core rebuild"
+        type: boolean
+        default: false
+      build_revision:
+        description: "MSIX version 4th component (0 = use run_number)"
+        type: number
+        default: 0
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'workflow_call' }}
 
 env:
-  # Shared prefix for restore-keys (pin + patches only).
   CORE_CACHE_PREFIX: core-uwp-v4-vs2026
 
 jobs:
-  # PR-only scaffold (no Core).
   uwp-scaffold:
     if: |
       github.event_name == 'pull_request' ||
@@ -73,9 +85,9 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # Stage 1: Core UWP libraries only.
   core-uwp:
     if: |
+      github.event_name == 'workflow_call' ||
       (github.event_name == 'workflow_dispatch' && inputs.with_core == true) ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: windows-2025-vs2026
@@ -101,10 +113,12 @@ jobs:
 
       - name: Build Core UWP libraries
         shell: pwsh
-        env:
-          XBB_CORE_SKIP_IF_FRESH: ${{ github.event_name == 'workflow_dispatch' && inputs.force_core && '0' || '1' }}
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch" -and "${{ inputs.force_core }}" -eq "true") {
+          $force = $false
+          if ("${{ github.event_name }}" -eq "workflow_call" -and "${{ inputs.force_core }}" -eq "true") { $force = $true }
+          if ("${{ github.event_name }}" -eq "workflow_dispatch" -and "${{ inputs.force_core }}" -eq "true") { $force = $true }
+          if ($force) {
+            Write-Host "ForceCore rebuild"
             .\scripts\build-uwp.ps1 -Configuration Release -CoreOnly -ForceCore
           } else {
             $env:XBB_CORE_SKIP_IF_FRESH = "1"
@@ -117,7 +131,6 @@ jobs:
             throw "missing bitcoin_embed.lib after core build"
           }
 
-      # Always save under run_id key so package-uwp sees this run's tree.
       - name: Save Core / vcpkg cache
         uses: actions/cache/save@v6
         with:
@@ -128,9 +141,9 @@ jobs:
             C:/vcpkg-bt
           key: ${{ env.CORE_CACHE_PREFIX }}-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}-${{ github.run_id }}
 
-  # Stage 2: MSIX package only (no Core recompile).
   package-uwp:
     if: |
+      github.event_name == 'workflow_call' ||
       (github.event_name == 'workflow_dispatch' && inputs.with_core == true) ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
     needs: [core-uwp]
@@ -174,10 +187,21 @@ jobs:
           key: ${{ env.CORE_CACHE_PREFIX }}-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}-${{ github.run_id }}
           fail-on-cache-miss: true
 
+      - name: Resolve BuildRevision
+        id: rev
+        shell: bash
+        run: |
+          rev="${{ inputs.build_revision }}"
+          if [[ -z "$rev" || "$rev" == "0" ]]; then
+            rev="${{ github.run_number }}"
+          fi
+          echo "build_revision=$rev" >> "$GITHUB_OUTPUT"
+          echo "Using BuildRevision=$rev"
+
       - name: Package MSIX (SkipCoreBuild)
         shell: pwsh
         run: |
-          .\scripts\build-uwp.ps1 -Configuration Release -BuildRevision ${{ github.run_number }} -WithCore -SkipCoreBuild
+          .\scripts\build-uwp.ps1 -Configuration Release -BuildRevision ${{ steps.rev.outputs.build_revision }} -WithCore -SkipCoreBuild
 
       - uses: actions/upload-artifact@v7
         with:
@@ -187,4 +211,4 @@ jobs:
             uwp/AppPackages/**/*.appx
             uwp/xbox_bitcoind-dev.cer
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14

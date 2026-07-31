@@ -9,7 +9,8 @@ deploy to the Xbox (use `scripts/deploy.sh` locally).
 |----------|-----------|----------------|-------------------------|
 | [`ci-linux.yml`](../.github/workflows/ci-linux.yml) | `ubuntu-24.04` | shellcheck, pin, optional Linux smoke | MSVC, UWP, Xbox |
 | [`ci-msvc-baseline.yml`](../.github/workflows/ci-msvc-baseline.yml) | `windows-2025-vs2026` | Desktop MSVC pin (unpatched) | UWP / MSIX |
-| [`build-uwp.yml`](../.github/workflows/build-uwp.yml) | scaffold `windows-2022`; core/package `windows-2025-vs2026` | UWP product pipeline | Desktop MSVC |
+| [`build-uwp.yml`](../.github/workflows/build-uwp.yml) | scaffold `windows-2022`; core/package `windows-2025-vs2026` | UWP product pipeline (also `workflow_call`) | Desktop MSVC |
+| [`release.yml`](../.github/workflows/release.yml) | calls `build-uwp` + `ubuntu-24.04` publish | Tag `v*` → MSIX + GitHub Release | Xbox deploy |
 
 **Desktop MSVC ≠ UWP Core:** same pin, different targets (`x64-windows` vs
 WindowsStore `x64-uwp` + patches). They only co-fire on pin / shared fetch changes.
@@ -74,6 +75,7 @@ Caches full `build-msvc-baseline` tree + vcpkg archives; `cmake --build --parall
 |--------|-----|------------|
 | `actions/checkout` | `v7` | `v7.0.1` |
 | `actions/upload-artifact` | `v7` | `v7.0.1` |
+| `actions/download-artifact` | `v8` | `v8.0.1` |
 | `actions/cache` | `v6` | `v6.1.0` |
 | `actions/cache/restore` | `v6` | (same) |
 | `actions/cache/save` | `v6` | (same) |
@@ -137,6 +139,25 @@ CI_SKIP_TESTS=1 ./scripts/build-linux-smoke.sh
 | `uwp/**` only (warm Core cache) | package-uwp medium; core SkipIfFresh |
 | pin / patches | core rebuild high + package |
 | MSVC script / pin | msvc high |
+
+## Releases (automated)
+
+| Trigger | Effect |
+|---------|--------|
+| `git push origin vX.Y.Z` | `release.yml`: build WithCore MSIX → GitHub Release + assets |
+| Actions → **release** → Run workflow | Rebuild/publish for an **existing** tag |
+
+Local helper:
+
+```bash
+./scripts/cut-release.sh 0.2.0           # tag + push → CI release
+./scripts/cut-release.sh 0.2.0 --dry-run
+```
+
+Requirements: clean tree; tag must not already exist. Package revision uses
+`GITHUB_RUN_NUMBER` (manifest base stays `0.1.0.0` unless you bump AppxManifest).
+
+Manual first release was `v0.1.0`; later tags should use this path only.
 
 ## Pin bumps
 

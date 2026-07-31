@@ -3,6 +3,17 @@
 All paths relative to the repo root. Credentials: `source scripts/env.sh`
 (or `~/.config/xllama/xbox-env`).
 
+## Release
+
+| Script | Purpose |
+|--------|---------|
+| `cut-release.sh` | Annotated tag `vX.Y.Z` + push → `.github/workflows/release.yml` |
+
+```bash
+./scripts/cut-release.sh 0.2.0
+./scripts/cut-release.sh 0.2.0 --dry-run
+```
+
 ## Operate (Linux host → Series S)
 
 | Script | Purpose |

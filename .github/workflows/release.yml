@@ -1,0 +1,176 @@
+name: release
+
+# Automated GitHub Release:
+#   1. push tag v*  →  build WithCore MSIX  →  publish release + assets
+#   2. workflow_dispatch → rebuild/publish for an existing tag
+#
+# Local cut: ./scripts/cut-release.sh 0.2.0
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing git tag to package (e.g. v0.1.1). Must already exist on the remote."
+        required: true
+        type: string
+      force_core:
+        description: "Force Core UWP rebuild"
+        type: boolean
+        default: true
+      prerelease:
+        description: "Mark GitHub release as pre-release"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Build product MSIX (reuses build-uwp pipeline).
+  build:
+    uses: ./.github/workflows/build-uwp.yml
+    with:
+      with_core: true
+      force_core: ${{ github.event_name == 'workflow_dispatch' && inputs.force_core || true }}
+      build_revision: ${{ github.run_number }}
+
+  publish:
+    needs: [build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag
+        id: meta
+        env:
+          INPUT_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || '' }}
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${INPUT_TAG}"
+            TAG="${TAG#refs/tags/}"
+            if [[ -z "$TAG" ]]; then
+              echo "workflow_dispatch requires tag input" >&2
+              exit 1
+            fi
+            if ! git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+              echo "Tag not found in checkout: ${TAG}" >&2
+              exit 1
+            fi
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-].*)?$ ]]; then
+            echo "Tag must look like v0.1.0 (got: ${TAG})" >&2
+            exit 1
+          fi
+          VER="${TAG#v}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-list -n1 "${TAG}")" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag=${TAG} version=${VER}"
+
+      - name: Download MSIX artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: xbox_bitcoind-msix-core
+          path: dist/
+
+      - name: Collect release assets
+        id: assets
+        run: |
+          set -euo pipefail
+          find dist -type f \( -name '*.msix' -o -name '*.appx' -o -name '*.cer' \) | sort
+          MSIX=$(find dist -type f -name '*.msix' | head -n1)
+          CER=$(find dist -type f -name '*.cer' | head -n1)
+          if [[ -z "${MSIX}" ]]; then
+            echo "No .msix in artifact" >&2
+            find dist -type f | head -50 >&2
+            exit 1
+          fi
+          # Flatten to release-friendly names in dist/release/
+          mkdir -p dist/release
+          cp -f "${MSIX}" "dist/release/$(basename "${MSIX}")"
+          echo "msix=dist/release/$(basename "${MSIX}")" >> "$GITHUB_OUTPUT"
+          if [[ -n "${CER}" ]]; then
+            cp -f "${CER}" "dist/release/$(basename "${CER}")"
+            echo "cer=dist/release/$(basename "${CER}")" >> "$GITHUB_OUTPUT"
+          fi
+          ls -la dist/release/
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VER: ${{ steps.meta.outputs.version }}
+          SHA: ${{ steps.meta.outputs.sha }}
+          MSIX: ${{ steps.assets.outputs.msix }}
+          CER: ${{ steps.assets.outputs.cer }}
+          PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+        run: |
+          set -euo pipefail
+          TITLE="v${VER} — xbox_bitcoind (Series S Dev Mode)"
+          NOTES="$(cat <<EOF
+          ## xbox_bitcoind ${TAG}
+
+          Automated release from commit \`${SHA:0:7}\`.
+
+          ### Assets
+          - \`$(basename "${MSIX}")\` — UWP WithCore package (sideload)
+          - \`$(basename "${CER:-xbox_bitcoind-dev.cer}")\` — dev signing certificate (install once)
+
+          ### Install
+          \`\`\`bash
+          source ~/.config/xllama/xbox-env
+          ./scripts/deploy.sh install-cert path/to/xbox_bitcoind-dev.cer
+          ./scripts/deploy.sh path/to/$(basename "${MSIX}")
+          # Dev Home → App type → Game
+          ./scripts/deploy.sh start-app
+          ./scripts/deploy.sh status
+          \`\`\`
+
+          ### Notes
+          - Dev Mode only (not Store / retail)
+          - Bitcoin Core pin: see \`config/bitcoin-core.pin\`
+          - Docs: [README](https://github.com/${{ github.repository }}#readme) · [ops](https://github.com/${{ github.repository }}/blob/${TAG}/docs/ops.md)
+
+          ---
+          Generated by \`.github/workflows/release.yml\`.
+          EOF
+          )"
+
+          FILES=("${MSIX}")
+          if [[ -n "${CER:-}" && -f "${CER}" ]]; then
+            FILES+=("${CER}")
+          fi
+
+          PRE_ARGS=()
+          if [[ "${PRERELEASE}" == "true" ]]; then
+            PRE_ARGS+=(--prerelease)
+          fi
+
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} exists — uploading assets (clobber)"
+            gh release upload "${TAG}" "${FILES[@]}" --clobber
+            gh release edit "${TAG}" --title "${TITLE}" --notes "${NOTES}" "${PRE_ARGS[@]}"
+          else
+            echo "Creating release ${TAG}"
+            gh release create "${TAG}" \
+              --title "${TITLE}" \
+              --notes "${NOTES}" \
+              --target "${SHA}" \
+              "${PRE_ARGS[@]}" \
+              "${FILES[@]}"
+          fi
+
+          gh release view "${TAG}"

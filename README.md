@@ -69,6 +69,12 @@ Details: [docs/plan-core-uwp.md](docs/plan-core-uwp.md).
 Latest packaged build: **[Releases](https://github.com/gianlucamazza/xbox_bitcoind/releases/latest)**  
 (`xbox_bitcoind_*.msix` + `xbox_bitcoind-dev.cer`). Install via `./scripts/deploy.sh` after trusting the cert; set **App type → Game**.
 
+New versions (maintainers):
+
+```bash
+./scripts/cut-release.sh 0.2.0    # tags v0.2.0, pushes → CI builds MSIX + publishes Release
+```
+
 ## Console (shared with xllama)
 
 | | |
