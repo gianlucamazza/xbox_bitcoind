@@ -11,7 +11,7 @@ Snapshot (see also [ops.md](ops.md)):
 | | |
 |--|--|
 | Pin | Bitcoin Core **v31.1** |
-| Package | `GianlucaMazza.xboxbitcoind` (WithCore, **Game**) |
+| Package | `GianlucaMazza.xboxbitcoind` **0.1.0.49** (WithCore, **Game**) |
 | Datadir | `LocalState\bitcoin` |
 
 ---
