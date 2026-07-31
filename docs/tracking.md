@@ -18,14 +18,15 @@ Update this file when gates move; use Issues for discussion and assignment.
 | Area | State |
 |------|--------|
 | Engineering v1 | **Complete** |
-| Git tag / Release | **v0.1.1** (cut from main; MSIX via release CI) · **v0.1.0** previous |
-| Console package | **0.1.0.65** WithCore · App type **Game** (upgrade to release MSIX when convenient) |
+| Git tag / Release | **v0.1.1** published (MSIX `0.1.0.6` + cert) · **v0.1.0** previous |
+| Console package | **0.1.0.6** WithCore · **set App type → Game** after reinstall |
+| Datadir | **Fresh IBD** — uninstall of 0.1.0.65 wiped LocalState (height was ~461k; now genesis) |
 | Pin | Bitcoin Core **v31.1** (`config/bitcoin-core.pin`) |
 | Version labeling | UI must show **Core pin** vs **app MSIX** separately (`xbb_version.generated.h` + package identity) — on `main`; console until next deploy still older subtitle |
 | Dashboard | 10-foot UI: primary/secondary metrics, dual bars, sparkline, ETA, centered KPI text |
 | Splash / tiles | Core official icons (regenerate: `scripts/generate-uwp-assets.py`) — on `main` |
 | Soft-stop (early / mid IBD) | Tip conservation **PASS**; mid-IBD host stop may still **DELETE** after 300s ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
-| Mainnet IBD | **In progress** (~14.2% tip progress, height ~**453k**) |
+| Mainnet IBD | **Restarted** after deploy wipe (height **0** → syncing again) |
 | 24h stable at tip | **Pending** IBD |
 | Soft-stop at tip | **Pending** tip |
 | Pre-Lightning | Blocked on IBD closure gates |

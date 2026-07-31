@@ -36,6 +36,8 @@ PFN=$(./scripts/deploy.sh pfn)
 5. Watch free space on the shared Dev partition (xllama + bitcoind).
 6. **Versions:** package `0.1.0.N` is the **app**; Bitcoin Core pin is **v31.1**.  
    Live package: `./scripts/node-status.sh` · gates: [tracking.md](tracking.md).
+7. **Never uninstall** just to install a lower package revision — **LocalState/datadir is deleted**. Prefer higher revision stamps. Deploy with `Dependencies/x64/*.appx` (VCLibs) beside the `.msix` or launch fails.
+8. Prefer GitHub **Release** assets over random CI artifacts; keep `Dependencies/x64` layout for `deploy.sh`.
 
 ## Quick commands
 

@@ -199,6 +199,7 @@ jobs:
           path: |
             uwp/AppPackages/**/*.msix
             uwp/AppPackages/**/*.appx
+            uwp/AppPackages/**/Dependencies/**/*.appx
             uwp/xbox_bitcoind-dev.cer
           if-no-files-found: error
           retention-days: 14

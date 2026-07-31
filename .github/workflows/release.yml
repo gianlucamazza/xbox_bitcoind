@@ -42,7 +42,9 @@ jobs:
     secrets: inherit
     with:
       force_core: true
-      build_revision: "${{ github.run_number }}"
+      # UWP revision is uint16 (0–65535). Offset so release packages sort above
+      # day-to-day build-uwp run_numbers (e.g. 65) and never "upgrade" to a lower rev.
+      build_revision: "${{ github.run_number + 10000 }}"
 
   publish:
     needs: [build]
@@ -98,20 +100,29 @@ jobs:
           find dist -type f \( -name '*.msix' -o -name '*.appx' -o -name '*.cer' \) | sort
           MSIX=$(find dist -type f -name '*.msix' | head -n1)
           CER=$(find dist -type f -name '*.cer' | head -n1)
+          VCLIB=$(find dist -type f -path '*/Dependencies/x64/*.appx' | head -n1 || true)
           if [[ -z "${MSIX}" ]]; then
             echo "No .msix in artifact" >&2
             find dist -type f | head -50 >&2
             exit 1
           fi
           # Flatten to release-friendly names in dist/release/
-          mkdir -p dist/release
+          mkdir -p dist/release/Dependencies/x64
           cp -f "${MSIX}" "dist/release/$(basename "${MSIX}")"
           echo "msix=dist/release/$(basename "${MSIX}")" >> "$GITHUB_OUTPUT"
           if [[ -n "${CER}" ]]; then
             cp -f "${CER}" "dist/release/$(basename "${CER}")"
             echo "cer=dist/release/$(basename "${CER}")" >> "$GITHUB_OUTPUT"
           fi
-          ls -la dist/release/
+          if [[ -n "${VCLIB}" ]]; then
+            cp -f "${VCLIB}" "dist/release/Dependencies/x64/$(basename "${VCLIB}")"
+            # Also attach flat for download-only users
+            cp -f "${VCLIB}" "dist/release/$(basename "${VCLIB}")"
+            echo "vclib=dist/release/$(basename "${VCLIB}")" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No VCLibs dependency in artifact — console launch may fail without prior VCLibs install"
+          fi
+          ls -laR dist/release/
 
       - name: Create or update GitHub Release
         env:
@@ -121,6 +132,7 @@ jobs:
           SHA: ${{ steps.meta.outputs.sha }}
           MSIX: ${{ steps.assets.outputs.msix }}
           CER: ${{ steps.assets.outputs.cer }}
+          VCLIB: ${{ steps.assets.outputs.vclib }}
           PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
         run: |
           set -euo pipefail
@@ -133,19 +145,23 @@ jobs:
           ### Assets
           - \`$(basename "${MSIX}")\` — UWP WithCore package (sideload)
           - \`$(basename "${CER:-xbox_bitcoind-dev.cer}")\` — dev signing certificate (install once)
+          - \`$(basename "${VCLIB:-Microsoft.VCLibs.x64.14.00.appx}")\` — VCLibs dependency (required for launch)
 
           ### Install
           \`\`\`bash
           source ~/.config/xllama/xbox-env
+          # Keep Dependencies/x64/ next to the .msix when using deploy.sh
           ./scripts/deploy.sh install-cert path/to/xbox_bitcoind-dev.cer
           ./scripts/deploy.sh path/to/$(basename "${MSIX}")
-          # Dev Home → App type → Game
+          # Dev Home → App type → Game  (after every reinstall)
           ./scripts/deploy.sh start-app
           ./scripts/deploy.sh status
           \`\`\`
 
           ### Notes
           - Dev Mode only (not Store / retail)
+          - **Do not uninstall** an older package just to downgrade revision — LocalState/datadir is wiped
+          - Package revision (0.1.0.N) is not Bitcoin Core version (v31.1)
           - Bitcoin Core pin: see \`config/bitcoin-core.pin\`
           - Docs: [README](https://github.com/${{ github.repository }}#readme) · [ops](https://github.com/${{ github.repository }}/blob/${TAG}/docs/ops.md)
 
@@ -157,6 +173,9 @@ jobs:
           FILES=("${MSIX}")
           if [[ -n "${CER:-}" && -f "${CER}" ]]; then
             FILES+=("${CER}")
+          fi
+          if [[ -n "${VCLIB:-}" && -f "${VCLIB}" ]]; then
+            FILES+=("${VCLIB}")
           fi
 
           PRE_ARGS=()

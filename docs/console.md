@@ -13,11 +13,11 @@ Same **Xbox Series S** as [`xllama`](../../xllama/) (Dev Mode + Device Portal).
 | Device Portal | `https://192.168.1.44:11443` (DHCP — update if IP changes) |
 | Credentials | `~/.config/xllama/xbox-env` (see `scripts/env.sh`) |
 | Sibling | `GianlucaMazza.xllama_1.5.2.836_x64__pj67f1fcj4n14` |
-| This package | `GianlucaMazza.xboxbitcoind_0.1.0.65_x64__m0e4707sws2jw` |
+| This package | `GianlucaMazza.xboxbitcoind_0.1.0.6_x64__m0e4707sws2jw` (release **v0.1.1**) |
 
-**Last full ops check:** 2026-07-31 package **0.1.0.65** (ETA + STOPPING Ns + join 150s). Live tip ~**453k** / ~14% IBD. Soft-stop at deploy used DELETE after 300s but tip conserved (452198→452201). Host wait default **180s**.
+**Last full ops check:** 2026-07-31 deploy **v0.1.1** MSIX (`0.1.0.6`). Soft-stop from 0.1.0.65 was **clean in 38s** once; later stop needed DELETE. Uninstall to force lower revision **wiped LocalState** → IBD restarted from genesis. Launch required **VCLibs** dependency next to the MSIX. **Set App type → Game**.
 
-**Version labels:** Bitcoin Core pin is **v31.1**; `0.1.0.65` is the **MSIX app** revision only. UI on `main` shows both (`Bitcoin Core v31.1 · app …`); console may lag until next package.
+**Version labels:** Bitcoin Core pin is **v31.1**; `0.1.0.6` is the **MSIX app** revision only.
 
 Live tracking [tracking.md](tracking.md). Day-to-day: [ops.md](ops.md).
 
