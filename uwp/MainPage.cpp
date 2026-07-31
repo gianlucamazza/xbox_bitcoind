@@ -189,6 +189,17 @@ void GetUsableSize(double page_w, double page_h, double& out_w, double& out_h, d
     } catch (...) {
         scale = 1.0;
     }
+    // Heuristic: classic half-1080p / half-1440 DIP sizes when API reports scale=1.
+    if (scale < 1.25) {
+        const double ar = (h > 1.0) ? (w / h) : 0.0;
+        if (ar > 1.5 && ar < 1.9) {
+            if (h >= 500.0 && h <= 560.0) {
+                scale = 2.0; // 960×540 → 1080p
+            } else if (h >= 700.0 && h <= 740.0) {
+                scale = 1.5; // 1280×720 → 1080p
+            }
+        }
+    }
     // Work in effective DIPs (≈ CSS reference pixels at 96dpi * scale).
     const double eff_w = w * scale;
     const double eff_h = h * scale;
@@ -346,9 +357,18 @@ void MainPageController::Init() {
     BuildUI();
     WireButtons();
     WireGamepadFocus();
-    auto L = DiscoverLayout(1920, 1080);
-    auto plan = PlanSections(L.usable_h, L);
-    ApplyLayout(L, plan);
+    // Prefer live bounds immediately (may still be 960×540@2x on Series S).
+    double w = 1920;
+    double h = 1080;
+    try {
+        auto b = ApplicationView::GetForCurrentView().VisibleBounds();
+        if (b.Width > 32 && b.Height > 32) {
+            w = b.Width;
+            h = b.Height;
+        }
+    } catch (...) {
+    }
+    OnRootSizeChanged(w, h);
     ApplyStatus(NodeStatusSnapshot(), {}, "Running probes…");
     StartUiTimer();
 }
@@ -771,8 +791,8 @@ void MainPageController::OnRootSizeChanged(double width, double height) {
 
     ApplyLayout(L, plan);
     Logf("[ui] layout view=%.0fx%.0f usable_eff=%.0fx%.0f density=%d cols=%d secondary=%d spark=%d log_min=%.0f",
-         width, height, L.usable_w, L.usable_h, static_cast<int>(L.density), L.primary_columns,
-         plan.show_secondary ? 1 : 0, plan.show_spark ? 1 : 0, plan.log_min_h);
+         L.viewport_w, L.viewport_h, L.usable_w, L.usable_h, static_cast<int>(L.density),
+         L.primary_columns, plan.show_secondary ? 1 : 0, plan.show_spark ? 1 : 0, plan.log_min_h);
 }
 
 void MainPageController::ApplyLayout(UiLayout const& L, LayoutPlan const& plan) {
