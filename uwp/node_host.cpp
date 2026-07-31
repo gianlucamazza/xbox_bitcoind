@@ -5,7 +5,9 @@
 
 #include "log.h"
 #include "node_host.h"
+#include "rpc_client.h"
 
+#include <chrono>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -28,7 +30,9 @@ std::wstring DatadirW() {
 }
 
 std::string WideToUtf8(const std::wstring& w) {
-    if (w.empty()) return {};
+    if (w.empty()) {
+        return {};
+    }
     int need = WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr);
     std::string u(static_cast<size_t>(need > 0 ? need - 1 : 0), '\0');
     if (need > 1) {
@@ -42,7 +46,6 @@ void EnsureDatadirLayout() {
     CreateDirectoryW(base.c_str(), nullptr);
     auto conf = base + L"\\bitcoin.conf";
     if (GetFileAttributesW(conf.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        // Prefer packaged template if present
         std::wstring packaged;
         try {
             auto ip = winrt::Windows::ApplicationModel::Package::Current().InstalledLocation().Path();
@@ -54,7 +57,7 @@ void EnsureDatadirLayout() {
         } else {
             const char* content =
                 "prune=550\nserver=1\nlisten=0\ndbcache=256\nmaxconnections=8\n"
-                "printtoconsole=0\nupnp=0\nnatpmp=0\n";
+                "printtoconsole=0\nupnp=0\nnatpmp=0\nrpcallowip=127.0.0.1\nrpcbind=127.0.0.1\n";
             FILE* f = _wfopen(conf.c_str(), L"wb");
             if (f) {
                 fwrite(content, 1, strlen(content), f);
@@ -70,7 +73,6 @@ void NodeThreadMain() {
     std::string datadir = WideToUtf8(DatadirW());
     std::string conf = datadir + "\\bitcoin.conf";
 
-    // argv must outlive BitcoindMain until it returns
     std::string a0 = "bitcoind";
     std::string a1 = "-datadir=" + datadir;
     std::string a2 = "-conf=" + conf;
@@ -122,12 +124,16 @@ bool NodeCoreLinked() {
 #endif
 }
 
+std::string NodeDatadirUtf8() {
+    return WideToUtf8(DatadirW());
+}
+
 NodeStatus NodeStatusSnapshot() {
     NodeStatus s;
     s.available = NodeCoreLinked();
     s.running = g_running.load();
     s.last_exit = g_exit.load();
-    s.datadir = WideToUtf8(DatadirW());
+    s.datadir = NodeDatadirUtf8();
     {
         std::lock_guard lock(g_mu);
         s.message = g_message;
@@ -142,6 +148,37 @@ NodeStatus NodeStatusSnapshot() {
     return s;
 }
 
+NodeStatus NodeStatusLive() {
+    NodeStatus s = NodeStatusSnapshot();
+    if (!s.available) {
+        return s;
+    }
+    if (!s.running) {
+        return s;
+    }
+    if (auto chain = RpcGetBlockchainInfo(s.datadir)) {
+        s.rpc_ready = true;
+        s.chain = chain->chain;
+        s.blocks = chain->blocks;
+        s.headers = chain->headers;
+        s.verification_progress = chain->verification_progress;
+        s.initial_block_download = chain->initial_block_download;
+        s.pruned = chain->pruned;
+        if (s.initial_block_download || s.verification_progress < 0.999) {
+            s.message = "syncing " + s.chain;
+        } else {
+            s.message = "synced " + s.chain;
+        }
+    } else {
+        s.rpc_ready = false;
+        s.message = "starting (RPC not ready)";
+    }
+    if (auto net = RpcGetNetworkInfo(s.datadir)) {
+        s.connections = net->connections;
+    }
+    return s;
+}
+
 bool NodeStart() {
 #ifdef XBB_WITH_CORE
     if (g_running) {
@@ -151,6 +188,11 @@ bool NodeStart() {
         g_thread.join();
     }
     EnsureDatadirLayout();
+    g_exit = 0;
+    {
+        std::lock_guard lock(g_mu);
+        g_message = "starting…";
+    }
     g_thread = std::thread(NodeThreadMain);
     return true;
 #else
@@ -161,14 +203,25 @@ bool NodeStart() {
 
 void NodeStop() {
 #ifdef XBB_WITH_CORE
-    // BitcoindMain blocks until shutdown_signal; request process-level stop via RPC later.
-    // For v1: app suspend/close ends the process. Best-effort join if already exiting.
-    Logf("[node] NodeStop: waiting for thread (if bitcoind already shutting down)");
-    if (g_thread.joinable()) {
-        // Cannot forcibly interrupt without RPC stop; detach if still running after app exit.
-        if (!g_running) {
-            g_thread.join();
+    Logf("[node] NodeStop: requesting RPC stop");
+    const std::string datadir = NodeDatadirUtf8();
+    if (g_running.load()) {
+        if (RpcStop(datadir)) {
+            Logf("[node] RPC stop sent");
         } else {
+            Logf("[node] RPC stop failed (node may not be ready)");
+        }
+    }
+    if (g_thread.joinable()) {
+        // Wait up to ~45s for clean shutdown
+        for (int i = 0; i < 90 && g_running.load(); ++i) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+        if (!g_running.load()) {
+            g_thread.join();
+            Logf("[node] node thread joined");
+        } else {
+            Logf("[node] node still running after wait; detaching");
             g_thread.detach();
         }
     }

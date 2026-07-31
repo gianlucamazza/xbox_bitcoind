@@ -197,6 +197,7 @@
     <ClCompile Include="log.cpp" />
     <ClCompile Include="probes.cpp" />
     <ClCompile Include="node_host.cpp" />
+    <ClCompile Include="rpc_client.cpp" />
   </ItemGroup>
 
   <ItemGroup>
@@ -206,6 +207,7 @@
     <ClInclude Include="log.h" />
     <ClInclude Include="probes.h" />
     <ClInclude Include="node_host.h" />
+    <ClInclude Include="rpc_client.h" />
   </ItemGroup>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

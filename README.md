@@ -6,7 +6,7 @@ Port of **Bitcoin Core (`bitcoind`)** to **Xbox Series S** (shared Dev Mode cons
 [![ci-msvc-baseline](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml)
 [![build-uwp](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml)
 
-> Status: **bitcoind v31.1 running on Series S** (WithCore MSIX `0.1.0.39`, prune=550). CI `uwp-core` green on VS2026.
+> Status: **bitcoind v31.1 on Series S** + **status dashboard UI** (RPC live metrics, Start/Stop, log tail). CI `uwp-core` green on VS2026.
 
 ## Goals (v1)
 

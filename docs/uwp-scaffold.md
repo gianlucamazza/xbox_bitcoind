@@ -1,8 +1,8 @@
 # UWP scaffold (xbox_bitcoind)
 
-Minimal **C++/WinRT** UWP app for Xbox Series S Dev Mode. Runs AppContainer
-probes and shows status UI. Bitcoin Core is **not linked yet** — that is the
-next integration step after probes pass on console.
+**C++/WinRT** UWP app for Xbox Series S Dev Mode: AppContainer probes, **status
+dashboard** (RPC metrics / Start-Stop / log tail), optional Bitcoin Core embed
+(`-WithCore`). UI details: [ui.md](./ui.md).
 
 ## Layout
 
