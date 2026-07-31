@@ -94,4 +94,4 @@ Live checklist + issue map: [tracking.md](tracking.md).
 
 ---
 
-*Last roadmap reconciliation: 2026-07-31 late — engineering + architecture/UI complete on main; **v0.1.1** on console **0.1.0.6**; IBD ~307k; leave node running (no mid-IBD redeploy).*
+*Last roadmap reconciliation: 2026-07-31 night — architecture/UI on console **0.1.0.75**; IBD ~326k; leave node running.*

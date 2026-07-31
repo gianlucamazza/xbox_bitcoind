@@ -29,7 +29,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 - Ops hygiene / best practices section in `docs/ops.md`
 - `apply-console-conf` guards tip profile until progress ≥ 0.99 (override `--force`)
 - Docs screenshot refreshed for package **0.1.0.6** / release **v0.1.1**
-- Tracking/roadmap: architecture+UI marked complete on main; live IBD snapshot
+- Tracking/roadmap: architecture+UI complete; console package **0.1.0.75**
+- `release.yml`: compute MSIX revision offset in shell (GHA expressions have no `+`)
 
 ## [0.1.1] — 2026-07-31
 

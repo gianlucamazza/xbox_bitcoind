@@ -145,8 +145,8 @@ Research archive (phase 0): [docs/research/](docs/research/00-feasibility.md).
 | Area | State |
 |------|--------|
 | **v1 engineering** | **Complete** ([docs/roadmap.md](docs/roadmap.md)) |
-| Architecture + UI | **Complete on main** — lifecycle, host plane, tip age / HEADERS·STALE ([docs/plan-core-uwp.md](docs/plan-core-uwp.md) · [docs/ui.md](docs/ui.md)) |
-| WithCore on Series S | Working — package **0.1.0.6** (release **v0.1.1**); IBD mid-progress |
+| Architecture + UI | **Complete** — lifecycle, host plane, tip age / HEADERS·STALE ([docs/plan-core-uwp.md](docs/plan-core-uwp.md) · [docs/ui.md](docs/ui.md)) |
+| WithCore on Series S | Working — package **0.1.0.75** (CI; tip age UI); IBD mid-progress |
 | Soft-stop persistence | Tip conserved early + mid IBD; mid-IBD DELETE fallback still possible ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
 | Mainnet IBD → tip + 24h stable | **Ops pending** (timer running; `./scripts/v1-close-check.sh`) |
 | Wallet / Store / inbound listen | Out of scope for v1 |

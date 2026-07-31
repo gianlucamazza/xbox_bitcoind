@@ -33,8 +33,29 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # GHA expressions have no arithmetic — compute offset revision in shell.
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      build_revision: ${{ steps.rev.outputs.rev }}
+    steps:
+      - id: rev
+        # UWP revision is uint16 (0–65535). Offset so release packages sort above
+        # day-to-day build-uwp run_numbers (e.g. 75) and never "upgrade" to a lower rev.
+        run: |
+          set -euo pipefail
+          rev=$((10000 + ${{ github.run_number }}))
+          if (( rev > 65535 )); then
+            echo "build_revision ${rev} exceeds uint16" >&2
+            exit 1
+          fi
+          echo "rev=${rev}" >> "$GITHUB_OUTPUT"
+          echo "build_revision=${rev} (run_number=${{ github.run_number }})"
+
   # Dedicated product pipeline (no PR gates / no path filters).
   build:
+    needs: [prepare]
     permissions:
       contents: read
       actions: write
@@ -42,9 +63,7 @@ jobs:
     secrets: inherit
     with:
       force_core: true
-      # UWP revision is uint16 (0–65535). Offset so release packages sort above
-      # day-to-day build-uwp run_numbers (e.g. 65) and never "upgrade" to a lower rev.
-      build_revision: "${{ github.run_number + 10000 }}"
+      build_revision: ${{ needs.prepare.outputs.build_revision }}
 
   publish:
     needs: [build]
