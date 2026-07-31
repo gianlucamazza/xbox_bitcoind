@@ -11,8 +11,9 @@ Snapshot (see also [ops.md](ops.md)):
 | | |
 |--|--|
 | Pin | Bitcoin Core **v31.1** |
-| Package | `GianlucaMazza.xboxbitcoind` **0.1.0.49** (WithCore, **Game**) |
+| Package | `GianlucaMazza.xboxbitcoind` **0.1.0.63** (WithCore, **Game**) |
 | Datadir | `LocalState\bitcoin` |
+| Tracking | [tracking.md](tracking.md) (status + GitHub Issues) |
 
 ---
 
@@ -23,6 +24,7 @@ Snapshot (see also [ops.md](ops.md)):
 | Doc | Contents |
 |-----|----------|
 | [ops.md](ops.md) | Golden rules, status/monitor, budgets, soft-stop |
+| [tracking.md](tracking.md) | **Live status, open work, issue map** |
 | [roadmap.md](roadmap.md) | v1 complete vs ops-pending IBD |
 | [console.md](console.md) | Series S baseline, identity, storage |
 | [device-portal.md](device-portal.md) | Portal env, `deploy.sh` surface |

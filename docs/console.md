@@ -13,9 +13,9 @@ Same **Xbox Series S** as [`xllama`](../../xllama/) (Dev Mode + Device Portal).
 | Device Portal | `https://192.168.1.44:11443` (DHCP — update if IP changes) |
 | Credentials | `~/.config/xllama/xbox-env` (see `scripts/env.sh`) |
 | Sibling | `GianlucaMazza.xllama_1.5.2.836_x64__pj67f1fcj4n14` |
-| This package | `GianlucaMazza.xboxbitcoind_0.1.0.49_x64__m0e4707sws2jw` |
+| This package | `GianlucaMazza.xboxbitcoind_0.1.0.63_x64__m0e4707sws2jw` |
 
-**Last full ops check:** 2026-07-31 deploy **0.1.0.49** (UI dashboard refresh); tip ~**369k** after soft-stop upgrade; chain load OK (`nBestHeight=368811`).
+**Last full ops check:** 2026-07-31 deploy **0.1.0.63** (responsive UI + scale-aware layout); tip ~**444k** / ~13% IBD; soft-stop mid-IBD verified earlier; live tracking [tracking.md](tracking.md).
 Day-to-day: [ops.md](ops.md).
 
 ```bash

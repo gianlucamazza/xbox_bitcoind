@@ -1,0 +1,40 @@
+name: Bug report
+description: Something broken in app, CI, or deploy
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Dev Mode only. For security issues use [SECURITY.md](../../SECURITY.md), not public issues.
+  - type: input
+    id: package
+    attributes:
+      label: Package / commit
+      description: e.g. 0.1.0.63 or git SHA
+    validations:
+      required: false
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: bitcoind.log tail, debug.log snippet, or CI URL
+    validations:
+      required: false

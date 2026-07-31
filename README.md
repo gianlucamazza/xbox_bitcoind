@@ -114,6 +114,7 @@ docs/         guides — [docs/README.md](docs/README.md)
 |----------|------------|
 | Run on console | [docs/ops.md](docs/ops.md) |
 | Doc index | [docs/README.md](docs/README.md) |
+| Tracking / issues | [docs/tracking.md](docs/tracking.md) |
 | Architecture | [docs/plan-core-uwp.md](docs/plan-core-uwp.md) |
 | CI / releases | [docs/ci.md](docs/ci.md) |
 | Scripts | [scripts/README.md](scripts/README.md) |

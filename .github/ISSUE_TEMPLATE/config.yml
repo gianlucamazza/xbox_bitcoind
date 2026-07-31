@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: https://github.com/gianlucamazza/xbox_bitcoind/blob/main/SECURITY.md
+    about: Do not file public issues for vulnerabilities
+  - name: Docs index
+    url: https://github.com/gianlucamazza/xbox_bitcoind/blob/main/docs/README.md
+    about: Start here for operators and developers

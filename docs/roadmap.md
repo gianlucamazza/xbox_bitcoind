@@ -24,9 +24,9 @@ original product shape (pruned validating node + UI + deploy + CI).
 
 | Gate | How to verify | Status |
 |------|----------------|--------|
-| Mainnet IBD finished | `tip_progress >= 0.999` via `node-status` / UI | **in progress** (~5% as of last sample) |
-| ≥24h stable at tip | Hourly samples in `ibd.jsonl` all running near tip | **pending** IBD |
-| Soft-stop at tip | `./scripts/soft-stop-test.sh` + note in [persistence.md](persistence.md) | **pending** tip |
+| Mainnet IBD finished | `tip_progress >= 0.999` via `node-status` / UI | **in progress** (~13% @ height ~444k, package 0.1.0.63) — [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) |
+| ≥24h stable at tip | Hourly samples in `ibd.jsonl` all running near tip | **pending** IBD — [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) |
+| Soft-stop at tip | `./scripts/soft-stop-test.sh` + note in [persistence.md](persistence.md) | **pending** tip — [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
 
 Automated assessment:
 
@@ -77,4 +77,8 @@ Only then: CLN spike / sibling `xbox_lightning` (not a conf flag).
 
 ---
 
-*Last roadmap reconciliation: 2026-07-31 — engineering complete; ops closure = IBD wall-clock.*
+Live checklist + issue map: [tracking.md](tracking.md).
+
+---
+
+*Last roadmap reconciliation: 2026-07-31 — engineering complete; ops closure = IBD wall-clock (~13%).*

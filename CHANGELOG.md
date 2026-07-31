@@ -14,26 +14,24 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ### Added
 
-- `SECURITY.md`, this changelog, `NOTICE`
-- Release automation (`.github/workflows/release.yml`, `scripts/cut-release.sh`)
-- README / docs restructure, `CONTRIBUTING.md`
-- Ops tooling (`node-status`, `soft-stop-test`, `ibd-sample`, `ibd-report`)
-- Hourly **user systemd** IBD sampler (`install-ibd-timer.sh`, `contrib/systemd/user/`)
-- `v1-close-check.sh` + [docs/roadmap.md](docs/roadmap.md) (engineering complete vs ops IBD)
-- Path-filtered CI; Core vs MSIX build split (`SkipIfFresh`, `workflow_call`)
-- Dashboard CHAIN + NODE metric grids (Behind / Disk / Mempool / Uptime)
-- Soft-stop UI state (`STOPPING`, button “Stop soft”)
-- Pre-Lightning roadmap gates + backup section in ops
+- `docs/tracking.md` + GitHub Issue templates (`bug`, `ops`) and labels
+- Responsive 10-foot dashboard: scale-aware density, primary/secondary metrics,
+  dual progress bars, session sparkline, title-safe budget layout
+- IBD console conf defaults (`dbcache=512`, `maxconnections=16`, `blocksonly=1`)
+  + `scripts/apply-console-conf.sh`
+- Off-LAN console access via standard OpenSSH LocalForward (Odroid Tailscale)
+- Auto-start node after probes (WithCore)
+- `SECURITY.md`, this changelog, `NOTICE` (since v0.1.0)
+- Release automation, ops tooling, hourly IBD timer, `v1-close-check.sh`
+- Path-filtered CI; Core vs MSIX build split
 
 ### Changed
 
-- GitHub Actions majors (paths-filter v4, setup-msbuild v3, setup-nuget v4, cache v6)
-- `ibd-sample.sh`: soft-fail for timers, milestone log, stuck-tip detection
-- Richer `getblockchaininfo` / `getmempoolinfo` / `uptime` in UI path
-- `bitcoin.conf.console` comments for standard pruned operator settings
-- UI: equal-width cards, section labels, gamepad focus, package version subtitle
-- UI visualization: dual progress (headers vs verified), session sparkline,
-  semantic metric colors, live updated clock, TV safe padding
+- Probes no longer overwrite operator `bitcoin.conf`
+- Fetch Bitcoin Core by pin **COMMIT** (quiet annotated-tag noise)
+- package-uwp: assert UWP workload before VS installer when possible
+- Soft-stop UI state (`STOPPING`, “Stop soft”); richer RPC metrics
+- Docs reconciled to package **0.1.0.63** / live IBD tracking
 
 ## [0.1.0] — 2026-07-31
 

@@ -56,7 +56,9 @@ PFN=$(./scripts/deploy.sh pfn)
 ./scripts/deploy.sh fetch-file "$PFN" debug.log /tmp/debug.log bitcoin
 ```
 
-## Measured budgets (package `0.1.0.42`, 2026-07-31)
+Live open work: [tracking.md](tracking.md).
+
+## Measured budgets (package `0.1.0.42`, 2026-07-31; re-sample at tip)
 
 Captured during mainnet IBD (~height 320–327k, progress ~3.5%):
 

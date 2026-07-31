@@ -1,0 +1,34 @@
+name: Ops / console task
+description: IBD, soft-stop, monitoring, console package work
+labels: ["ops"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Prefer updating [docs/tracking.md](../../docs/tracking.md) status when gates move.
+  - type: dropdown
+    id: gate
+    attributes:
+      label: Gate
+      options:
+        - IBD to tip
+        - 24h stable at tip
+        - Soft-stop at tip
+        - Soft-stop timeout / DELETE fallback
+        - Package cleanup
+        - Other ops
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Exit criteria
+      description: How do we know this is done? (script, metric, doc note)
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes / evidence
+    validations:
+      required: false

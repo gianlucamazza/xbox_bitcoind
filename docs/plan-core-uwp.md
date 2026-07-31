@@ -19,7 +19,7 @@ xbox_bitcoind.exe (UWP AppContainer, Game class)
         │
         ├── -datadir=<LocalState>\bitcoin
         ├── -conf=<LocalState>\bitcoin\bitcoin.conf
-        ├── prune=550 listen=0 server=1 dbcache=256
+        ├── prune=550 listen=0 server=1 dbcache=512 (console defaults)
         └── links: bitcoin_embed → bitcoin_node + util + common + deps (x64-uwp)
 ```
 
@@ -121,8 +121,8 @@ CI matrix and path filters: [ci.md](ci.md).
 | UWP patches 0001–0010 | **Done** (API + durability; no language hacks) |
 | `build-core-uwp` / `-WithCore` | **Done** (`bitcoin_embed` + `event.dll`) |
 | CI + release automation | **Done** |
-| Package on Series S | **`0.1.0.42`** WithCore, mainnet IBD running |
-| Full node sync | **Ops pending** (wall-clock; monitor via timer) |
+| Package on Series S | **`0.1.0.63`** WithCore, mainnet IBD ~13% |
+| Full node sync | **Ops pending** — [tracking.md](tracking.md) · issues #1–#3 |
 | Soft-stop persistence | **Verified** early + mid IBD |
 | Ops tooling | status / soft-stop-test / ibd-sample / **v1-close-check** |
 | **v1 engineering** | **Complete** (2026-07-31) |
