@@ -41,10 +41,17 @@ class MainPageController : public std::enable_shared_from_this<MainPageControlle
     winrt::Windows::UI::Xaml::Controls::TextBlock m_pill_text{nullptr};
     winrt::Windows::UI::Xaml::Controls::TextBlock m_network_label{nullptr};
 
+    // Row 1: chain tip
     winrt::Windows::UI::Xaml::Controls::TextBlock m_val_height{nullptr};
     winrt::Windows::UI::Xaml::Controls::TextBlock m_val_headers{nullptr};
     winrt::Windows::UI::Xaml::Controls::TextBlock m_val_progress{nullptr};
     winrt::Windows::UI::Xaml::Controls::TextBlock m_val_peers{nullptr};
+
+    // Row 2: standard node health
+    winrt::Windows::UI::Xaml::Controls::TextBlock m_val_behind{nullptr};
+    winrt::Windows::UI::Xaml::Controls::TextBlock m_val_disk{nullptr};
+    winrt::Windows::UI::Xaml::Controls::TextBlock m_val_mempool{nullptr};
+    winrt::Windows::UI::Xaml::Controls::TextBlock m_val_uptime{nullptr};
 
     winrt::Windows::UI::Xaml::Controls::ProgressBar m_progress_bar{nullptr};
     winrt::Windows::UI::Xaml::Controls::TextBlock m_meta{nullptr};
@@ -59,6 +66,7 @@ class MainPageController : public std::enable_shared_from_this<MainPageControlle
     winrt::Windows::UI::Xaml::DispatcherTimer m_timer{nullptr};
     std::string m_probe_note;
     bool m_refreshing = false;
+    bool m_stopping = false;
 };
 
 } // namespace xbb

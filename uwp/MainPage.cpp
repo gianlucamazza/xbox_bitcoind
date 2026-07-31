@@ -17,6 +17,7 @@
 #include <winrt/Windows.UI.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <iomanip>
 #include <sstream>
 
@@ -72,7 +73,43 @@ std::wstring FormatInt(int v) {
 
 std::wstring FormatPct(double p) {
     std::wostringstream os;
-    os << std::fixed << std::setprecision(1) << (p * 100.0) << L"%";
+    // More digits while IBD; coarser when synced.
+    const int prec = (p < 0.999) ? 3 : 1;
+    os << std::fixed << std::setprecision(prec) << (p * 100.0) << L"%";
+    return os.str();
+}
+
+std::wstring FormatBytes(int64_t n) {
+    if (n <= 0) {
+        return L"—";
+    }
+    const wchar_t* units[] = {L"B", L"KiB", L"MiB", L"GiB", L"TiB"};
+    double v = static_cast<double>(n);
+    int u = 0;
+    while (v >= 1024.0 && u < 4) {
+        v /= 1024.0;
+        ++u;
+    }
+    std::wostringstream os;
+    os << std::fixed << std::setprecision(u == 0 ? 0 : 1) << v << L" " << units[u];
+    return os.str();
+}
+
+std::wstring FormatUptime(int64_t sec) {
+    if (sec <= 0) {
+        return L"—";
+    }
+    const int64_t d = sec / 86400;
+    const int64_t h = (sec % 86400) / 3600;
+    const int64_t m = (sec % 3600) / 60;
+    std::wostringstream os;
+    if (d > 0) {
+        os << d << L"d " << h << L"h";
+    } else if (h > 0) {
+        os << h << L"h " << m << L"m";
+    } else {
+        os << m << L"m";
+    }
     return os.str();
 }
 
@@ -135,7 +172,8 @@ void MainPageController::BuildUI() {
     root_grid.Background(SolidColorBrush{kBg});
     root_grid.Padding(ThicknessHelper::FromUniformLength(28));
 
-    // rows: header | metrics | progress | actions | log
+    // rows: header | metrics1 | metrics2 | progress | actions | log
+    root_grid.RowDefinitions().Append(RowDefinition{});
     root_grid.RowDefinitions().Append(RowDefinition{});
     root_grid.RowDefinitions().Append(RowDefinition{});
     root_grid.RowDefinitions().Append(RowDefinition{});
@@ -190,10 +228,10 @@ void MainPageController::BuildUI() {
     Grid::SetRow(header, 0);
     root_grid.Children().Append(header);
 
-    // --- Metric cards ---
+    // --- Metric cards row 1 (chain) ---
     auto metrics = StackPanel{};
     metrics.Orientation(Orientation::Horizontal);
-    metrics.Margin(ThicknessHelper::FromLengths(0, 0, 0, 12));
+    metrics.Margin(ThicknessHelper::FromLengths(0, 0, 0, 10));
     metrics.Children().Append(MakeCard(L"Height", m_val_height));
     metrics.Children().Append(MakeCard(L"Headers", m_val_headers));
     metrics.Children().Append(MakeCard(L"Progress", m_val_progress));
@@ -202,6 +240,19 @@ void MainPageController::BuildUI() {
     metrics.Children().Append(peers_card);
     Grid::SetRow(metrics, 1);
     root_grid.Children().Append(metrics);
+
+    // --- Metric cards row 2 (node health — standard bitcoind view) ---
+    auto metrics2 = StackPanel{};
+    metrics2.Orientation(Orientation::Horizontal);
+    metrics2.Margin(ThicknessHelper::FromLengths(0, 0, 0, 12));
+    metrics2.Children().Append(MakeCard(L"Behind", m_val_behind));
+    metrics2.Children().Append(MakeCard(L"Disk", m_val_disk));
+    metrics2.Children().Append(MakeCard(L"Mempool", m_val_mempool));
+    auto up_card = MakeCard(L"Uptime", m_val_uptime);
+    up_card.Margin(ThicknessHelper::FromUniformLength(0));
+    metrics2.Children().Append(up_card);
+    Grid::SetRow(metrics2, 2);
+    root_grid.Children().Append(metrics2);
 
     // --- Progress + meta ---
     auto prog_panel = StackPanel{};
@@ -221,7 +272,7 @@ void MainPageController::BuildUI() {
     m_meta.TextWrapping(TextWrapping::Wrap);
     prog_panel.Children().Append(m_progress_bar);
     prog_panel.Children().Append(m_meta);
-    Grid::SetRow(prog_panel, 2);
+    Grid::SetRow(prog_panel, 3);
     root_grid.Children().Append(prog_panel);
 
     // --- Actions ---
@@ -229,12 +280,12 @@ void MainPageController::BuildUI() {
     actions.Orientation(Orientation::Horizontal);
     actions.Margin(ThicknessHelper::FromLengths(0, 0, 0, 16));
     m_btn_start = MakeButton(L"Start");
-    m_btn_stop = MakeButton(L"Stop");
+    m_btn_stop = MakeButton(L"Stop soft");
     m_btn_refresh = MakeButton(L"Refresh");
     actions.Children().Append(m_btn_start);
     actions.Children().Append(m_btn_stop);
     actions.Children().Append(m_btn_refresh);
-    Grid::SetRow(actions, 3);
+    Grid::SetRow(actions, 4);
     root_grid.Children().Append(actions);
 
     // --- Log ---
@@ -264,7 +315,7 @@ void MainPageController::BuildUI() {
     log_stack.Children().Append(log_title);
     log_stack.Children().Append(m_log_scroll);
     log_border.Child(log_stack);
-    Grid::SetRow(log_border, 4);
+    Grid::SetRow(log_border, 5);
     root_grid.Children().Append(log_border);
 
     m_root.Content(root_grid);
@@ -303,13 +354,21 @@ void MainPageController::SetMetric(TextBlock const& value, std::wstring const& t
 
 void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& log_tail,
                                      std::string const& probe_note) {
-    if (!st.available) {
-        SetPill(L"NO CORE", kPurple);
+    auto clear_metrics = [&]() {
         SetMetric(m_val_height, L"—");
         SetMetric(m_val_headers, L"—");
         SetMetric(m_val_progress, L"—");
         SetMetric(m_val_peers, L"—");
+        SetMetric(m_val_behind, L"—");
+        SetMetric(m_val_disk, L"—");
+        SetMetric(m_val_mempool, L"—");
+        SetMetric(m_val_uptime, L"—");
         m_progress_bar.Value(0);
+    };
+
+    if (!st.available) {
+        SetPill(L"NO CORE", kPurple);
+        clear_metrics();
         m_meta.Text(Utf8ToWide("Scaffold build — Core not linked. " + st.datadir));
         m_network_label.Text(L"scaffold");
         m_btn_start.IsEnabled(false);
@@ -321,7 +380,11 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         return;
     }
 
-    if (!st.running) {
+    if (m_stopping) {
+        SetPill(L"STOPPING", kYellow);
+        m_btn_start.IsEnabled(false);
+        m_btn_stop.IsEnabled(false);
+    } else if (!st.running) {
         if (st.last_exit != 0) {
             SetPill(L"ERROR", kRed);
         } else {
@@ -331,6 +394,10 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         m_btn_stop.IsEnabled(false);
     } else if (!st.rpc_ready) {
         SetPill(L"STARTING", kYellow);
+        m_btn_start.IsEnabled(false);
+        m_btn_stop.IsEnabled(true);
+    } else if (!st.network_active) {
+        SetPill(L"NET OFF", kRed);
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(true);
     } else if (st.initial_block_download || st.verification_progress < 0.999) {
@@ -344,14 +411,27 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
     }
 
     if (st.rpc_ready) {
+        const int behind = (st.headers > st.blocks) ? (st.headers - st.blocks) : 0;
         SetMetric(m_val_height, FormatInt(st.blocks));
         SetMetric(m_val_headers, FormatInt(st.headers));
         SetMetric(m_val_progress, FormatPct(st.verification_progress));
         SetMetric(m_val_peers, FormatInt(st.connections));
+        SetMetric(m_val_behind, behind > 0 ? FormatInt(behind) : L"0");
+        SetMetric(m_val_disk, FormatBytes(st.size_on_disk));
+        if (st.mempool_tx > 0 || st.mempool_bytes > 0) {
+            SetMetric(m_val_mempool, FormatInt(st.mempool_tx) + L" tx");
+        } else {
+            SetMetric(m_val_mempool, L"0 tx");
+        }
+        SetMetric(m_val_uptime, FormatUptime(st.uptime_sec));
         m_progress_bar.Value(std::clamp(st.verification_progress, 0.0, 1.0));
+
         std::wstring net = Utf8ToWide(st.chain.empty() ? "main" : st.chain);
         if (st.pruned) {
             net += L" · prune";
+        }
+        if (st.initial_block_download) {
+            net += L" · IBD";
         }
         m_network_label.Text(net);
     } else if (st.running) {
@@ -359,13 +439,28 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         SetMetric(m_val_headers, L"…");
         SetMetric(m_val_progress, L"…");
         SetMetric(m_val_peers, L"…");
+        SetMetric(m_val_behind, L"…");
+        SetMetric(m_val_disk, L"…");
+        SetMetric(m_val_mempool, L"…");
+        SetMetric(m_val_uptime, L"…");
         m_progress_bar.Value(0);
+    } else {
+        clear_metrics();
     }
 
     std::ostringstream meta;
-    meta << "Datadir  " << st.datadir;
+    meta << st.datadir;
+    if (!st.subversion.empty()) {
+        meta << "  ·  " << st.subversion;
+    }
     if (!st.message.empty()) {
         meta << "  ·  " << st.message;
+    }
+    if (st.pruned && st.prune_target_size > 0) {
+        meta << "  ·  prune target ~" << (st.prune_target_size / (1024 * 1024)) << " MiB";
+    }
+    if (!st.warnings.empty()) {
+        meta << "  ·  warn: " << st.warnings;
     }
     if (st.last_exit != 0 && !st.running) {
         meta << "  ·  last exit " << st.last_exit;
@@ -377,7 +472,6 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
 
     if (!log_tail.empty()) {
         m_log.Text(Utf8ToWide(log_tail));
-        // Keep view near bottom
         m_log_scroll.ChangeView(nullptr, m_log_scroll.ScrollableHeight(), nullptr);
     }
 }
@@ -417,13 +511,17 @@ void MainPageController::OnStartClick() {
 }
 
 void MainPageController::OnStopClick() {
-    Logf("[ui] Stop clicked");
+    Logf("[ui] Stop soft clicked");
     auto self = shared_from_this();
     auto dispatcher = winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread().Dispatcher();
+    m_stopping = true;
     m_btn_stop.IsEnabled(false);
+    m_btn_start.IsEnabled(false);
+    SetPill(L"STOPPING", kYellow);
     winrt::Windows::System::Threading::ThreadPool::RunAsync([self, dispatcher](auto&&) {
         NodeStop();
         dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal, [self]() {
+            self->m_stopping = false;
             self->ApplyStatus(NodeStatusSnapshot(), {}, self->m_probe_note);
             self->RefreshAsync();
         });

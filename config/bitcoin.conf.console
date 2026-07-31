@@ -1,26 +1,37 @@
 # Console defaults for Xbox Series S (UWP / Dev Mode).
 # Host places datadir under ApplicationData LocalFolder (LocalState\bitcoin).
+# Prefer stock Bitcoin Core options only — no custom consensus / forks.
 
-# Pruned validating node (v1 target)
+# --- Pruned validating full node (standard bitcoind operator setup) ---
+# 550 MiB is Core's practical minimum. Raise (e.g. 2000–5000) only if Dev
+# storage allows — more buffer if the process is offline longer (pre-LN prep).
 prune=550
 
-# RPC for local UI / debugging (bind decided by host; keep off public interfaces)
+# Local RPC for UI / tooling (cookie auth under datadir/.cookie).
+# Keep loopback-only until you intentionally open LAN (security surface).
 server=1
 rpcallowip=127.0.0.1
 rpcbind=127.0.0.1
 
-# Outbound-only P2P first (NAT / UWP listen may be flaky)
+# Outbound-only Bitcoin P2P (standard for NAT / constrained hosts).
+# listen=1 is optional later and not required for validation or for CLN backend.
 listen=0
 
-# Conservative memory on Series S AppContainer (raise after Game-class measurements)
+# Memory: start conservative on Series S AppContainer; re-measure at tip before raising.
 dbcache=256
 maxmempool=50
 maxconnections=8
 
+# Relay transactions (default). Do not set blocksonly=1 if you plan Lightning later.
+# blocksonly=0
+
 # Avoid optional services until needed
 upnp=0
 natpmp=0
-# blocksonly=0
 
-# Logging: host may also tee to LocalState\bitcoind.log
+# Logging (host app may also tee to LocalState\bitcoind.log)
 printtoconsole=0
+
+# Not enabled (standard pruned node):
+# txindex=1          # incompatible with prune; CLN does not require it
+# blockfilterindex=1

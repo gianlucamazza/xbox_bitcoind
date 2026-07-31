@@ -280,28 +280,80 @@ std::optional<BlockchainInfo> RpcGetBlockchainInfo(const std::string& datadir_ut
     if (auto pr = JsonBoolField(*result, "pruned")) {
         info.pruned = *pr;
     }
+    if (auto sz = JsonIntField(*result, "size_on_disk")) {
+        info.size_on_disk = *sz;
+    }
+    if (auto pts = JsonIntField(*result, "prune_target_size")) {
+        info.prune_target_size = *pts;
+    }
+    if (auto w = JsonStringField(*result, "warnings")) {
+        info.warnings = *w;
+    }
     return info;
 }
 
 std::optional<NetworkInfo> RpcGetNetworkInfo(const std::string& datadir_utf8) {
-    // getconnectioncount is simpler; fallback to getnetworkinfo.connections
+    NetworkInfo n;
+    bool got = false;
     if (auto body = RpcCall(datadir_utf8, "getconnectioncount")) {
         auto result = JsonResultObject(*body);
         if (result) {
             try {
-                // result is a bare integer
                 std::string r = *result;
                 while (!r.empty() && std::isspace(static_cast<unsigned char>(r.front()))) {
                     r.erase(r.begin());
                 }
-                NetworkInfo n;
                 n.connections = static_cast<int>(std::stoll(r));
-                return n;
+                got = true;
             } catch (...) {
             }
         }
     }
-    auto body = RpcCall(datadir_utf8, "getnetworkinfo");
+    if (auto body = RpcCall(datadir_utf8, "getnetworkinfo")) {
+        if (auto result = JsonResultObject(*body)) {
+            if (auto c = JsonIntField(*result, "connections")) {
+                n.connections = static_cast<int>(*c);
+                got = true;
+            }
+            if (auto na = JsonBoolField(*result, "networkactive")) {
+                n.network_active = *na;
+            }
+            if (auto sv = JsonStringField(*result, "subversion")) {
+                n.subversion = *sv;
+            }
+            got = true;
+        }
+    }
+    if (!got) {
+        return std::nullopt;
+    }
+    return n;
+}
+
+std::optional<MempoolInfo> RpcGetMempoolInfo(const std::string& datadir_utf8) {
+    auto body = RpcCall(datadir_utf8, "getmempoolinfo");
+    if (!body) {
+        return std::nullopt;
+    }
+    auto result = JsonResultObject(*body);
+    if (!result || *result == "null") {
+        return std::nullopt;
+    }
+    MempoolInfo m;
+    if (auto s = JsonIntField(*result, "size")) {
+        m.size = static_cast<int>(*s);
+    }
+    if (auto b = JsonIntField(*result, "bytes")) {
+        m.bytes = *b;
+    }
+    if (auto u = JsonIntField(*result, "usage")) {
+        m.usage = *u;
+    }
+    return m;
+}
+
+std::optional<int64_t> RpcUptime(const std::string& datadir_utf8) {
+    auto body = RpcCall(datadir_utf8, "uptime");
     if (!body) {
         return std::nullopt;
     }
@@ -309,11 +361,15 @@ std::optional<NetworkInfo> RpcGetNetworkInfo(const std::string& datadir_utf8) {
     if (!result) {
         return std::nullopt;
     }
-    NetworkInfo n;
-    if (auto c = JsonIntField(*result, "connections")) {
-        n.connections = static_cast<int>(*c);
+    try {
+        std::string r = *result;
+        while (!r.empty() && std::isspace(static_cast<unsigned char>(r.front()))) {
+            r.erase(r.begin());
+        }
+        return std::stoll(r);
+    } catch (...) {
+        return std::nullopt;
     }
-    return n;
 }
 
 bool RpcStop(const std::string& datadir_utf8) {

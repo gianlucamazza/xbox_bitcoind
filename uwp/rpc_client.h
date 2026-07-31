@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -14,10 +15,21 @@ struct BlockchainInfo {
     double verification_progress = 0.0;
     bool initial_block_download = false;
     bool pruned = false;
+    int64_t size_on_disk = 0;       // bytes
+    int64_t prune_target_size = 0;  // bytes (0 if unknown / not set)
+    std::string warnings;
 };
 
 struct NetworkInfo {
     int connections = 0;
+    bool network_active = true;
+    std::string subversion; // e.g. /Satoshi:31.1.0/
+};
+
+struct MempoolInfo {
+    int size = 0;        // tx count
+    int64_t bytes = 0;   // memory usage of txs
+    int64_t usage = 0;   // total mempool usage
 };
 
 // JSON-RPC over loopback using cookie auth from <datadir>/.cookie
@@ -26,6 +38,9 @@ std::optional<std::string> RpcCall(const std::string& datadir_utf8, const std::s
 
 std::optional<BlockchainInfo> RpcGetBlockchainInfo(const std::string& datadir_utf8);
 std::optional<NetworkInfo> RpcGetNetworkInfo(const std::string& datadir_utf8);
+std::optional<MempoolInfo> RpcGetMempoolInfo(const std::string& datadir_utf8);
+// Seconds since bitcoind start; nullopt if RPC not ready.
+std::optional<int64_t> RpcUptime(const std::string& datadir_utf8);
 bool RpcStop(const std::string& datadir_utf8);
 
 // Last N lines of debug.log (UTF-8). Empty if missing/unreadable.

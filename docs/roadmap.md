@@ -43,6 +43,22 @@ When it exits **0**:
 
 Until then: leave the app open, timer enabled (`install-ibd-timer.sh`), do not hard-kill.
 
+## Pre-Lightning (standard node only)
+
+Do these **before** any CLN work. Prefer stock Core options and normal operator practice.
+
+| # | Item | Status / how |
+|---|------|----------------|
+| 1 | IBD complete + tip stable 24–48h | Ops — `v1-close-check.sh` |
+| 2 | Soft-stop @ tip documented | Ops — `soft-stop-test.sh` → [persistence.md](persistence.md) |
+| 3 | Disk/RAM headroom at tip | Ops — UI Disk + `node-status` / samples |
+| 4 | Prune policy deliberate (`prune=550` min; raise if space) | Conf — [bitcoin.conf.console](../config/bitcoin.conf.console) |
+| 5 | Keep RPC loopback + cookie; no public RPC | **Done** (defaults) |
+| 6 | Dashboard shows standard node health | **Done** (height/peers/disk/mempool/uptime) |
+| 7 | Backup/restore story | [ops.md](ops.md) § Backup |
+
+Only then: CLN spike / sibling `xbox_lightning` (not a conf flag).
+
 ## Out of scope v1 (future)
 
 | Item | Notes |
@@ -51,7 +67,7 @@ Until then: leave the app open, timer enabled (`install-ibd-timer.sh`), do not h
 | USB datadir | Manifest has capability; needs UX |
 | `listen=1` inbound | NAT / UWP |
 | Microsoft Store | Policy + signing |
-| Lightning | Sibling project |
+| Lightning (CLN) | After pre-Lightning gates; separate port |
 
 ## v1.1+ ideas (not scheduled)
 

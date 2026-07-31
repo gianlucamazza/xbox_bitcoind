@@ -164,8 +164,15 @@ NodeStatus NodeStatusLive() {
         s.verification_progress = chain->verification_progress;
         s.initial_block_download = chain->initial_block_download;
         s.pruned = chain->pruned;
+        s.size_on_disk = chain->size_on_disk;
+        s.prune_target_size = chain->prune_target_size;
+        s.warnings = chain->warnings;
+        const int behind = (s.headers > s.blocks) ? (s.headers - s.blocks) : 0;
         if (s.initial_block_download || s.verification_progress < 0.999) {
-            s.message = "syncing " + s.chain;
+            s.message = "IBD " + s.chain;
+            if (behind > 0) {
+                s.message += " · " + std::to_string(behind) + " headers ahead";
+            }
         } else {
             s.message = "synced " + s.chain;
         }
@@ -175,6 +182,15 @@ NodeStatus NodeStatusLive() {
     }
     if (auto net = RpcGetNetworkInfo(s.datadir)) {
         s.connections = net->connections;
+        s.network_active = net->network_active;
+        s.subversion = net->subversion;
+    }
+    if (auto mp = RpcGetMempoolInfo(s.datadir)) {
+        s.mempool_tx = mp->size;
+        s.mempool_bytes = mp->usage > 0 ? mp->usage : mp->bytes;
+    }
+    if (auto up = RpcUptime(s.datadir)) {
+        s.uptime_sec = *up;
     }
     return s;
 }

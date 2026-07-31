@@ -3,6 +3,26 @@
 How to run and care for the Series S node day-to-day. Product overview:
 root [README](../README.md). Architecture: [plan-core-uwp.md](plan-core-uwp.md).
 
+## Backup & restore (standard node practice)
+
+| Asset | Where | Notes |
+|-------|--------|--------|
+| `bitcoin.conf` | `LocalState\bitcoin\bitcoin.conf` | Recreated from package defaults if missing |
+| Chain / UTXO | `blocks/`, `chainstate/` under datadir | Pruned — **not** a full archival backup |
+| Cookie | `datadir\.cookie` | Ephemeral; recreated each run |
+| App log | `LocalState\bitcoind.log` | Host diagnostics |
+
+**Restore after wipe:** reinstall MSIX → set **Game** → `start-app` → full IBD again  
+(there is no lightweight “restore pruned chain” path). For anything valuable later
+(Lightning seeds, etc.), backup **outside** LocalState on a separate medium.
+
+Pull conf for inspection:
+
+```bash
+PFN=$(./scripts/deploy.sh pfn)
+./scripts/deploy.sh fetch-file "$PFN" bitcoin.conf /tmp/bitcoin.conf bitcoin
+```
+
 ## Golden rules
 
 1. **Leave the app open** during IBD (Game class package foreground/background
@@ -42,10 +62,10 @@ Captured during mainnet IBD (~height 320–327k, progress ~3.5%):
 
 | Metric | Observed | Notes |
 |--------|----------|--------|
-| Working set | **~0.9–1.0 GiB** | Peak during active `UpdateTip` |
-| Private WS | **~0.9 GiB** | |
-| Log `cache=` | **~400–520 MiB** | UTXO/cache lines; conf `dbcache=256` is a floor not a hard cap |
-| Datadir ≈ | **~1.1–1.2 GiB** | blocks + chainstate via portal listings (non-recursive) |
+| Working set | **~0.7–1.0 GiB** | Peak during active `UpdateTip` |
+| Private WS | **~0.7–0.9 GiB** | |
+| Log `cache=` | **~240–520 MiB** | UTXO/cache lines; conf `dbcache=256` is a floor not a hard cap |
+| Datadir ≈ | **~1.5–2.0 GiB** mid-IBD | blocks + chainstate via portal listings (grows then prunes) |
 | `debug.log` | **~60 MiB** then rotated/truncated after restart | Expect growth during long IBD |
 | Soft-stop exit | **~36 s** | Clean process exit after suspend (no DELETE needed) |
 
