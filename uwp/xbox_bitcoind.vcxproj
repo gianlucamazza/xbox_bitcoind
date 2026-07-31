@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <!-- Optional: written by scripts/build-uwp.ps1 when the pinned SDK is absent (e.g. GHA VS2026). -->
+  <Import Project="sdk-version.props" Condition="Exists('$(MSBuildThisFileDirectory)sdk-version.props')" />
+
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>

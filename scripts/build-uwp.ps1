@@ -128,6 +128,17 @@ if (-not $WindowsSdkVersion) {
 }
 if ($WindowsSdkVersion) {
     Write-Host "WindowsTargetPlatformVersion=$WindowsSdkVersion"
+    # UWP Globals often ignore /p:WindowsTargetPlatformVersion; import a props file first.
+    $sdkProps = Join-Path $UwpDir "sdk-version.props"
+    @"
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <WindowsTargetPlatformVersion>$WindowsSdkVersion</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+</Project>
+"@ | Set-Content -Path $sdkProps -Encoding UTF8
+    Write-Host "Wrote $sdkProps"
 } else {
     Write-Warning "No Windows 10 SDK detected under Kits\10\Include"
 }
@@ -189,6 +200,9 @@ $MsBuildArgs = @(
 )
 if ($PlatformToolsetOverride) {
     $MsBuildArgs += "/p:PlatformToolsetOverride=$PlatformToolsetOverride"
+}
+if ($WindowsSdkVersion) {
+    $MsBuildArgs += "/p:WindowsTargetPlatformVersion=$WindowsSdkVersion"
 }
 if ($WithCore -and $CoreProps) {
     $MsBuildArgs += "/p:XbbWithCore=true"

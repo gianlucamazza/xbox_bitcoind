@@ -39,3 +39,4 @@ out/
 
 third_party/bitcoin/build-uwp/
 **/.xbb-uwp-patches-applied
+uwp/sdk-version.props
