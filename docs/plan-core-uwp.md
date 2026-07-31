@@ -55,7 +55,8 @@ toolchain — do **not** paper over it with language hacks in Core headers.
 | 8 | **Docs** | README + docs map consolidated | **done** |
 | 9 | **Ops tooling** | `node-status` / `soft-stop-test` / `ibd-sample` + budgets | **done** |
 | 10 | **Build pipeline** | Core vs MSIX split, SkipIfFresh, CI stages | **done** |
-| 11 | **IBD to tip** | long-run mainnet sync | **in progress** |
+| 11 | **IBD monitor** | hourly user timer + report/stuck/milestones | **done** |
+| 12 | **IBD to tip** | long-run mainnet sync (≥24h stable) | **in progress** |
 
 ## Patch set (`patches/uwp/`)
 

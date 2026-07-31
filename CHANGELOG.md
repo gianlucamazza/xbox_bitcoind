@@ -14,15 +14,17 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ### Added
 
-- `SECURITY.md`, this changelog
+- `SECURITY.md`, this changelog, `NOTICE`
 - Release automation (`.github/workflows/release.yml`, `scripts/cut-release.sh`)
 - README / docs restructure, `CONTRIBUTING.md`
-- Ops tooling (`node-status`, `soft-stop-test`, `ibd-sample`)
+- Ops tooling (`node-status`, `soft-stop-test`, `ibd-sample`, `ibd-report`)
+- Hourly **user systemd** IBD sampler (`install-ibd-timer.sh`, `contrib/systemd/user/`)
 - Path-filtered CI; Core vs MSIX build split (`SkipIfFresh`, `workflow_call`)
 
 ### Changed
 
 - GitHub Actions majors (paths-filter v4, setup-msbuild v3, setup-nuget v4, cache v6)
+- `ibd-sample.sh`: soft-fail for timers, milestone log, stuck-tip detection
 
 ## [0.1.0] — 2026-07-31
 

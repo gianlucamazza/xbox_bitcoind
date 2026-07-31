@@ -1,0 +1,16 @@
+[Unit]
+Description=Sample xbox_bitcoind IBD tip/RAM from Device Portal (JSONL)
+Documentation=file:@REPO@/docs/ops.md
+# Portal blips should not cascade into user session failure.
+ConditionPathExists=@REPO@/scripts/ibd-sample.sh
+
+[Service]
+Type=oneshot
+# Absolute repo path filled by scripts/install-ibd-timer.sh
+ExecStart=@REPO@/scripts/ibd-sample.sh -q
+# Device Portal + large debug.log fetch can be slow on Wi‑Fi.
+TimeoutStartSec=300
+Nice=10
+IOSchedulingClass=idle
+# Do not leave the unit failed: sampler exits 0 after logging errors.
+SuccessExitStatus=0

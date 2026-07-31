@@ -78,18 +78,36 @@ Re-run:
 
 | Cadence | Action |
 |---------|--------|
-| Hourly (optional) | `node-status.sh --loop 3600` **or** `ibd-sample.sh` (JSONL history) |
-| Daily | Confirm process running + progress increasing |
-| Milestone | Soft-stop test at ~500k and near tip |
-| On error | Capture `node-status.sh --json`, `bitcoind.log`, tail of `debug.log` |
+| **Hourly (recommended)** | User systemd timer → `ibd-sample.sh -q` (JSONL + stuck/milestone hooks) |
+| Daily | `./scripts/ibd-report.sh` — rate, last tip, errors |
+| Milestone | Soft-stop test at ~500k / near tip (`milestones.log` reminds you) |
+| On error | `node-status.sh --json`, `bitcoind.log`, tail of `debug.log` |
 
-### JSONL history
+### Automated hourly samples (best practice)
+
+Uses a **user** systemd timer (no `/etc`, survives login, `Persistent=true`):
+
+```bash
+./scripts/install-ibd-timer.sh          # enable + first sample now
+./scripts/install-ibd-timer.sh --status
+./scripts/ibd-report.sh                 # human summary
+./scripts/install-ibd-timer.sh --uninstall
+```
+
+| Path | Contents |
+|------|----------|
+| `~/.local/state/xbox_bitcoind/ibd.jsonl` | One JSON sample per hour |
+| `~/.local/state/xbox_bitcoind/ibd-errors.jsonl` | Portal/script failures, stuck-tip alerts |
+| `~/.local/state/xbox_bitcoind/milestones.log` | Once-each markers (500k, 700k, …) |
+
+Units are generated from [contrib/systemd/user/](../contrib/systemd/user/) into
+`~/.config/systemd/user/`. The sampler **exits 0** after logging errors so a flaky
+Device Portal does not fail the user session.
+
+Manual one-shot:
 
 ```bash
 ./scripts/ibd-sample.sh
-# appends to ~/.local/state/xbox_bitcoind/ibd.jsonl
-# optional timer (user systemd):
-#   ExecStart=%h/Workspace/tooling/xbox_bitcoind/scripts/ibd-sample.sh -q
 ```
 
 **v1 complete** when: not in IBD, peers > 0, tip near network, soft-stop OK near tip,

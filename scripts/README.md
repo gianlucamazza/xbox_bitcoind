@@ -23,7 +23,9 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 | `deploy.sh` | Install MSIX, start/stop, logs, **status**, **soft-stop-test** |
 | `node-status.sh` | IBD tip, RAM, datadir snapshot (`--json`, `--loop N`) |
 | `soft-stop-test.sh` | Automated soft-stop persistence check |
-| `ibd-sample.sh` | Append one JSONL sample under `~/.local/state/xbox_bitcoind/` |
+| `ibd-sample.sh` | Append one JSONL sample (+ milestones / stuck detection) |
+| `ibd-report.sh` | Summarize JSONL history and errors |
+| `install-ibd-timer.sh` | Enable hourly user systemd timer |
 
 ```bash
 ./scripts/deploy.sh status

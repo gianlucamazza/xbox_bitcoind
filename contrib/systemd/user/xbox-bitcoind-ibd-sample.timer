@@ -1,0 +1,16 @@
+[Unit]
+Description=Hourly IBD sample for xbox_bitcoind (Device Portal)
+# Documentation path is rewritten by install-ibd-timer.sh to the live repo.
+Documentation=file:%h/.local/state/xbox_bitcoind/
+
+[Timer]
+# Shortly after login, then hourly on the clock.
+OnBootSec=3min
+OnUnitActiveSec=1h
+OnCalendar=hourly
+Persistent=true
+# Slight jitter to avoid thundering herd with other timers.
+RandomizedDelaySec=90
+
+[Install]
+WantedBy=timers.target
