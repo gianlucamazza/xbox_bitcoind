@@ -16,6 +16,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 ### Changed
 
 - Mid-IBD soft-stop field verify: clean **8s** no DELETE, tip conserved (367530→367533) on package 0.1.0.75
+- Console deployed **v0.1.2** package **0.1.0.10017** (upgrade soft-stop clean; tip conserved)
 
 ## [0.1.2] — 2026-08-01
 

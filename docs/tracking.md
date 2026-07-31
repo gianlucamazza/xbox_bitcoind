@@ -19,13 +19,13 @@ Update this file when gates move; use Issues for discussion and assignment.
 |------|--------|
 | Engineering v1 | **Complete** |
 | Architecture + UI | **Complete** (lifecycle SSOT, tip age, HEADERS/STALE) — [plan-core-uwp.md](plan-core-uwp.md) · [ui.md](ui.md) |
-| Git tag / Release | **[v0.1.1](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1)** (baseline); console ahead via CI MSIX |
-| Console package | **0.1.0.75** WithCore · reinstall **complete** (cert + VCLibs + MSIX + start) |
-| Game class | **Confirmed Game** (user) · `DefaultUWPContentTypeToGame=true` · WS ~0.9–1.0 GiB mid-IBD |
+| Git tag / Release | **[v0.1.2](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.2)** · MSIX `0.1.0.10017` |
+| Console package | **0.1.0.10017** WithCore (v0.1.2) · soft-stop clean + tip conserved on upgrade |
+| Game class | **Confirm App type → Game** after this reinstall (user) · `DefaultUWPContentTypeToGame=true` |
 | Pin | Bitcoin Core **v31.1** |
 | UI on console | **Live** Core **v31.1 · app 0.1.0.75** — tip age, dual bars, spark, ETA (screenshot refreshed) |
 | Soft-stop | Mid-IBD **PASS** clean 8s no DELETE + tip conserved (2026-08-01) · [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) mitigated; @ tip still open · [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
-| Mainnet IBD | **In progress** (~**357k**, progress ~**5%**) — leave focused; no further redeploy |
+| Mainnet IBD | **In progress** (~**368k**, progress ~**5.7%**) — leave focused |
 | 24h stable at tip | **Pending** IBD |
 | Soft-stop at tip | **Pending** tip |
 | Pre-Lightning | Blocked on IBD closure gates |
@@ -121,4 +121,4 @@ gh issue list --label v1-close
 
 ---
 
-*Last consolidated: 2026-08-01 — soft-stop mid-IBD field **PASS** (8s, no DELETE); leave focused for IBD.*
+*Last consolidated: 2026-08-01 — **v0.1.2** on console **0.1.0.10017**; soft-stop clean; IBD ~368k; leave focused.*

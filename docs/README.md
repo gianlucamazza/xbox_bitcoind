@@ -11,8 +11,8 @@ Snapshot (see also [ops.md](ops.md) · [tracking.md](tracking.md)):
 | | |
 |--|--|
 | Pin | Bitcoin Core **v31.1** (not the MSIX revision) |
-| Console package | `GianlucaMazza.xboxbitcoind` **0.1.0.75** (WithCore, tip-age UI) |
-| Screenshot | [assets/screenshot-console.png](assets/screenshot-console.png) (live 0.1.0.75) |
+| Console package | `GianlucaMazza.xboxbitcoind` **0.1.0.10017** (WithCore, release **v0.1.2**) |
+| Screenshot | [assets/screenshot-console.png](assets/screenshot-console.png) (0.1.0.75 capture; refresh optional) |
 | Datadir | `LocalState\bitcoin` |
 | IBD | Mainnet ~5% — [tracking.md](tracking.md) |
 | Version labels | **Core pin** vs **app package** — see [ui.md](ui.md) · `generate-version-header.py` |
