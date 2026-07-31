@@ -21,7 +21,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 - Hourly **user systemd** IBD sampler (`install-ibd-timer.sh`, `contrib/systemd/user/`)
 - `v1-close-check.sh` + [docs/roadmap.md](docs/roadmap.md) (engineering complete vs ops IBD)
 - Path-filtered CI; Core vs MSIX build split (`SkipIfFresh`, `workflow_call`)
-- Dashboard row 2: Behind / Disk / Mempool / Uptime (standard RPC)
+- Dashboard CHAIN + NODE metric grids (Behind / Disk / Mempool / Uptime)
 - Soft-stop UI state (`STOPPING`, button “Stop soft”)
 - Pre-Lightning roadmap gates + backup section in ops
 
@@ -31,6 +31,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 - `ibd-sample.sh`: soft-fail for timers, milestone log, stuck-tip detection
 - Richer `getblockchaininfo` / `getmempoolinfo` / `uptime` in UI path
 - `bitcoin.conf.console` comments for standard pruned operator settings
+- UI refactor: equal-width cards, section labels, gamepad focus, package version
+  subtitle, verification % label, primary Start accent, log panel stretch
 
 ## [0.1.0] — 2026-07-31
 

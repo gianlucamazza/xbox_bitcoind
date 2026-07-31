@@ -26,6 +26,7 @@ using namespace winrt::Windows::Foundation;
 using namespace winrt::Windows::UI;
 using namespace winrt::Windows::UI::Xaml;
 using namespace winrt::Windows::UI::Xaml::Controls;
+using namespace winrt::Windows::UI::Xaml::Input;
 using namespace winrt::Windows::UI::Xaml::Media;
 
 namespace xbb {
@@ -35,16 +36,20 @@ Color C(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) {
     return ColorHelper::FromArgb(a, r, g, b);
 }
 
+// Bitcoin-inspired dark theme (10-foot readable on Series S).
 const Color kBg = C(14, 17, 22);
-const Color kCard = C(24, 28, 36);
+const Color kCard = C(28, 33, 42);
+const Color kCardBorder = C(42, 48, 60);
 const Color kOrange = C(247, 147, 26);
+const Color kOrangeDim = C(180, 100, 20);
 const Color kWhite = C(255, 255, 255);
-const Color kMuted = C(160, 168, 180);
+const Color kMuted = C(150, 158, 172);
 const Color kGreen = C(46, 160, 67);
 const Color kYellow = C(218, 165, 32);
 const Color kRed = C(200, 60, 60);
 const Color kGray = C(90, 96, 108);
-const Color kPurple = C(88, 60, 120);
+const Color kPurple = C(110, 80, 150);
+const Color kLogFg = C(190, 196, 208);
 
 std::wstring Utf8ToWide(std::string const& text) {
     if (text.empty()) {
@@ -60,7 +65,6 @@ std::wstring Utf8ToWide(std::string const& text) {
 
 std::wstring FormatInt(int v) {
     std::wstring s = std::to_wstring(v);
-    // thousands separators
     int insert = 0;
     for (int i = static_cast<int>(s.size()) - 1; i > 0; --i) {
         ++insert;
@@ -73,7 +77,6 @@ std::wstring FormatInt(int v) {
 
 std::wstring FormatPct(double p) {
     std::wostringstream os;
-    // More digits while IBD; coarser when synced.
     const int prec = (p < 0.999) ? 3 : 1;
     os << std::fixed << std::setprecision(prec) << (p * 100.0) << L"%";
     return os.str();
@@ -113,28 +116,43 @@ std::wstring FormatUptime(int64_t sec) {
     return os.str();
 }
 
-Border MakeCard(hstring const& label, TextBlock& value_out) {
+std::wstring PackageVersionLabel() {
+    try {
+        auto v = winrt::Windows::ApplicationModel::Package::Current().Id().Version();
+        std::wostringstream os;
+        os << L"v" << v.Major << L"." << v.Minor << L"." << v.Build << L"." << v.Revision;
+        return os.str();
+    } catch (...) {
+        return L"";
+    }
+}
+
+Border MakeMetricCard(hstring const& label, TextBlock& value_out) {
     auto border = Border{};
     border.Background(SolidColorBrush{kCard});
-    border.CornerRadius(CornerRadiusHelper::FromUniformRadius(8));
-    border.Padding(ThicknessHelper::FromUniformLength(16));
-    border.Margin(ThicknessHelper::FromLengths(0, 0, 12, 0));
-    border.MinWidth(160);
-    border.MinHeight(96);
+    border.BorderBrush(SolidColorBrush{kCardBorder});
+    border.BorderThickness(ThicknessHelper::FromUniformLength(1));
+    border.CornerRadius(CornerRadiusHelper::FromUniformRadius(10));
+    border.Padding(ThicknessHelper::FromLengths(18, 14, 18, 14));
+    border.HorizontalAlignment(HorizontalAlignment::Stretch);
+    border.VerticalAlignment(VerticalAlignment::Stretch);
+    border.MinHeight(100);
 
     auto stack = StackPanel{};
-    stack.Spacing(6);
+    stack.Spacing(8);
 
     auto lab = TextBlock{};
     lab.Text(label);
-    lab.FontSize(14);
+    lab.FontSize(13);
+    lab.CharacterSpacing(40); // slight tracking
     lab.Foreground(SolidColorBrush{kMuted});
 
     value_out = TextBlock{};
     value_out.Text(L"—");
-    value_out.FontSize(28);
+    value_out.FontSize(26);
     value_out.FontWeight(winrt::Windows::UI::Text::FontWeights::SemiBold());
     value_out.Foreground(SolidColorBrush{kWhite});
+    value_out.TextTrimming(TextTrimming::CharacterEllipsis);
 
     stack.Children().Append(lab);
     stack.Children().Append(value_out);
@@ -142,17 +160,33 @@ Border MakeCard(hstring const& label, TextBlock& value_out) {
     return border;
 }
 
-Button MakeButton(hstring const& label) {
+Button MakeActionButton(hstring const& label) {
     auto btn = Button{};
     btn.Content(box_value(label));
-    btn.MinHeight(52);
-    btn.MinWidth(140);
-    btn.Padding(ThicknessHelper::FromLengths(20, 10, 20, 10));
+    btn.MinHeight(56);
+    btn.MinWidth(160);
+    btn.Padding(ThicknessHelper::FromLengths(24, 12, 24, 12));
     btn.FontSize(18);
-    btn.Margin(ThicknessHelper::FromLengths(0, 0, 12, 0));
+    btn.FontWeight(winrt::Windows::UI::Text::FontWeights::SemiBold());
+    btn.Margin(ThicknessHelper::FromLengths(0, 0, 14, 0));
     btn.Background(SolidColorBrush{kCard});
     btn.Foreground(SolidColorBrush{kWhite});
+    btn.BorderBrush(SolidColorBrush{kCardBorder});
+    btn.BorderThickness(ThicknessHelper::FromUniformLength(1));
+    // 10-foot: larger hit target + controller focus
+    btn.UseSystemFocusVisuals(true);
+    btn.IsTabStop(true);
     return btn;
+}
+
+TextBlock MakeSectionLabel(hstring const& text) {
+    auto t = TextBlock{};
+    t.Text(text);
+    t.FontSize(12);
+    t.Foreground(SolidColorBrush{kMuted});
+    t.Margin(ThicknessHelper::FromLengths(0, 0, 0, 6));
+    t.CharacterSpacing(60);
+    return t;
 }
 
 } // namespace
@@ -162,164 +196,251 @@ MainPageController::MainPageController() = default;
 void MainPageController::Init() {
     BuildUI();
     WireButtons();
+    WireGamepadFocus();
     ApplyStatus(NodeStatusSnapshot(), {}, "Running probes…");
     StartUiTimer();
 }
 
-void MainPageController::BuildUI() {
-    m_root = Page{};
-    auto root_grid = Grid{};
-    root_grid.Background(SolidColorBrush{kBg});
-    root_grid.Padding(ThicknessHelper::FromUniformLength(28));
-
-    // rows: header | metrics1 | metrics2 | progress | actions | log
-    root_grid.RowDefinitions().Append(RowDefinition{});
-    root_grid.RowDefinitions().Append(RowDefinition{});
-    root_grid.RowDefinitions().Append(RowDefinition{});
-    root_grid.RowDefinitions().Append(RowDefinition{});
-    root_grid.RowDefinitions().Append(RowDefinition{});
-    auto log_row = RowDefinition{};
-    log_row.Height(GridLengthHelper::FromValueAndType(1, GridUnitType::Star));
-    root_grid.RowDefinitions().Append(log_row);
-
-    // --- Header ---
+UIElement MainPageController::BuildHeader() {
     auto header = Grid{};
-    auto col_title = ColumnDefinition{};
-    col_title.Width(GridLengthHelper::Auto());
-    header.ColumnDefinitions().Append(col_title);
+    header.ColumnDefinitions().Append(ColumnDefinition{}); // title
     auto mid = ColumnDefinition{};
     mid.Width(GridLengthHelper::FromValueAndType(1, GridUnitType::Star));
     header.ColumnDefinitions().Append(mid);
-    auto col_net = ColumnDefinition{};
-    col_net.Width(GridLengthHelper::Auto());
-    header.ColumnDefinitions().Append(col_net);
-    header.Margin(ThicknessHelper::FromLengths(0, 0, 0, 16));
+    header.ColumnDefinitions().Append(ColumnDefinition{}); // net
+    header.Margin(ThicknessHelper::FromLengths(0, 0, 0, 20));
 
+    auto title_col = StackPanel{};
+    title_col.Spacing(2);
     m_title = TextBlock{};
     m_title.Text(L"xbox_bitcoind");
-    m_title.FontSize(34);
+    m_title.FontSize(32);
     m_title.FontWeight(winrt::Windows::UI::Text::FontWeights::Bold());
     m_title.Foreground(SolidColorBrush{kOrange});
-    m_title.VerticalAlignment(VerticalAlignment::Center);
-    header.Children().Append(m_title);
+    m_subtitle = TextBlock{};
+    auto ver = PackageVersionLabel();
+    m_subtitle.Text(ver.empty() ? L"Bitcoin Core node · Dev Mode" : (L"Bitcoin Core node · " + ver));
+    m_subtitle.FontSize(13);
+    m_subtitle.Foreground(SolidColorBrush{kMuted});
+    title_col.Children().Append(m_title);
+    title_col.Children().Append(m_subtitle);
+    title_col.VerticalAlignment(VerticalAlignment::Center);
+    header.Children().Append(title_col);
 
     m_pill = Border{};
-    m_pill.CornerRadius(CornerRadiusHelper::FromUniformRadius(16));
-    m_pill.Padding(ThicknessHelper::FromLengths(16, 8, 16, 8));
+    m_pill.CornerRadius(CornerRadiusHelper::FromUniformRadius(18));
+    m_pill.Padding(ThicknessHelper::FromLengths(18, 10, 18, 10));
     m_pill.VerticalAlignment(VerticalAlignment::Center);
     m_pill.HorizontalAlignment(HorizontalAlignment::Center);
+    m_pill.MinWidth(120);
     m_pill_text = TextBlock{};
-    m_pill_text.FontSize(16);
-    m_pill_text.FontWeight(winrt::Windows::UI::Text::FontWeights::SemiBold());
+    m_pill_text.FontSize(15);
+    m_pill_text.FontWeight(winrt::Windows::UI::Text::FontWeights::Bold());
     m_pill_text.Foreground(SolidColorBrush{kWhite});
+    m_pill_text.HorizontalAlignment(HorizontalAlignment::Center);
     m_pill.Child(m_pill_text);
     Grid::SetColumn(m_pill, 1);
     header.Children().Append(m_pill);
 
     m_network_label = TextBlock{};
-    m_network_label.Text(L"mainnet · prune");
-    m_network_label.FontSize(16);
+    m_network_label.Text(L"main · prune");
+    m_network_label.FontSize(15);
     m_network_label.Foreground(SolidColorBrush{kMuted});
     m_network_label.VerticalAlignment(VerticalAlignment::Center);
     m_network_label.HorizontalAlignment(HorizontalAlignment::Right);
     Grid::SetColumn(m_network_label, 2);
     header.Children().Append(m_network_label);
 
-    Grid::SetRow(header, 0);
-    root_grid.Children().Append(header);
+    return header;
+}
 
-    // --- Metric cards row 1 (chain) ---
-    auto metrics = StackPanel{};
-    metrics.Orientation(Orientation::Horizontal);
-    metrics.Margin(ThicknessHelper::FromLengths(0, 0, 0, 10));
-    metrics.Children().Append(MakeCard(L"Height", m_val_height));
-    metrics.Children().Append(MakeCard(L"Headers", m_val_headers));
-    metrics.Children().Append(MakeCard(L"Progress", m_val_progress));
-    auto peers_card = MakeCard(L"Peers", m_val_peers);
-    peers_card.Margin(ThicknessHelper::FromUniformLength(0));
-    metrics.Children().Append(peers_card);
-    Grid::SetRow(metrics, 1);
-    root_grid.Children().Append(metrics);
+UIElement MainPageController::BuildMetricGrid(std::array<TextBlock*, 4> values,
+                                              std::array<wchar_t const*, 4> labels) {
+    auto grid = Grid{};
+    grid.ColumnSpacing(12);
+    for (int i = 0; i < 4; ++i) {
+        auto col = ColumnDefinition{};
+        col.Width(GridLengthHelper::FromValueAndType(1, GridUnitType::Star));
+        grid.ColumnDefinitions().Append(col);
+    }
+    for (int i = 0; i < 4; ++i) {
+        auto card = MakeMetricCard(hstring{labels[static_cast<size_t>(i)]}, *values[static_cast<size_t>(i)]);
+        Grid::SetColumn(card, i);
+        grid.Children().Append(card);
+    }
+    return grid;
+}
 
-    // --- Metric cards row 2 (node health — standard bitcoind view) ---
-    auto metrics2 = StackPanel{};
-    metrics2.Orientation(Orientation::Horizontal);
-    metrics2.Margin(ThicknessHelper::FromLengths(0, 0, 0, 12));
-    metrics2.Children().Append(MakeCard(L"Behind", m_val_behind));
-    metrics2.Children().Append(MakeCard(L"Disk", m_val_disk));
-    metrics2.Children().Append(MakeCard(L"Mempool", m_val_mempool));
-    auto up_card = MakeCard(L"Uptime", m_val_uptime);
-    up_card.Margin(ThicknessHelper::FromUniformLength(0));
-    metrics2.Children().Append(up_card);
-    Grid::SetRow(metrics2, 2);
-    root_grid.Children().Append(metrics2);
+UIElement MainPageController::BuildProgressSection() {
+    auto panel = StackPanel{};
+    panel.Spacing(8);
+    panel.Margin(ThicknessHelper::FromLengths(0, 4, 0, 0));
 
-    // --- Progress + meta ---
-    auto prog_panel = StackPanel{};
-    prog_panel.Spacing(8);
-    prog_panel.Margin(ThicknessHelper::FromLengths(0, 0, 0, 16));
+    auto top = Grid{};
+    auto star = ColumnDefinition{};
+    star.Width(GridLengthHelper::FromValueAndType(1, GridUnitType::Star));
+    top.ColumnDefinitions().Append(star);
+    top.ColumnDefinitions().Append(ColumnDefinition{});
+
+    auto sec = MakeSectionLabel(L"VERIFICATION");
+    top.Children().Append(sec);
+    m_progress_label = TextBlock{};
+    m_progress_label.Text(L"—");
+    m_progress_label.FontSize(13);
+    m_progress_label.Foreground(SolidColorBrush{kOrange});
+    m_progress_label.HorizontalAlignment(HorizontalAlignment::Right);
+    m_progress_label.FontWeight(winrt::Windows::UI::Text::FontWeights::SemiBold());
+    Grid::SetColumn(m_progress_label, 1);
+    top.Children().Append(m_progress_label);
+
     m_progress_bar = ProgressBar{};
     m_progress_bar.Minimum(0);
     m_progress_bar.Maximum(1);
     m_progress_bar.Value(0);
-    m_progress_bar.Height(12);
+    m_progress_bar.Height(14);
     m_progress_bar.Foreground(SolidColorBrush{kOrange});
     m_progress_bar.Background(SolidColorBrush{kCard});
+    m_progress_bar.CornerRadius(CornerRadiusHelper::FromUniformRadius(4));
+
     m_meta = TextBlock{};
     m_meta.Text(L"Datadir —");
-    m_meta.FontSize(14);
+    m_meta.FontSize(13);
     m_meta.Foreground(SolidColorBrush{kMuted});
-    m_meta.TextWrapping(TextWrapping::Wrap);
-    prog_panel.Children().Append(m_progress_bar);
-    prog_panel.Children().Append(m_meta);
-    Grid::SetRow(prog_panel, 3);
-    root_grid.Children().Append(prog_panel);
+    m_meta.TextWrapping(TextWrapping::WrapWholeWords);
+    m_meta.IsTextSelectionEnabled(false);
 
-    // --- Actions ---
+    panel.Children().Append(top);
+    panel.Children().Append(m_progress_bar);
+    panel.Children().Append(m_meta);
+    return panel;
+}
+
+UIElement MainPageController::BuildActions() {
     auto actions = StackPanel{};
     actions.Orientation(Orientation::Horizontal);
-    actions.Margin(ThicknessHelper::FromLengths(0, 0, 0, 16));
-    m_btn_start = MakeButton(L"Start");
-    m_btn_stop = MakeButton(L"Stop soft");
-    m_btn_refresh = MakeButton(L"Refresh");
+    actions.Margin(ThicknessHelper::FromLengths(0, 8, 0, 0));
+    m_btn_start = MakeActionButton(L"Start");
+    m_btn_stop = MakeActionButton(L"Stop soft");
+    m_btn_refresh = MakeActionButton(L"Refresh");
+    StylePrimaryButton(m_btn_start, true);
+    StylePrimaryButton(m_btn_stop, false);
+    StylePrimaryButton(m_btn_refresh, false);
     actions.Children().Append(m_btn_start);
     actions.Children().Append(m_btn_stop);
     actions.Children().Append(m_btn_refresh);
-    Grid::SetRow(actions, 4);
-    root_grid.Children().Append(actions);
+    return actions;
+}
 
-    // --- Log ---
-    auto log_border = Border{};
-    log_border.Background(SolidColorBrush{kCard});
-    log_border.CornerRadius(CornerRadiusHelper::FromUniformRadius(8));
-    log_border.Padding(ThicknessHelper::FromUniformLength(12));
+UIElement MainPageController::BuildLogPanel() {
+    auto border = Border{};
+    border.Background(SolidColorBrush{kCard});
+    border.BorderBrush(SolidColorBrush{kCardBorder});
+    border.BorderThickness(ThicknessHelper::FromUniformLength(1));
+    border.CornerRadius(CornerRadiusHelper::FromUniformRadius(10));
+    border.Padding(ThicknessHelper::FromUniformLength(14));
+    border.HorizontalAlignment(HorizontalAlignment::Stretch);
+    border.VerticalAlignment(VerticalAlignment::Stretch);
 
-    auto log_stack = StackPanel{};
+    auto inner = Grid{};
+    inner.RowDefinitions().Append(RowDefinition{}); // title
+    auto star = RowDefinition{};
+    star.Height(GridLengthHelper::FromValueAndType(1, GridUnitType::Star));
+    inner.RowDefinitions().Append(star);
+
     auto log_title = TextBlock{};
     log_title.Text(L"debug.log");
-    log_title.FontSize(14);
+    log_title.FontSize(12);
     log_title.Foreground(SolidColorBrush{kMuted});
     log_title.Margin(ThicknessHelper::FromLengths(0, 0, 0, 8));
+    log_title.CharacterSpacing(40);
+    Grid::SetRow(log_title, 0);
+    inner.Children().Append(log_title);
 
     m_log_scroll = ScrollViewer{};
     m_log_scroll.VerticalScrollBarVisibility(ScrollBarVisibility::Auto);
     m_log_scroll.HorizontalScrollBarVisibility(ScrollBarVisibility::Disabled);
+    m_log_scroll.VerticalAlignment(VerticalAlignment::Stretch);
+    m_log_scroll.IsTabStop(true);
     m_log = TextBlock{};
     m_log.TextWrapping(TextWrapping::Wrap);
-    m_log.FontSize(13);
+    m_log.FontSize(12);
     m_log.FontFamily(FontFamily{L"Consolas"});
-    m_log.Foreground(SolidColorBrush{C(200, 205, 215)});
+    m_log.Foreground(SolidColorBrush{kLogFg});
     m_log.Text(L"…");
     m_log_scroll.Content(m_log);
-    // Fill remaining space via parent Grid star row + border stretch
-    log_stack.Children().Append(log_title);
-    log_stack.Children().Append(m_log_scroll);
-    log_border.Child(log_stack);
-    Grid::SetRow(log_border, 5);
-    root_grid.Children().Append(log_border);
+    Grid::SetRow(m_log_scroll, 1);
+    inner.Children().Append(m_log_scroll);
+
+    border.Child(inner);
+    return border;
+}
+
+void MainPageController::StylePrimaryButton(Button const& btn, bool primary) {
+    if (primary) {
+        btn.Background(SolidColorBrush{kOrange});
+        btn.Foreground(SolidColorBrush{kBg});
+        btn.BorderBrush(SolidColorBrush{kOrangeDim});
+    } else {
+        btn.Background(SolidColorBrush{kCard});
+        btn.Foreground(SolidColorBrush{kWhite});
+        btn.BorderBrush(SolidColorBrush{kCardBorder});
+    }
+}
+
+void MainPageController::BuildUI() {
+    m_root = Page{};
+    // Xbox: prefer directional navigation with gamepad.
+    m_root.XYFocusKeyboardNavigation(XYFocusKeyboardNavigationMode::Enabled);
+
+    auto root_grid = Grid{};
+    root_grid.Background(SolidColorBrush{kBg});
+    root_grid.Padding(ThicknessHelper::FromLengths(36, 28, 36, 28));
+
+    // header | label+metrics1 | label+metrics2 | progress | actions | log*
+    for (int i = 0; i < 5; ++i) {
+        root_grid.RowDefinitions().Append(RowDefinition{});
+    }
+    auto log_row = RowDefinition{};
+    log_row.Height(GridLengthHelper::FromValueAndType(1, GridUnitType::Star));
+    root_grid.RowDefinitions().Append(log_row);
+
+    auto header = BuildHeader();
+    Grid::SetRow(header, 0);
+    root_grid.Children().Append(header);
+
+    // Chain section
+    auto chain_block = StackPanel{};
+    chain_block.Margin(ThicknessHelper::FromLengths(0, 0, 0, 14));
+    chain_block.Children().Append(MakeSectionLabel(L"CHAIN"));
+    chain_block.Children().Append(BuildMetricGrid(
+        {&m_val_height, &m_val_headers, &m_val_progress, &m_val_peers},
+        {L"HEIGHT", L"HEADERS", L"PROGRESS", L"PEERS"}));
+    Grid::SetRow(chain_block, 1);
+    root_grid.Children().Append(chain_block);
+
+    // Health section
+    auto health_block = StackPanel{};
+    health_block.Margin(ThicknessHelper::FromLengths(0, 0, 0, 16));
+    health_block.Children().Append(MakeSectionLabel(L"NODE"));
+    health_block.Children().Append(BuildMetricGrid(
+        {&m_val_behind, &m_val_disk, &m_val_mempool, &m_val_uptime},
+        {L"BEHIND", L"DISK", L"MEMPOOL", L"UPTIME"}));
+    Grid::SetRow(health_block, 2);
+    root_grid.Children().Append(health_block);
+
+    auto prog = BuildProgressSection();
+    Grid::SetRow(prog, 3);
+    root_grid.Children().Append(prog);
+
+    auto actions = BuildActions();
+    Grid::SetRow(actions, 4);
+    root_grid.Children().Append(actions);
+
+    auto log = BuildLogPanel();
+    Grid::SetRow(log, 5);
+    root_grid.Children().Append(log);
 
     m_root.Content(root_grid);
-
     SetPill(L"INIT", kGray);
 }
 
@@ -328,6 +449,18 @@ void MainPageController::WireButtons() {
     m_btn_start.Click([self](IInspectable const&, RoutedEventArgs const&) { self->OnStartClick(); });
     m_btn_stop.Click([self](IInspectable const&, RoutedEventArgs const&) { self->OnStopClick(); });
     m_btn_refresh.Click([self](IInspectable const&, RoutedEventArgs const&) { self->OnRefreshClick(); });
+}
+
+void MainPageController::WireGamepadFocus() {
+    // Left → right focus ring for controller D-pad / stick.
+    m_btn_start.XYFocusRight(m_btn_stop);
+    m_btn_stop.XYFocusLeft(m_btn_start);
+    m_btn_stop.XYFocusRight(m_btn_refresh);
+    m_btn_refresh.XYFocusLeft(m_btn_stop);
+    m_btn_start.XYFocusDown(m_log_scroll);
+    m_btn_stop.XYFocusDown(m_log_scroll);
+    m_btn_refresh.XYFocusDown(m_log_scroll);
+    m_log_scroll.XYFocusUp(m_btn_start);
 }
 
 void MainPageController::StartUiTimer() {
@@ -347,7 +480,7 @@ void MainPageController::SetPill(std::wstring const& text, Color bg) {
 }
 
 void MainPageController::SetMetric(TextBlock const& value, std::wstring const& text) {
-    if (value) {
+    if (value && value.Text() != text) {
         value.Text(text);
     }
 }
@@ -364,6 +497,9 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         SetMetric(m_val_mempool, L"—");
         SetMetric(m_val_uptime, L"—");
         m_progress_bar.Value(0);
+        if (m_progress_label) {
+            m_progress_label.Text(L"—");
+        }
     };
 
     if (!st.available) {
@@ -374,8 +510,13 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(false);
         m_btn_refresh.IsEnabled(true);
+        StylePrimaryButton(m_btn_start, false);
         if (!probe_note.empty()) {
-            m_log.Text(Utf8ToWide(probe_note));
+            auto w = Utf8ToWide(probe_note);
+            if (w != m_last_log) {
+                m_log.Text(w);
+                m_last_log = w;
+            }
         }
         return;
     }
@@ -384,6 +525,7 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         SetPill(L"STOPPING", kYellow);
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(false);
+        StylePrimaryButton(m_btn_start, false);
     } else if (!st.running) {
         if (st.last_exit != 0) {
             SetPill(L"ERROR", kRed);
@@ -392,22 +534,27 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         }
         m_btn_start.IsEnabled(true);
         m_btn_stop.IsEnabled(false);
+        StylePrimaryButton(m_btn_start, true);
     } else if (!st.rpc_ready) {
         SetPill(L"STARTING", kYellow);
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(true);
+        StylePrimaryButton(m_btn_start, false);
     } else if (!st.network_active) {
         SetPill(L"NET OFF", kRed);
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(true);
+        StylePrimaryButton(m_btn_start, false);
     } else if (st.initial_block_download || st.verification_progress < 0.999) {
         SetPill(L"SYNCING", kOrange);
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(true);
+        StylePrimaryButton(m_btn_start, false);
     } else {
         SetPill(L"SYNCED", kGreen);
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(true);
+        StylePrimaryButton(m_btn_start, false);
     }
 
     if (st.rpc_ready) {
@@ -418,13 +565,13 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         SetMetric(m_val_peers, FormatInt(st.connections));
         SetMetric(m_val_behind, behind > 0 ? FormatInt(behind) : L"0");
         SetMetric(m_val_disk, FormatBytes(st.size_on_disk));
-        if (st.mempool_tx > 0 || st.mempool_bytes > 0) {
-            SetMetric(m_val_mempool, FormatInt(st.mempool_tx) + L" tx");
-        } else {
-            SetMetric(m_val_mempool, L"0 tx");
-        }
+        SetMetric(m_val_mempool, FormatInt(st.mempool_tx) + L" tx");
         SetMetric(m_val_uptime, FormatUptime(st.uptime_sec));
-        m_progress_bar.Value(std::clamp(st.verification_progress, 0.0, 1.0));
+        const double pv = std::clamp(st.verification_progress, 0.0, 1.0);
+        m_progress_bar.Value(pv);
+        if (m_progress_label) {
+            m_progress_label.Text(FormatPct(pv));
+        }
 
         std::wstring net = Utf8ToWide(st.chain.empty() ? "main" : st.chain);
         if (st.pruned) {
@@ -432,6 +579,9 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         }
         if (st.initial_block_download) {
             net += L" · IBD";
+        }
+        if (!st.network_active) {
+            net += L" · net off";
         }
         m_network_label.Text(net);
     } else if (st.running) {
@@ -444,6 +594,9 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         SetMetric(m_val_mempool, L"…");
         SetMetric(m_val_uptime, L"…");
         m_progress_bar.Value(0);
+        if (m_progress_label) {
+            m_progress_label.Text(L"…");
+        }
     } else {
         clear_metrics();
     }
@@ -457,10 +610,13 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         meta << "  ·  " << st.message;
     }
     if (st.pruned && st.prune_target_size > 0) {
-        meta << "  ·  prune target ~" << (st.prune_target_size / (1024 * 1024)) << " MiB";
+        meta << "  ·  prune ≤" << (st.prune_target_size / (1024 * 1024)) << " MiB";
+    }
+    if (st.mempool_bytes > 0) {
+        meta << "  ·  mempool " << (st.mempool_bytes / 1024) << " KiB";
     }
     if (!st.warnings.empty()) {
-        meta << "  ·  warn: " << st.warnings;
+        meta << "  ·  ⚠ " << st.warnings;
     }
     if (st.last_exit != 0 && !st.running) {
         meta << "  ·  last exit " << st.last_exit;
@@ -471,8 +627,13 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
     m_meta.Text(Utf8ToWide(meta.str()));
 
     if (!log_tail.empty()) {
-        m_log.Text(Utf8ToWide(log_tail));
-        m_log_scroll.ChangeView(nullptr, m_log_scroll.ScrollableHeight(), nullptr);
+        auto w = Utf8ToWide(log_tail);
+        if (w != m_last_log) {
+            m_log.Text(w);
+            m_last_log = std::move(w);
+            m_log_scroll.UpdateLayout();
+            m_log_scroll.ChangeView(nullptr, m_log_scroll.ScrollableHeight(), nullptr);
+        }
     }
 }
 
@@ -488,7 +649,7 @@ void MainPageController::RefreshAsync() {
         NodeStatus st = NodeStatusLive();
         std::string log;
         if (st.available) {
-            log = ReadDebugLogTail(st.datadir, 40);
+            log = ReadDebugLogTail(st.datadir, 48);
         }
         auto probe = self->m_probe_note;
         dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal,
@@ -501,7 +662,7 @@ void MainPageController::RefreshAsync() {
 
 void MainPageController::OnStartClick() {
     Logf("[ui] Start clicked");
-    if (!NodeCoreLinked()) {
+    if (!NodeCoreLinked() || m_stopping) {
         return;
     }
     if (NodeStart()) {
@@ -512,6 +673,9 @@ void MainPageController::OnStartClick() {
 
 void MainPageController::OnStopClick() {
     Logf("[ui] Stop soft clicked");
+    if (m_stopping) {
+        return;
+    }
     auto self = shared_from_this();
     auto dispatcher = winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread().Dispatcher();
     m_stopping = true;
@@ -549,6 +713,15 @@ void MainPageController::StartProbesAsync() {
                                     self->ApplyStatus(NodeStatusSnapshot(), report, self->m_probe_note);
                                 }
                                 self->RefreshAsync();
+                                // Prefer Start focused when stopped; otherwise Stop soft.
+                                try {
+                                    if (self->m_btn_start && self->m_btn_start.IsEnabled()) {
+                                        self->m_btn_start.Focus(FocusState::Programmatic);
+                                    } else if (self->m_btn_stop && self->m_btn_stop.IsEnabled()) {
+                                        self->m_btn_stop.Focus(FocusState::Programmatic);
+                                    }
+                                } catch (...) {
+                                }
                             });
     });
 }
