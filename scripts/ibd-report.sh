@@ -51,16 +51,6 @@ def parse_ts(r):
     except Exception:
         return None
 
-first, last = rows[0], rows[-1]
-print(
-    f"first:   ts={first.get('ts')} height={h(first)} progress={first.get('tip_progress')} "
-    f"running={first.get('running')}"
-)
-print(
-    f"last:    ts={last.get('ts')} height={h(last)} progress={last.get('tip_progress')} "
-    f"running={last.get('running')} ws={last.get('working_set')}"
-)
-
 def fmt_eta(hours):
     if hours is None or not math.isfinite(hours) or hours < 0:
         return "n/a"
@@ -72,7 +62,35 @@ def fmt_eta(hours):
         return f"~{hours:.1f}h"
     return f"~{hours / 24.0:.1f}d"
 
-# Full-window rate
+# Contiguous segment ending at last sample: reset if height drops hard (datadir wipe / reinstall).
+valid = [r for r in rows if h(r) is not None and parse_ts(r)]
+segment = []
+for r in valid:
+    if segment and h(r) is not None and h(segment[-1]) is not None:
+        prev, cur = h(segment[-1]), h(r)
+        # Wipe / restore: large absolute drop or collapse to near-genesis while previously high.
+        if cur + 50_000 < prev or (prev >= 50_000 and cur < 5_000):
+            print(
+                f"note:    height discontinuity {prev} → {cur} at {r.get('ts')} "
+                f"(datadir wipe/reinstall?) — rate/ETA use segment after reset"
+            )
+            segment = []
+    segment.append(r)
+
+if not segment:
+    segment = valid[-24:] if valid else rows
+
+first, last = segment[0], segment[-1]
+print(
+    f"first:   ts={first.get('ts')} height={h(first)} progress={first.get('tip_progress')} "
+    f"running={first.get('running')}  (segment n={len(segment)})"
+)
+print(
+    f"last:    ts={last.get('ts')} height={h(last)} progress={last.get('tip_progress')} "
+    f"running={last.get('running')} ws={last.get('working_set')}"
+)
+
+# Segment rate
 try:
     t0 = parse_ts(first)
     t1 = parse_ts(last)
@@ -84,8 +102,8 @@ try:
 except Exception:
     pass
 
-# Recent window (last ≤24 samples with valid height+ts)
-window = [r for r in rows[-24:] if h(r) is not None and parse_ts(r)]
+# Recent window within segment (last ≤24)
+window = segment[-24:] if len(segment) >= 2 else segment
 if len(window) >= 2:
     hs = [h(r) for r in window]
     print(f"recent:  last {len(window)} samples height {hs[0]} → {hs[-1]} (Δ{hs[-1] - hs[0]})")
@@ -95,7 +113,6 @@ if len(window) >= 2:
     rate = (hs[-1] - hs[0]) / hours
     print(f"rate:    ~{rate:.0f} blocks/h (recent window {hours:.1f} h)")
 
-    # ETA from height (assume_tip) and/or verification progress
     tip_h = hs[-1]
     remain_blocks = max(0, assume_tip - tip_h)
     eta_h = (remain_blocks / rate) if rate > 1 else None
@@ -109,7 +126,7 @@ if len(window) >= 2:
     print(f"eta:     height→~{assume_tip}: {fmt_eta(eta_h)}  |  progress: {fmt_eta(eta_p)}")
     print(f"         (height ETA uses XBB_ASSUME_TIP_HEIGHT={assume_tip}; rough only)")
 elif len(window) == 1:
-    print("recent:  only one valid sample — need more history for rate/ETA")
+    print("recent:  only one valid sample in segment — need more history for rate/ETA")
 
 if mile_path.is_file():
     print("--- milestones ---")

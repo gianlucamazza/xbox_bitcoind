@@ -17,7 +17,7 @@ Live ops status: [tracking.md](tracking.md).
 | Docs / SECURITY / CHANGELOG / CONTRIBUTING | **done** |
 | Ops tooling + hourly IBD monitor timer | **done** (`ibd-report` rate/ETA, `v1-close-check`) |
 | Public release **v0.1.0** | **published** |
-| Release **v0.1.1** (UI/ops polish) | **tagged** — MSIX via `release.yml` |
+| Release **v0.1.1** (UI/ops polish) | **published** — [GitHub Release](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1) |
 | Branding (Core icons splash/tiles) + version header | **in v0.1.1** |
 
 **Verdict: v1 engineering is complete.** Remaining work is **ops wall-clock** (IBD) plus optional package upgrades.
@@ -26,7 +26,7 @@ Live ops status: [tracking.md](tracking.md).
 
 | Gate | How to verify | Status |
 |------|----------------|--------|
-| Mainnet IBD finished | `tip_progress >= 0.999` via `node-status` / UI | **in progress** (~14% @ height ~**453k**, package **0.1.0.65**) — [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) |
+| Mainnet IBD finished | `tip_progress >= 0.999` via `node-status` / UI | **in progress** (~0.4% @ height ~**192k**, package **0.1.0.6** / v0.1.1; restarted after wipe) — [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) |
 | ≥24h stable at tip | Hourly samples in `ibd.jsonl` all running near tip | **pending** IBD — [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) |
 | Soft-stop at tip | `./scripts/soft-stop-test.sh` + note in [persistence.md](persistence.md) | **pending** tip — [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
 
@@ -89,4 +89,4 @@ Live checklist + issue map: [tracking.md](tracking.md).
 
 ---
 
-*Last roadmap reconciliation: 2026-07-31 — engineering complete; console **0.1.0.65**; IBD ~14% / ~453k; docs + main polish ahead of next package.*
+*Last roadmap reconciliation: 2026-07-31 — engineering complete; **v0.1.1** on console **0.1.0.6**; IBD restarted (~192k); leave node running.*

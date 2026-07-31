@@ -18,15 +18,12 @@ Update this file when gates move; use Issues for discussion and assignment.
 | Area | State |
 |------|--------|
 | Engineering v1 | **Complete** |
-| Git tag / Release | **v0.1.1** published (MSIX `0.1.0.6` + cert) · **v0.1.0** previous |
-| Console package | **0.1.0.6** WithCore · **set App type → Game** after reinstall |
-| Datadir | **Fresh IBD** — uninstall of 0.1.0.65 wiped LocalState (height was ~461k; now genesis) |
-| Pin | Bitcoin Core **v31.1** (`config/bitcoin-core.pin`) |
-| Version labeling | UI must show **Core pin** vs **app MSIX** separately (`xbb_version.generated.h` + package identity) — on `main`; console until next deploy still older subtitle |
-| Dashboard | 10-foot UI: primary/secondary metrics, dual bars, sparkline, ETA, centered KPI text |
-| Splash / tiles | Core official icons (regenerate: `scripts/generate-uwp-assets.py`) — on `main` |
-| Soft-stop (early / mid IBD) | Tip conservation **PASS**; mid-IBD host stop may still **DELETE** after 300s ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
-| Mainnet IBD | **Restarted** after deploy wipe (height **0** → syncing again) |
+| Git tag / Release | **[v0.1.1](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1)** · MSIX `0.1.0.6` (+ VCLibs for deploy) |
+| Console package | **0.1.0.6** WithCore · set **App type → Game** after reinstall |
+| Pin | Bitcoin Core **v31.1** |
+| UI | Core **v31.1 · app 0.1.0.6** subtitle, 10-foot metrics, dual bars, spark, ETA |
+| Soft-stop | Tip conserved; mid-IBD sometimes clean (~38s), sometimes DELETE ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
+| Mainnet IBD | **In progress** after datadir wipe (~**192k**, progress ~**0.4%**) — do **not** redeploy |
 | 24h stable at tip | **Pending** IBD |
 | Soft-stop at tip | **Pending** tip |
 | Pre-Lightning | Blocked on IBD closure gates |
@@ -39,6 +36,8 @@ Verify live:
 ./scripts/ibd-report.sh
 ```
 
+**Ops stance:** leave app open; hourly timer enabled; soft-stop only; no uninstall (wipes LocalState).
+
 ---
 
 ## Open work (by priority)
@@ -47,33 +46,22 @@ Verify live:
 
 | ID | Task | Exit criteria |
 |----|------|----------------|
-| ops-ibd | Finish mainnet IBD | `v1-close-check.sh` `sync_near_tip` PASS |
-| ops-24h | ≥24h stable at tip | Hourly `ibd.jsonl` samples near tip |
-| ops-soft-tip | Soft-stop @ tip | `soft-stop-test.sh` PASS + note in persistence.md |
-
-Track on GitHub: labels `ops`, `v1-close`.
+| ops-ibd | Finish mainnet IBD | `v1-close-check.sh` `sync_near_tip` PASS · [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) |
+| ops-24h | ≥24h stable at tip | Hourly `ibd.jsonl` near tip · [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) |
+| ops-soft-tip | Soft-stop @ tip | `soft-stop-test.sh` + [persistence.md](persistence.md) · [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
+| ops-game | Confirm Dev Home **App type → Game** | Manual after each reinstall |
 
 ### P1 — Quality / reliability
 
 | ID | Task | Notes |
 |----|------|--------|
-| soft-stop-timeout | Soft-stop wait / DELETE fallback | **Mitigated** (180s host + 150s join); mid-IBD field still DELETE @300s — leave open ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
-| package-gc | Remove stale package revisions | **Done** tooling — `deploy.sh package-gc` ([#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) closed) |
-| conf-apply | Conf only via `apply-console-conf` after MSIX | Done; probes must not overwrite |
-| next-msix | Deploy `main` (icons, centered metrics, Core·app subtitle) | Optional — prefer after IBD milestone or when needed |
+| soft-stop-timeout | Clean exit without DELETE | Mitigated host wait + re-suspend; field-verify · [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) |
+| release-hygiene | Monotonic MSIX rev + VCLibs in release | **on main** (`c4e92a2`) — next cut ≥ rev 10000+run_number |
+| package-gc | Stale revisions | **Done** · [#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) closed |
 
 ### P2 — Pre-Lightning (after P0)
 
 See [roadmap.md § Pre-Lightning](roadmap.md#pre-lightning-standard-node-only).
-
-### Polishing (closed on main)
-
-| Wave | Status |
-|------|--------|
-| A host/docs | **done** |
-| B package UI (ETA, STOPPING Ns, join 150s) | **on console 0.1.0.65** |
-| C layout tests / conf docs | **done** |
-| Icons + metric center + version subtitle | **on main** — next package |
 
 ### Out of scope (do not open as v1 work)
 
@@ -83,25 +71,16 @@ Wallet UI · Store · `listen=1` · CLN on-console · USB datadir UX
 
 ## GitHub Issues
 
-| Label | Use |
-|-------|-----|
-| `ops` | Console / IBD / monitoring |
-| `bug` | Defects |
-| `enhancement` | Non-blocking product improvements |
-| `docs` | Documentation only |
-| `v1-close` | Required to close v1 ops |
-
 | Issue | Title | Status |
 |-------|-------|--------|
-| [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close) | open |
+| [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close) | open — ~192k / ~0.4% post-wipe |
 | [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) | 24h stability at tip (v1 close) | open |
 | [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) | Soft-stop retest at tip (v1 close) | open |
-| [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop → DELETE fallback mid-IBD | mitigated / field notes |
-| [#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) | Remove stale package revisions | **closed** |
+| [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop → DELETE fallback | mitigated / field |
+| [#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) | package-gc | **closed** |
 
 ```bash
 gh issue list --label v1-close
-gh issue list --label ops
 ```
 
 ---
@@ -112,27 +91,10 @@ gh issue list --label ops
 |-------------|--------|
 | New feature / fix shipped | CHANGELOG Unreleased + relevant guide |
 | Ops gate progress | **this file** + roadmap ops table |
-| Architecture | plan-core-uwp.md |
-| Console identity / package rev | console.md + this snapshot |
-| UI behaviour | ui.md (+ screenshot if visual) |
-| CI / release / pin process | ci.md |
-| Core pin bump | `config/bitcoin-core.pin` + `./scripts/generate-version-header.py` |
-
-**Rule:** Prefer editing an existing doc over adding a top-level file ([docs/README.md](README.md)).
+| Console package rev | console.md + this snapshot |
+| UI / screenshot | ui.md + assets |
+| CI / release | ci.md |
 
 ---
 
-## Related paths
-
-| Path | Role |
-|------|------|
-| [ops.md](ops.md) | Day-to-day operator runbook |
-| [console.md](console.md) | Series S identity & storage |
-| [persistence.md](persistence.md) | Soft-stop evidence |
-| [ui.md](ui.md) | Dashboard + 10-foot layout |
-| [ci.md](ci.md) | Workflows & releases |
-| [ops/odroid-sshd-gmazza-local-forward.conf](ops/odroid-sshd-gmazza-local-forward.conf) | Lab SSH forward policy (audit copy) |
-
----
-
-*Last consolidated: 2026-07-31 (docs pass — IBD ~453k / package 0.1.0.65 / main polish noted).*
+*Last consolidated: 2026-07-31 evening — v0.1.1 on console; IBD restarted; timer active; no redeploy.*
