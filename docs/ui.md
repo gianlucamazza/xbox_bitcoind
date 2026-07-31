@@ -1,72 +1,88 @@
 # UI — xbox_bitcoind dashboard
 
 Controller-first **10-foot** status UI for Series S Dev Mode (programmatic XAML).
-Screenshot: [assets/screenshot-console.png](assets/screenshot-console.png).
 
-## Architecture: self-discovery + responsive
+## Best practices (10-foot / TV)
 
-Layout is **not** fixed to 1920×1080. The page discovers its live size and applies a token set.
+| Practice | How we apply it |
+|----------|-----------------|
+| **Measure usable surface** | `ApplicationView.VisibleBounds` + ~5% title-safe inset |
+| **No silent clipping** | Height **budget** + progressive disclosure (never drop primary KPIs invisibly) |
+| **No page scroll** | Full-viewport Grid shell; only `debug.log` scrolls |
+| **Primary vs secondary data** | P1: Height/Progress/Peers/Behind always; P3 secondary row or folded into meta |
+| **Decorative first to go** | Sparkline is P4 — hide when budget tight |
+| **Safe padding** | Overscan inset + content pad from tokens |
+| **Focus order** | Start → Stop soft → Refresh → log |
+| **High contrast** | Dark cards, semantic colors, large type on TV |
+
+### Priority table
+
+| P | Content | When tight |
+|---|---------|------------|
+| P0 | Header + actions | always |
+| P1 | Primary 4 metrics | always |
+| P2 | Dual bars + one-line meta | always |
+| P3 | Secondary 4 metrics | collapse → fold into meta |
+| P4 | Sparkline | hide |
+| P5 | DEBUG.LOG | shrink min height (floor 72 DIP) |
+
+## Architecture
 
 ```
-Page.SizeChanged
-    → DiscoverLayout(width, height)   // pure: size → UiLayout tokens
-    → ApplyLayout(tokens)             // mutate fonts, pads, gaps, visibility
-    → RelayoutMetricGrid(columns)     // 4-col or 2-col metric grid
+Page.SizeChanged / VisibleBounds
+  → GetUsableSize()           // bounds − title-safe
+  → DiscoverLayout()          // density + scale tokens
+  → PlanSections(usable_h)    // progressive flags
+  → ApplyLayout(tokens, plan) // mutate live tree
 ```
 
-| Piece | Role |
-|-------|------|
-| `UiDensity` | `Compact` · `Standard` · `Comfort` |
-| `UiLayout` | All scale tokens (pad, type, card min height, spark, log min, …) |
-| `DiscoverLayout` | Breakpoints from **viewport height/width** (TV fit is height-driven) |
-| `ApplyLayout` | Pushes tokens into already-built controls (no full rebuild) |
-| `RelayoutMetricGrid` | 8 metric cards → 2×4 or 4×2 |
+| Type | Role |
+|------|------|
+| `UiDensity` | Compact · Standard · Comfort |
+| `UiLayout` | Fonts, pads, card/spark/log sizes, columns |
+| `LayoutPlan` | `show_secondary`, `show_spark`, `log_min_h`, … |
 
-### Breakpoints (DIPs)
+### Shell rows
 
-| Density | When | Goal |
-|---------|------|------|
-| **Compact** | `h < 860` or `w < 1100` | Fit critical chrome; optional spark |
-| **Standard** | default (1080p TV + overscan) | **All primary UI on-screen, no page scroll** |
-| **Comfort** | `h ≥ 1200` and `w ≥ 1600` | Roomier type/cards, section labels, wrapped meta |
+```
+0 Header
+1 Metrics block (primary row + optional secondary row)
+2 Sync (bars + optional spark + meta)
+3 Actions
+4 Log  (* remaining height)
+```
 
-Columns: `metric_columns = 2` if `w < 1280`, else `4`.
-
-### Why not page ScrollViewer
-
-TV 10-foot UIs should not require scrolling the whole dashboard. Only **`debug.log`** scrolls internally. Meta path is shortened on Standard so vertical budget stays for metrics + sync + log.
+Primary metrics: **HEIGHT · PROGRESS · PEERS · BEHIND**  
+Secondary: **HEADERS · DISK · MEMPOOL · UPTIME** (or meta line when hidden)
 
 ## Visualization
 
 | Element | Practice |
 |---------|----------|
-| Dual progress bars | **Headers** (cyan): blocks÷headers · **Verified** (orange): `verificationprogress` |
-| Sparkline | Session trend (last ~90 samples); hidden in tight Compact |
+| Dual progress bars | Headers (cyan) = blocks÷headers; Verified (orange) = `verificationprogress` |
+| Sparkline | Session trend; optional under budget |
 | Semantic colors | Peers red if 0; behind orange if large; progress green when synced |
-| Metric cards | Equal-width responsive grid, high-contrast type |
-| Status pill + clock | Coarse state + local `updated HH:MM:SS` |
-| Gamepad | XY-focus Start ↔ Stop soft ↔ Refresh → log |
-
-## Layout (Standard density)
-
-```
-Header:   ₿ title · version | STATUS PILL | chain · prune · IBD
-Metrics:  2×4 cards (HEIGHT…UPTIME) — no section labels
-SYNC:     dual bars + sparkline + short meta
-Actions:  Start | Stop soft | Refresh
-Log:      debug.log (* row, MinHeight from tokens)
-```
+| Status pill | Coarse state + `updated HH:MM:SS` |
 
 ### Status pill
 
 `NO CORE` · `STOPPED` · `ERROR` · `STARTING` · `STOPPING` · `SYNCING` · `SYNCED` · `NET OFF`
 
+## Verification checklist (post-deploy)
+
+- [ ] P0–P2 fully on-screen (no crop under TV overscan)
+- [ ] Either 8 metrics **or** 4 primary + secondary data in meta — never half a grid missing
+- [ ] Spark visible **or** intentionally absent (log says `spark=0`)
+- [ ] Log ≥ ~3 lines
+- [ ] Start / Stop soft / Refresh fully visible and focusable
+- [ ] Host log: `[ui] layout usable=… density=… secondary=… spark=…`
+
 ## Data sources
 
 | Field | RPC |
 |-------|-----|
-| Chain tip / disk / IBD / warnings | `getblockchaininfo` |
-| Peers / UA / networkactive | `getconnectioncount`, `getnetworkinfo` |
+| Chain / IBD / disk | `getblockchaininfo` |
+| Peers / network | `getconnectioncount`, `getnetworkinfo` |
 | Mempool | `getmempoolinfo` |
 | Uptime | `uptime` |
 | Stop | `stop` |
@@ -74,4 +90,4 @@ Log:      debug.log (* row, MinHeight from tokens)
 
 ## Files
 
-`uwp/MainPage.h` (`UiLayout`, `DiscoverLayout`) · `uwp/MainPage.cpp` · `rpc_client.*` · `node_host.*` · `App.*`
+`uwp/MainPage.h` · `uwp/MainPage.cpp` · `rpc_client.*` · `node_host.*` · `App.*`

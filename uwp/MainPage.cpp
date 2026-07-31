@@ -12,6 +12,7 @@
 #include <winrt/Windows.System.Threading.h>
 #include <winrt/Windows.UI.Core.h>
 #include <winrt/Windows.UI.Text.h>
+#include <winrt/Windows.UI.ViewManagement.h>
 #include <winrt/Windows.UI.Xaml.Controls.Primitives.h>
 #include <winrt/Windows.UI.Xaml.Input.h>
 #include <winrt/Windows.UI.Xaml.Shapes.h>
@@ -32,6 +33,7 @@ using namespace winrt::Windows::UI::Xaml::Controls;
 using namespace winrt::Windows::UI::Xaml::Input;
 using namespace winrt::Windows::UI::Xaml::Media;
 using namespace winrt::Windows::UI::Xaml::Shapes;
+using namespace winrt::Windows::UI::ViewManagement;
 
 namespace xbb {
 namespace {
@@ -40,7 +42,6 @@ Color C(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) {
     return ColorHelper::FromArgb(a, r, g, b);
 }
 
-// High-contrast dark theme (WCAG-friendly on TV).
 const Color kBg = C(12, 14, 18);
 const Color kCard = C(26, 30, 38);
 const Color kCardBorder = C(48, 54, 66);
@@ -58,6 +59,8 @@ const Color kLogFg = C(186, 192, 204);
 const Color kSparkFill = C(247, 147, 26, 40);
 
 constexpr size_t kHistMax = 90;
+// Title-safe: ~5% each edge (Xbox TV overscan guidance).
+constexpr double kSafeFraction = 0.05;
 
 std::wstring Utf8ToWide(std::string const& text) {
     if (text.empty()) {
@@ -156,46 +159,52 @@ ProgressBar MakeBar(Color fg) {
     return bar;
 }
 
-TextBlock MakeTinyLabel(hstring const& text) {
-    auto t = TextBlock{};
-    t.Text(text);
-    t.FontSize(10);
-    t.Foreground(SolidColorBrush{kMuted});
-    t.Margin(ThicknessHelper::FromLengths(2, 0, 0, 4));
-    t.CharacterSpacing(80);
-    t.FontWeight(winrt::Windows::UI::Text::FontWeights::SemiBold());
-    return t;
-}
-
 } // namespace
 
-// --- Self-discovery: map viewport → layout tokens ---------------------------------
+// --- Self-discovery + budget planner ----------------------------------------------
+
+void GetUsableSize(double page_w, double page_h, double& out_w, double& out_h, double& out_inset) {
+    double w = page_w > 1 ? page_w : 1920;
+    double h = page_h > 1 ? page_h : 1080;
+    try {
+        auto bounds = ApplicationView::GetForCurrentView().VisibleBounds();
+        if (bounds.Width > 32 && bounds.Height > 32) {
+            w = bounds.Width;
+            h = bounds.Height;
+        }
+    } catch (...) {
+        // Fallback: Page size (pre-activation / test).
+    }
+    // Title-safe inset: max(5% of min dimension, 24 DIP).
+    const double inset = (std::max)(24.0, kSafeFraction * (std::min)(w, h));
+    out_inset = inset;
+    out_w = (std::max)(320.0, w - 2.0 * inset);
+    out_h = (std::max)(240.0, h - 2.0 * inset);
+}
 
 UiLayout DiscoverLayout(double width, double height) {
     UiLayout L;
-    L.viewport_w = width > 1 ? width : 1920;
-    L.viewport_h = height > 1 ? height : 1080;
+    double inset = 0;
+    GetUsableSize(width, height, L.usable_w, L.usable_h, inset);
+    L.viewport_w = width > 1 ? width : L.usable_w;
+    L.viewport_h = height > 1 ? height : L.usable_h;
+    L.safe_inset = inset;
+    // Root padding = safe inset (overscan) + small content pad.
+    L.pad_x = inset + 8;
+    L.pad_y = inset * 0.75 + 6;
 
-    // Height drives TV fit; width handles rare portrait / split (unlikely on Xbox).
-    // Compact: tight safe-area or small window. Standard: 1080p TV. Comfort: tall.
-    if (L.viewport_h < 860 || L.viewport_w < 1100) {
+    if (L.usable_h < 820 || L.usable_w < 1000) {
         L.density = UiDensity::Compact;
-    } else if (L.viewport_h >= 1200 && L.viewport_w >= 1600) {
+    } else if (L.usable_h >= 1100 && L.usable_w >= 1500) {
         L.density = UiDensity::Comfort;
     } else {
         L.density = UiDensity::Standard;
     }
 
-    if (L.viewport_w < 1280) {
-        L.metric_columns = 2;
-    } else {
-        L.metric_columns = 4;
-    }
+    L.primary_columns = (L.usable_w < 1100) ? 2 : 4;
 
     switch (L.density) {
     case UiDensity::Compact:
-        L.pad_x = 20;
-        L.pad_y = 12;
         L.title_fs = 20;
         L.subtitle_fs = 11;
         L.value_fs = 18;
@@ -204,59 +213,44 @@ UiLayout DiscoverLayout(double width, double height) {
         L.meta_fs = 11;
         L.btn_fs = 15;
         L.pill_fs = 12;
-        L.card_min_h = 56;
-        L.card_pad_y = 6;
+        L.card_min_h = 54;
+        L.card_pad_y = 5;
         L.card_pad_x = 10;
         L.card_gap = 6;
-        L.spark_h = 28;
-        L.spark_card_h = 44;
+        L.spark_h = 26;
+        L.spark_card_h = 42;
         L.bar_h_headers = 5;
         L.bar_h_verify = 7;
-        L.log_min_h = 96;
+        L.log_min_h = 88;
         L.btn_min_h = 40;
         L.btn_min_w = 120;
-        L.header_margin_b = 6;
         L.section_gap = 4;
-        L.show_sparkline = L.viewport_h >= 780;
-        L.show_section_labels = false;
-        L.show_subtitle = false;
-        L.meta_wrap = false;
         break;
     case UiDensity::Comfort:
-        L.pad_x = 40;
-        L.pad_y = 28;
-        L.title_fs = 30;
-        L.subtitle_fs = 14;
-        L.value_fs = 26;
-        L.label_fs = 12;
+        L.title_fs = 28;
+        L.subtitle_fs = 13;
+        L.value_fs = 24;
+        L.label_fs = 11;
         L.log_fs = 13;
         L.meta_fs = 13;
-        L.btn_fs = 18;
-        L.pill_fs = 15;
-        L.card_min_h = 88;
-        L.card_pad_y = 12;
-        L.card_pad_x = 16;
-        L.card_gap = 12;
-        L.spark_h = 48;
-        L.spark_card_h = 76;
-        L.bar_h_headers = 8;
-        L.bar_h_verify = 12;
-        L.log_min_h = 200;
-        L.btn_min_h = 52;
-        L.btn_min_w = 160;
-        L.header_margin_b = 14;
-        L.section_gap = 10;
-        L.show_sparkline = true;
-        L.show_section_labels = true;
-        L.show_subtitle = true;
-        L.meta_wrap = true;
+        L.btn_fs = 17;
+        L.pill_fs = 14;
+        L.card_min_h = 76;
+        L.card_pad_y = 10;
+        L.card_pad_x = 14;
+        L.card_gap = 10;
+        L.spark_h = 40;
+        L.spark_card_h = 64;
+        L.bar_h_headers = 7;
+        L.bar_h_verify = 10;
+        L.log_min_h = 160;
+        L.btn_min_h = 48;
+        L.btn_min_w = 148;
+        L.section_gap = 8;
         break;
     case UiDensity::Standard:
     default:
-        // Tuned so 1920×1080 with ~5–8% overscan still shows header→log without page scroll.
-        L.pad_x = 28;
-        L.pad_y = 16;
-        L.title_fs = 24;
+        L.title_fs = 22;
         L.subtitle_fs = 12;
         L.value_fs = 20;
         L.label_fs = 10;
@@ -264,26 +258,64 @@ UiLayout DiscoverLayout(double width, double height) {
         L.meta_fs = 12;
         L.btn_fs = 16;
         L.pill_fs = 13;
-        L.card_min_h = 64;
-        L.card_pad_y = 7;
+        L.card_min_h = 60;
+        L.card_pad_y = 6;
         L.card_pad_x = 12;
         L.card_gap = 8;
-        L.spark_h = 32;
-        L.spark_card_h = 52;
+        L.spark_h = 30;
+        L.spark_card_h = 48;
         L.bar_h_headers = 6;
-        L.bar_h_verify = 9;
-        L.log_min_h = 112;
+        L.bar_h_verify = 8;
+        L.log_min_h = 100;
         L.btn_min_h = 44;
-        L.btn_min_w = 136;
-        L.header_margin_b = 8;
+        L.btn_min_w = 132;
         L.section_gap = 6;
-        L.show_sparkline = true;
-        L.show_section_labels = false;
-        L.show_subtitle = true;
-        L.meta_wrap = false;
         break;
     }
     return L;
+}
+
+LayoutPlan PlanSections(double usable_h, UiLayout const& L) {
+    LayoutPlan plan;
+    plan.show_subtitle = (L.density != UiDensity::Compact);
+    plan.show_section_labels = (L.density == UiDensity::Comfort);
+    plan.meta_wrap = (L.density == UiDensity::Comfort);
+    plan.log_min_h = L.log_min_h;
+
+    // Estimated block heights (DIP) for budget.
+    const double header_h = L.title_fs + (plan.show_subtitle ? L.subtitle_fs + 8 : 4) + 12;
+    const int prow = (L.primary_columns >= 4) ? 1 : 2;
+    const double primary_h = prow * L.card_min_h + (prow - 1) * L.card_gap + L.section_gap;
+    const double secondary_h = L.card_min_h + L.section_gap; // always one row of 4 (or 2×2)
+    const double sync_bars = 18 + L.bar_h_headers + L.bar_h_verify + 16 + L.meta_fs + 12;
+    const double spark_h = L.spark_card_h + 6;
+    const double actions_h = L.btn_min_h + L.section_gap * 2;
+    const double log_floor = L.log_min_h;
+
+    // P0+P1+P2+P5 fixed budget; P3 secondary; P4 spark.
+    const double base = header_h + primary_h + sync_bars + actions_h + log_floor;
+
+    plan.show_secondary = true;
+    plan.show_spark = true;
+
+    if (base + secondary_h + spark_h > usable_h) {
+        plan.show_spark = false;
+    }
+    if (base + secondary_h + (plan.show_spark ? spark_h : 0) > usable_h) {
+        plan.show_secondary = false;
+    }
+    // If still tight, shrink log floor (never below 72).
+    double used = header_h + primary_h + sync_bars + actions_h +
+                  (plan.show_secondary ? secondary_h : 0) + (plan.show_spark ? spark_h : 0);
+    if (used + plan.log_min_h > usable_h) {
+        plan.log_min_h = (std::max)(72.0, usable_h - used);
+    }
+    // Compact density: default secondary off unless plenty of height.
+    if (L.density == UiDensity::Compact && usable_h < 900) {
+        plan.show_secondary = (base + secondary_h + 80 <= usable_h);
+        plan.show_spark = false;
+    }
+    return plan;
 }
 
 // --- Controller -------------------------------------------------------------------
@@ -294,10 +326,56 @@ void MainPageController::Init() {
     BuildUI();
     WireButtons();
     WireGamepadFocus();
-    // Seed Standard tokens before first measure.
-    ApplyLayout(DiscoverLayout(1920, 1080));
+    auto L = DiscoverLayout(1920, 1080);
+    auto plan = PlanSections(L.usable_h, L);
+    ApplyLayout(L, plan);
     ApplyStatus(NodeStatusSnapshot(), {}, "Running probes…");
     StartUiTimer();
+}
+
+Border MainPageController::MakeMetricCard(wchar_t const* label, TextBlock& value_out) {
+    auto border = Border{};
+    border.Background(SolidColorBrush{kCard});
+    border.BorderBrush(SolidColorBrush{kCardBorder});
+    border.BorderThickness(ThicknessHelper::FromUniformLength(1));
+    border.CornerRadius(CornerRadiusHelper::FromUniformRadius(10));
+    border.HorizontalAlignment(HorizontalAlignment::Stretch);
+    border.VerticalAlignment(VerticalAlignment::Stretch);
+
+    auto root = Grid{};
+    auto strip_col = ColumnDefinition{};
+    strip_col.Width(GridLengthHelper::FromPixels(3));
+    root.ColumnDefinitions().Append(strip_col);
+    auto body_col = ColumnDefinition{};
+    body_col.Width(GridLengthHelper::FromValueAndType(1, GridUnitType::Star));
+    root.ColumnDefinitions().Append(body_col);
+
+    auto strip = Border{};
+    strip.Background(SolidColorBrush{kCardBorder});
+    strip.Width(3);
+    Grid::SetColumn(strip, 0);
+    root.Children().Append(strip);
+
+    auto stack = StackPanel{};
+    stack.Spacing(3);
+    auto lab = TextBlock{};
+    lab.Text(label);
+    lab.CharacterSpacing(40);
+    lab.Foreground(SolidColorBrush{kMuted});
+    value_out = TextBlock{};
+    value_out.Text(L"—");
+    value_out.FontWeight(winrt::Windows::UI::Text::FontWeights::SemiBold());
+    value_out.Foreground(SolidColorBrush{kWhite});
+    value_out.TextTrimming(TextTrimming::CharacterEllipsis);
+    stack.Children().Append(lab);
+    stack.Children().Append(value_out);
+    Grid::SetColumn(stack, 1);
+    root.Children().Append(stack);
+    border.Child(root);
+
+    // Track label for ApplyLayout font updates (last child path via value_out sibling).
+    // Labels stored by callers alongside cards.
+    return border;
 }
 
 FrameworkElement MainPageController::BuildHeader() {
@@ -351,143 +429,115 @@ FrameworkElement MainPageController::BuildHeader() {
     m_network_label.HorizontalAlignment(HorizontalAlignment::Right);
     Grid::SetColumn(m_network_label, 2);
     header.Children().Append(m_network_label);
-
     return header;
 }
 
-FrameworkElement MainPageController::BuildMetricsBlock() {
-    m_metrics_host = StackPanel{};
-    m_chain_label = MakeTinyLabel(L"CHAIN");
-    m_node_label = MakeTinyLabel(L"NODE");
-    m_metrics_host.Children().Append(m_chain_label);
-
-    m_metrics_grid = Grid{};
-    // 8 cards: height, headers, progress, peers, behind, disk, mempool, uptime
-    struct Slot {
-        TextBlock* value;
-        wchar_t const* label;
-    };
-    // values filled after TextBlocks created
-    m_metric_cards.clear();
-    m_metric_labels.clear();
-    m_metric_values.clear();
-
-    auto add_card = [&](wchar_t const* label, TextBlock& value_out) {
-        auto border = Border{};
-        border.Background(SolidColorBrush{kCard});
-        border.BorderBrush(SolidColorBrush{kCardBorder});
-        border.BorderThickness(ThicknessHelper::FromUniformLength(1));
-        border.CornerRadius(CornerRadiusHelper::FromUniformRadius(10));
-        border.HorizontalAlignment(HorizontalAlignment::Stretch);
-        border.VerticalAlignment(VerticalAlignment::Stretch);
-
-        auto root = Grid{};
-        auto strip_col = ColumnDefinition{};
-        strip_col.Width(GridLengthHelper::FromPixels(3));
-        root.ColumnDefinitions().Append(strip_col);
-        auto body_col = ColumnDefinition{};
-        body_col.Width(GridLengthHelper::FromValueAndType(1, GridUnitType::Star));
-        root.ColumnDefinitions().Append(body_col);
-
-        auto strip = Border{};
-        strip.Background(SolidColorBrush{kCardBorder});
-        strip.Width(3);
-        strip.HorizontalAlignment(HorizontalAlignment::Left);
-        Grid::SetColumn(strip, 0);
-        root.Children().Append(strip);
-
-        auto stack = StackPanel{};
-        stack.Spacing(4);
-        auto lab = TextBlock{};
-        lab.Text(label);
-        lab.CharacterSpacing(60);
-        lab.Foreground(SolidColorBrush{kMuted});
-        value_out = TextBlock{};
-        value_out.Text(L"—");
-        value_out.FontWeight(winrt::Windows::UI::Text::FontWeights::SemiBold());
-        value_out.Foreground(SolidColorBrush{kWhite});
-        value_out.TextTrimming(TextTrimming::CharacterEllipsis);
-        stack.Children().Append(lab);
-        stack.Children().Append(value_out);
-        Grid::SetColumn(stack, 1);
-        root.Children().Append(stack);
-        border.Child(root);
-
-        m_metric_labels.push_back(lab);
-        m_metric_values.push_back(value_out);
-        m_metric_cards.push_back(border);
-        m_metrics_grid.Children().Append(border);
-    };
-
-    add_card(L"HEIGHT", m_val_height);
-    add_card(L"HEADERS", m_val_headers);
-    add_card(L"PROGRESS", m_val_progress);
-    add_card(L"PEERS", m_val_peers);
-    add_card(L"BEHIND", m_val_behind);
-    add_card(L"DISK", m_val_disk);
-    add_card(L"MEMPOOL", m_val_mempool);
-    add_card(L"UPTIME", m_val_uptime);
-
-    m_metrics_host.Children().Append(m_metrics_grid);
-    // NODE label is conceptual (second row); we toggle visibility with CHAIN for density.
-    m_metrics_host.Children().Append(m_node_label);
-    m_node_label.Visibility(Visibility::Collapsed);
-
-    RelayoutMetricGrid(4);
-    return m_metrics_host;
-}
-
-void MainPageController::RelayoutMetricGrid(int columns) {
-    if (!m_metrics_grid || m_metric_cards.empty()) {
+void MainPageController::LayoutMetricRow(Grid const& grid, std::vector<Border> const& cards, int columns) {
+    if (!grid || cards.empty()) {
         return;
     }
     columns = (std::max)(2, (std::min)(4, columns));
-    const int n = static_cast<int>(m_metric_cards.size());
+    const int n = static_cast<int>(cards.size());
     const int rows = (n + columns - 1) / columns;
 
-    m_metrics_grid.ColumnDefinitions().Clear();
-    m_metrics_grid.RowDefinitions().Clear();
+    grid.ColumnDefinitions().Clear();
+    grid.RowDefinitions().Clear();
     for (int c = 0; c < columns; ++c) {
         auto col = ColumnDefinition{};
         col.Width(GridLengthHelper::FromValueAndType(1, GridUnitType::Star));
-        m_metrics_grid.ColumnDefinitions().Append(col);
+        grid.ColumnDefinitions().Append(col);
     }
     for (int r = 0; r < rows; ++r) {
-        m_metrics_grid.RowDefinitions().Append(RowDefinition{});
+        auto row = RowDefinition{};
+        // Explicit min height so rows never collapse to 0 under budget pressure.
+        row.MinHeight(m_layout.card_min_h);
+        row.Height(GridLengthHelper::FromPixels(m_layout.card_min_h));
+        grid.RowDefinitions().Append(row);
     }
-    m_metrics_grid.ColumnSpacing(m_layout.card_gap);
-    m_metrics_grid.RowSpacing(m_layout.card_gap);
+    grid.ColumnSpacing(m_layout.card_gap);
+    grid.RowSpacing(m_layout.card_gap);
 
     for (int i = 0; i < n; ++i) {
-        const int r = i / columns;
-        const int c = i % columns;
-        Grid::SetRow(m_metric_cards[static_cast<size_t>(i)], r);
-        Grid::SetColumn(m_metric_cards[static_cast<size_t>(i)], c);
+        Grid::SetRow(cards[static_cast<size_t>(i)], i / columns);
+        Grid::SetColumn(cards[static_cast<size_t>(i)], i % columns);
     }
 }
 
+FrameworkElement MainPageController::BuildPrimaryMetrics() {
+    m_primary_grid = Grid{};
+    m_primary_cards.clear();
+    m_primary_labels.clear();
+    m_primary_values.clear();
+
+    auto add = [&](wchar_t const* lab, TextBlock& val) {
+        auto card = MakeMetricCard(lab, val);
+        // Recover label from card for ApplyLayout (first TextBlock in stack).
+        m_primary_cards.push_back(card);
+        m_primary_values.push_back(val);
+        m_primary_grid.Children().Append(card);
+    };
+    // P1 IBD-critical order
+    add(L"HEIGHT", m_val_height);
+    add(L"PROGRESS", m_val_progress);
+    add(L"PEERS", m_val_peers);
+    add(L"BEHIND", m_val_behind);
+
+    // Extract labels for font updates
+    for (auto const& card : m_primary_cards) {
+        try {
+            auto root = card.Child().as<Grid>();
+            auto stack = root.Children().GetAt(1).as<StackPanel>();
+            m_primary_labels.push_back(stack.Children().GetAt(0).as<TextBlock>());
+        } catch (...) {
+        }
+    }
+
+    LayoutMetricRow(m_primary_grid, m_primary_cards, 4);
+    return m_primary_grid;
+}
+
+FrameworkElement MainPageController::BuildSecondaryMetrics() {
+    m_secondary_grid = Grid{};
+    m_secondary_cards.clear();
+    m_secondary_labels.clear();
+    m_secondary_values.clear();
+
+    auto add = [&](wchar_t const* lab, TextBlock& val) {
+        auto card = MakeMetricCard(lab, val);
+        m_secondary_cards.push_back(card);
+        m_secondary_values.push_back(val);
+        m_secondary_grid.Children().Append(card);
+    };
+    add(L"HEADERS", m_val_headers);
+    add(L"DISK", m_val_disk);
+    add(L"MEMPOOL", m_val_mempool);
+    add(L"UPTIME", m_val_uptime);
+
+    for (auto const& card : m_secondary_cards) {
+        try {
+            auto root = card.Child().as<Grid>();
+            auto stack = root.Children().GetAt(1).as<StackPanel>();
+            m_secondary_labels.push_back(stack.Children().GetAt(0).as<TextBlock>());
+        } catch (...) {
+        }
+    }
+
+    LayoutMetricRow(m_secondary_grid, m_secondary_cards, 4);
+    return m_secondary_grid;
+}
+
 FrameworkElement MainPageController::BuildProgressSection() {
-    auto panel = StackPanel{};
+    m_progress_panel = StackPanel{};
+    m_progress_panel.Spacing(4);
 
     auto top = Grid{};
     auto star = ColumnDefinition{};
     star.Width(GridLengthHelper::FromValueAndType(1, GridUnitType::Star));
     top.ColumnDefinitions().Append(star);
     top.ColumnDefinitions().Append(ColumnDefinition{});
-    m_sync_section_label = MakeTinyLabel(L"SYNC");
-    top.Children().Append(m_sync_section_label);
-    m_progress_label = TextBlock{};
-    m_progress_label.Text(L"—");
-    m_progress_label.Foreground(SolidColorBrush{kOrange});
-    m_progress_label.HorizontalAlignment(HorizontalAlignment::Right);
-    m_progress_label.FontWeight(winrt::Windows::UI::Text::FontWeights::Bold());
-    m_progress_label.VerticalAlignment(VerticalAlignment::Center);
-    Grid::SetColumn(m_progress_label, 1);
-    top.Children().Append(m_progress_label);
-
     auto legend = StackPanel{};
     legend.Orientation(Orientation::Horizontal);
-    legend.Spacing(14);
+    legend.Spacing(12);
     auto leg_h = TextBlock{};
     leg_h.Text(L"● Headers");
     leg_h.FontSize(11);
@@ -498,6 +548,16 @@ FrameworkElement MainPageController::BuildProgressSection() {
     leg_v.Foreground(SolidColorBrush{kOrange});
     legend.Children().Append(leg_h);
     legend.Children().Append(leg_v);
+    top.Children().Append(legend);
+
+    m_progress_label = TextBlock{};
+    m_progress_label.Text(L"—");
+    m_progress_label.Foreground(SolidColorBrush{kOrange});
+    m_progress_label.HorizontalAlignment(HorizontalAlignment::Right);
+    m_progress_label.FontWeight(winrt::Windows::UI::Text::FontWeights::Bold());
+    m_progress_label.VerticalAlignment(VerticalAlignment::Center);
+    Grid::SetColumn(m_progress_label, 1);
+    top.Children().Append(m_progress_label);
 
     m_bar_headers = MakeBar(kCyan);
     m_bar_verify = MakeBar(kOrange);
@@ -533,24 +593,22 @@ FrameworkElement MainPageController::BuildProgressSection() {
         }
         auto border = sender.as<Border>();
         const double pad = m_layout.card_pad_x * 2.0;
-        const double inner = (std::max)(8.0, border.ActualWidth() - pad);
-        m_spark_canvas.Width(inner);
+        m_spark_canvas.Width((std::max)(8.0, border.ActualWidth() - pad));
         RedrawSparkline();
     });
 
     m_meta = TextBlock{};
-    m_meta.Text(L"Datadir —");
+    m_meta.Text(L"—");
     m_meta.Foreground(SolidColorBrush{kMuted});
     m_meta.TextTrimming(TextTrimming::CharacterEllipsis);
+    m_meta.MaxLines(1);
 
-    panel.Children().Append(top);
-    panel.Children().Append(legend);
-    panel.Children().Append(m_bar_headers);
-    panel.Children().Append(m_bar_verify);
-    panel.Children().Append(m_spark_border);
-    panel.Children().Append(m_meta);
-    panel.Spacing(4);
-    return panel;
+    m_progress_panel.Children().Append(top);
+    m_progress_panel.Children().Append(m_bar_headers);
+    m_progress_panel.Children().Append(m_bar_verify);
+    m_progress_panel.Children().Append(m_spark_border);
+    m_progress_panel.Children().Append(m_meta);
+    return m_progress_panel;
 }
 
 FrameworkElement MainPageController::BuildActions() {
@@ -596,7 +654,7 @@ FrameworkElement MainPageController::BuildLogPanel() {
     auto log_title = TextBlock{};
     log_title.Text(L"DEBUG.LOG");
     log_title.FontSize(10);
-    log_title.CharacterSpacing(60);
+    log_title.CharacterSpacing(40);
     log_title.Foreground(SolidColorBrush{kMuted});
     log_title.Margin(ThicknessHelper::FromLengths(0, 0, 0, 4));
     Grid::SetRow(log_title, 0);
@@ -615,7 +673,6 @@ FrameworkElement MainPageController::BuildLogPanel() {
     m_log_scroll.Content(m_log);
     Grid::SetRow(m_log_scroll, 1);
     inner.Children().Append(m_log_scroll);
-
     m_log_border.Child(inner);
     return m_log_border;
 }
@@ -637,10 +694,9 @@ void MainPageController::BuildUI() {
     m_root.XYFocusKeyboardNavigation(XYFocusKeyboardNavigationMode::Enabled);
     m_root.Background(SolidColorBrush{kBg});
 
+    // Shell: Header | Metrics (primary+secondary) | Sync | Actions | Log*
     m_root_grid = Grid{};
     m_root_grid.Background(SolidColorBrush{kBg});
-
-    // Rows: header, metrics, progress, actions, log*
     for (int i = 0; i < 4; ++i) {
         m_root_grid.RowDefinitions().Append(RowDefinition{});
     }
@@ -652,9 +708,12 @@ void MainPageController::BuildUI() {
     Grid::SetRow(header, 0);
     m_root_grid.Children().Append(header);
 
-    auto metrics = BuildMetricsBlock();
-    Grid::SetRow(metrics, 1);
-    m_root_grid.Children().Append(metrics);
+    m_metrics_block = StackPanel{};
+    m_metrics_block.Spacing(6);
+    m_metrics_block.Children().Append(BuildPrimaryMetrics());
+    m_metrics_block.Children().Append(BuildSecondaryMetrics());
+    Grid::SetRow(m_metrics_block, 1);
+    m_root_grid.Children().Append(m_metrics_block);
 
     auto prog = BuildProgressSection();
     Grid::SetRow(prog, 2);
@@ -669,12 +728,9 @@ void MainPageController::BuildUI() {
     m_root_grid.Children().Append(log);
 
     m_root.Content(m_root_grid);
-
-    // Self-discovery: recompute tokens whenever the page is measured.
     m_root.SizeChanged([this](IInspectable const&, SizeChangedEventArgs const& e) {
         OnRootSizeChanged(e.NewSize().Width, e.NewSize().Height);
     });
-
     SetPill(L"INIT", kGray);
 }
 
@@ -682,25 +738,26 @@ void MainPageController::OnRootSizeChanged(double width, double height) {
     if (width < 32 || height < 32) {
         return;
     }
-    // Ignore tiny noise remeasures
-    if (std::fabs(width - m_layout.viewport_w) < 1.0 && std::fabs(height - m_layout.viewport_h) < 1.0 &&
-        m_layout.viewport_w > 1) {
+    auto L = DiscoverLayout(width, height);
+    auto plan = PlanSections(L.usable_h, L);
+
+    const bool same =
+        std::fabs(L.usable_w - m_layout.usable_w) < 2.0 && std::fabs(L.usable_h - m_layout.usable_h) < 2.0 &&
+        L.density == m_layout.density && plan.show_secondary == m_plan.show_secondary &&
+        plan.show_spark == m_plan.show_spark && L.primary_columns == m_layout.primary_columns;
+    if (same && m_layout.usable_w > 1) {
         return;
     }
-    auto next = DiscoverLayout(width, height);
-    const bool density_changed = next.density != m_layout.density;
-    const bool cols_changed = next.metric_columns != m_layout.metric_columns;
-    ApplyLayout(next);
-    if (cols_changed || density_changed) {
-        RelayoutMetricGrid(m_layout.metric_columns);
-    }
-    Logf("[ui] layout density=%d %.0fx%.0f cols=%d spark=%d", static_cast<int>(m_layout.density),
-         m_layout.viewport_w, m_layout.viewport_h, m_layout.metric_columns,
-         m_layout.show_sparkline ? 1 : 0);
+
+    ApplyLayout(L, plan);
+    Logf("[ui] layout usable=%.0fx%.0f density=%d primary_cols=%d secondary=%d spark=%d log_min=%.0f",
+         L.usable_w, L.usable_h, static_cast<int>(L.density), L.primary_columns, plan.show_secondary ? 1 : 0,
+         plan.show_spark ? 1 : 0, plan.log_min_h);
 }
 
-void MainPageController::ApplyLayout(UiLayout const& L) {
+void MainPageController::ApplyLayout(UiLayout const& L, LayoutPlan const& plan) {
     m_layout = L;
+    m_plan = plan;
     if (!m_root_grid) {
         return;
     }
@@ -712,7 +769,7 @@ void MainPageController::ApplyLayout(UiLayout const& L) {
     }
     if (m_subtitle) {
         m_subtitle.FontSize(L.subtitle_fs);
-        m_subtitle.Visibility(L.show_subtitle ? Visibility::Visible : Visibility::Collapsed);
+        m_subtitle.Visibility(plan.show_subtitle ? Visibility::Visible : Visibility::Collapsed);
     }
     if (m_network_label) {
         m_network_label.FontSize(L.subtitle_fs + 1);
@@ -721,48 +778,41 @@ void MainPageController::ApplyLayout(UiLayout const& L) {
         m_updated.FontSize((std::max)(10.0, L.subtitle_fs - 1));
     }
     if (m_pill) {
-        m_pill.Padding(ThicknessHelper::FromLengths(L.pad_x * 0.55, L.pad_y * 0.45, L.pad_x * 0.55,
-                                                    L.pad_y * 0.45));
-        m_pill.MinWidth(L.btn_min_w * 0.85);
+        m_pill.Padding(ThicknessHelper::FromLengths(14, 6, 14, 6));
+        m_pill.MinWidth(L.btn_min_w * 0.8);
     }
     if (m_pill_text) {
         m_pill_text.FontSize(L.pill_fs);
     }
-    if (m_title_col) {
-        // header bottom margin via host: first child row spacing approximated on metrics host
+
+    if (m_metrics_block) {
+        m_metrics_block.Spacing(L.section_gap);
+        m_metrics_block.Margin(ThicknessHelper::FromLengths(0, 0, 0, L.section_gap));
     }
 
-    if (m_chain_label) {
-        m_chain_label.Visibility(L.show_section_labels ? Visibility::Visible : Visibility::Collapsed);
-        m_chain_label.FontSize(L.label_fs);
-    }
-    if (m_node_label) {
-        m_node_label.Visibility(Visibility::Collapsed);
-    }
-    if (m_sync_section_label) {
-        m_sync_section_label.Visibility(L.show_section_labels ? Visibility::Visible : Visibility::Collapsed);
-        m_sync_section_label.FontSize(L.label_fs);
-    }
-
-    if (m_metrics_host) {
-        m_metrics_host.Margin(ThicknessHelper::FromLengths(0, 0, 0, L.section_gap));
-        m_metrics_host.Spacing(L.section_gap * 0.5);
-    }
-    if (m_metrics_grid) {
-        m_metrics_grid.ColumnSpacing(L.card_gap);
-        m_metrics_grid.RowSpacing(L.card_gap);
-    }
-
-    for (size_t i = 0; i < m_metric_cards.size(); ++i) {
-        auto& card = m_metric_cards[i];
-        card.MinHeight(L.card_min_h);
-        card.Padding(ThicknessHelper::FromLengths(L.card_pad_x, L.card_pad_y, L.card_pad_x, L.card_pad_y));
-        if (i < m_metric_labels.size()) {
-            m_metric_labels[i].FontSize(L.label_fs);
+    auto style_cards = [&](std::vector<Border>& cards, std::vector<TextBlock>& labels,
+                           std::vector<TextBlock>& values) {
+        for (size_t i = 0; i < cards.size(); ++i) {
+            cards[i].MinHeight(L.card_min_h);
+            cards[i].Height(L.card_min_h);
+            cards[i].Padding(
+                ThicknessHelper::FromLengths(L.card_pad_x, L.card_pad_y, L.card_pad_x, L.card_pad_y));
+            if (i < labels.size()) {
+                labels[i].FontSize(L.label_fs);
+            }
+            if (i < values.size()) {
+                values[i].FontSize(L.value_fs);
+            }
         }
-        if (i < m_metric_values.size()) {
-            m_metric_values[i].FontSize(L.value_fs);
-        }
+    };
+    style_cards(m_primary_cards, m_primary_labels, m_primary_values);
+    style_cards(m_secondary_cards, m_secondary_labels, m_secondary_values);
+
+    LayoutMetricRow(m_primary_grid, m_primary_cards, L.primary_columns);
+    LayoutMetricRow(m_secondary_grid, m_secondary_cards, L.primary_columns);
+
+    if (m_secondary_grid) {
+        m_secondary_grid.Visibility(plan.show_secondary ? Visibility::Visible : Visibility::Collapsed);
     }
 
     if (m_progress_label) {
@@ -775,44 +825,46 @@ void MainPageController::ApplyLayout(UiLayout const& L) {
         m_bar_verify.Height(L.bar_h_verify);
     }
     if (m_spark_border) {
-        m_spark_border.Visibility(L.show_sparkline ? Visibility::Visible : Visibility::Collapsed);
+        m_spark_border.Visibility(plan.show_spark ? Visibility::Visible : Visibility::Collapsed);
         m_spark_border.Height(L.spark_card_h);
         m_spark_border.Padding(
-            ThicknessHelper::FromLengths(L.card_pad_x, L.card_pad_y * 0.6, L.card_pad_x, L.card_pad_y * 0.6));
+            ThicknessHelper::FromLengths(L.card_pad_x, L.card_pad_y * 0.5, L.card_pad_x, L.card_pad_y * 0.5));
     }
     if (m_spark_canvas) {
         m_spark_canvas.Height(L.spark_h);
     }
     if (m_meta) {
         m_meta.FontSize(L.meta_fs);
-        m_meta.TextWrapping(L.meta_wrap ? TextWrapping::WrapWholeWords : TextWrapping::NoWrap);
-        m_meta.MaxLines(L.meta_wrap ? 3 : 1);
+        m_meta.TextWrapping(plan.meta_wrap ? TextWrapping::WrapWholeWords : TextWrapping::NoWrap);
+        m_meta.MaxLines(plan.meta_wrap ? 2 : 1);
+    }
+    if (m_progress_panel) {
+        m_progress_panel.Margin(ThicknessHelper::FromLengths(0, 0, 0, L.section_gap));
     }
 
     if (m_actions) {
-        m_actions.Margin(ThicknessHelper::FromLengths(0, L.section_gap * 0.5, 0, L.section_gap));
+        m_actions.Margin(ThicknessHelper::FromLengths(0, 2, 0, L.section_gap));
     }
     for (auto* b : {&m_btn_start, &m_btn_stop, &m_btn_refresh}) {
         if (!*b) {
             continue;
         }
         (*b).MinHeight(L.btn_min_h);
+        (*b).Height(L.btn_min_h);
         (*b).MinWidth(L.btn_min_w);
         (*b).FontSize(L.btn_fs);
-        (*b).Padding(ThicknessHelper::FromLengths(L.card_pad_x * 1.4, L.card_pad_y, L.card_pad_x * 1.4,
-                                                  L.card_pad_y));
+        (*b).Padding(ThicknessHelper::FromLengths(L.card_pad_x * 1.2, 4, L.card_pad_x * 1.2, 4));
     }
 
     if (m_log_border) {
-        m_log_border.MinHeight(L.log_min_h);
-        m_log_border.Padding(ThicknessHelper::FromUniformLength((std::max)(8.0, L.card_pad_x * 0.75)));
+        m_log_border.MinHeight(plan.log_min_h);
+        m_log_border.Padding(ThicknessHelper::FromUniformLength((std::max)(8.0, L.card_pad_x * 0.7)));
     }
     if (m_log) {
         m_log.FontSize(L.log_fs);
     }
-    // Ensure log star row never collapses below token min.
     if (m_root_grid && m_root_grid.RowDefinitions().Size() >= 5) {
-        m_root_grid.RowDefinitions().GetAt(4).MinHeight(L.log_min_h);
+        m_root_grid.RowDefinitions().GetAt(4).MinHeight(plan.log_min_h);
     }
 
     RedrawSparkline();
@@ -875,7 +927,7 @@ void MainPageController::RedrawSparkline() {
     if (!m_spark_canvas || !m_spark_line || !m_spark_fill) {
         return;
     }
-    if (m_layout.show_sparkline == false) {
+    if (!m_plan.show_spark) {
         m_spark_line.Points().Clear();
         m_spark_fill.Points().Clear();
         return;
@@ -904,7 +956,6 @@ void MainPageController::RedrawSparkline() {
     auto fill = m_spark_fill.Points();
     pts.Clear();
     fill.Clear();
-
     const size_t n = m_hist_progress.size();
     fill.Append(Point(0.f, static_cast<float>(h)));
     for (size_t i = 0; i < n; ++i) {
@@ -922,10 +973,10 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
                                      std::string const& probe_note) {
     auto clear_metrics = [&]() {
         SetMetric(m_val_height, L"—", kMuted);
-        SetMetric(m_val_headers, L"—", kMuted);
         SetMetric(m_val_progress, L"—", kMuted);
         SetMetric(m_val_peers, L"—", kMuted);
         SetMetric(m_val_behind, L"—", kMuted);
+        SetMetric(m_val_headers, L"—", kMuted);
         SetMetric(m_val_disk, L"—", kMuted);
         SetMetric(m_val_mempool, L"—", kMuted);
         SetMetric(m_val_uptime, L"—", kMuted);
@@ -947,13 +998,13 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
     if (!st.available) {
         SetPill(L"NO CORE", kPurple);
         clear_metrics();
-        m_meta.Text(Utf8ToWide("Scaffold build — Core not linked. " + st.datadir));
+        m_meta.Text(Utf8ToWide("Scaffold — Core not linked"));
         m_network_label.Text(L"scaffold");
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(false);
         m_btn_refresh.IsEnabled(true);
         StylePrimaryButton(m_btn_start, false);
-        if (!probe_note.empty()) {
+        if (!probe_note.empty() && m_log) {
             auto w = Utf8ToWide(probe_note);
             if (w != m_last_log) {
                 m_log.Text(w);
@@ -1004,10 +1055,16 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         const Color behind_c = behind > 1000 ? kOrange : (behind > 0 ? kYellow : kGreen);
 
         SetMetric(m_val_height, FormatInt(st.blocks), kWhite);
-        SetMetric(m_val_headers, FormatInt(st.headers), kCyan);
         SetMetric(m_val_progress, FormatPct(st.verification_progress), prog_c);
         SetMetric(m_val_peers, FormatInt(st.connections), peers_c);
         SetMetric(m_val_behind, behind > 0 ? FormatInt(behind) : L"0", behind_c);
+
+        m_cache_headers = st.headers;
+        m_cache_disk = st.size_on_disk;
+        m_cache_mempool = st.mempool_tx;
+        m_cache_uptime = st.uptime_sec;
+
+        SetMetric(m_val_headers, FormatInt(st.headers), kCyan);
         SetMetric(m_val_disk, FormatBytes(st.size_on_disk), kWhite);
         SetMetric(m_val_mempool, FormatInt(st.mempool_tx) + L" tx",
                   st.mempool_tx > 0 ? kWhite : kMuted);
@@ -1015,8 +1072,8 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
 
         double header_ratio = 1.0;
         if (st.headers > 0) {
-            header_ratio = std::clamp(static_cast<double>(st.blocks) / static_cast<double>(st.headers),
-                                      0.0, 1.0);
+            header_ratio =
+                std::clamp(static_cast<double>(st.blocks) / static_cast<double>(st.headers), 0.0, 1.0);
         }
         const double verify = std::clamp(st.verification_progress, 0.0, 1.0);
         if (m_bar_headers) {
@@ -1045,16 +1102,13 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         if (st.initial_block_download) {
             net += L" · IBD";
         }
-        if (!st.network_active) {
-            net += L" · net off";
-        }
         m_network_label.Text(net);
     } else if (st.running) {
         SetMetric(m_val_height, L"…", kMuted);
-        SetMetric(m_val_headers, L"…", kMuted);
         SetMetric(m_val_progress, L"…", kMuted);
         SetMetric(m_val_peers, L"…", kMuted);
         SetMetric(m_val_behind, L"…", kMuted);
+        SetMetric(m_val_headers, L"…", kMuted);
         SetMetric(m_val_disk, L"…", kMuted);
         SetMetric(m_val_mempool, L"…", kMuted);
         SetMetric(m_val_uptime, L"…", kMuted);
@@ -1062,35 +1116,38 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         clear_metrics();
     }
 
-    // Meta: short by default so Standard density fits on TV without vertical overflow.
-    std::ostringstream meta;
-    if (!st.subversion.empty()) {
-        meta << st.subversion;
-    } else {
-        meta << "bitcoind";
+    // Meta: short status; fold secondary KPIs when grid hidden (no silent data loss).
+    {
+        std::wostringstream wmeta;
+        if (!st.subversion.empty()) {
+            wmeta << Utf8ToWide(st.subversion);
+        } else if (!st.message.empty()) {
+            wmeta << Utf8ToWide(st.message);
+        } else {
+            wmeta << L"bitcoind";
+        }
+        if (st.pruned && st.prune_target_size > 0) {
+            wmeta << L"  ·  prune ≤" << (st.prune_target_size / (1024 * 1024)) << L" MiB";
+        }
+        if (!m_plan.show_secondary && st.rpc_ready) {
+            wmeta << L"  ·  hdr " << FormatInt(m_cache_headers);
+            wmeta << L"  ·  " << FormatBytes(m_cache_disk);
+            wmeta << L"  ·  mem " << m_cache_mempool << L" tx";
+            wmeta << L"  ·  up " << FormatUptime(m_cache_uptime);
+        } else if (st.mempool_bytes > 0) {
+            wmeta << L"  ·  mempool " << (st.mempool_bytes / 1024) << L" KiB";
+        }
+        if (!st.warnings.empty()) {
+            wmeta << L"  ·  ⚠ " << Utf8ToWide(st.warnings);
+        }
+        if (st.last_exit != 0 && !st.running) {
+            wmeta << L"  ·  exit " << st.last_exit;
+        }
+        if (!probe_note.empty() && m_layout.density != UiDensity::Compact) {
+            wmeta << L"  ·  " << Utf8ToWide(probe_note);
+        }
+        m_meta.Text(wmeta.str());
     }
-    if (!st.message.empty()) {
-        meta << "  ·  " << st.message;
-    }
-    if (st.pruned && st.prune_target_size > 0) {
-        meta << "  ·  prune ≤" << (st.prune_target_size / (1024 * 1024)) << " MiB";
-    }
-    if (st.mempool_bytes > 0) {
-        meta << "  ·  mempool " << (st.mempool_bytes / 1024) << " KiB";
-    }
-    if (!st.warnings.empty()) {
-        meta << "  ·  ⚠ " << st.warnings;
-    }
-    if (st.last_exit != 0 && !st.running) {
-        meta << "  ·  last exit " << st.last_exit;
-    }
-    if (m_layout.meta_wrap && !st.datadir.empty()) {
-        meta << "  ·  " << st.datadir;
-    }
-    if (!probe_note.empty() && m_layout.density != UiDensity::Compact) {
-        meta << "  ·  " << probe_note;
-    }
-    m_meta.Text(Utf8ToWide(meta.str()));
 
     if (!log_tail.empty()) {
         auto w = Utf8ToWide(log_tail);
@@ -1115,7 +1172,7 @@ void MainPageController::RefreshAsync() {
         NodeStatus st = NodeStatusLive();
         std::string log;
         if (st.available) {
-            log = ReadDebugLogTail(st.datadir, 48);
+            log = ReadDebugLogTail(st.datadir, 40);
         }
         auto probe = self->m_probe_note;
         dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal,
