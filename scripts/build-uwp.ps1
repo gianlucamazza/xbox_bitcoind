@@ -107,6 +107,31 @@ if (-not $PlatformToolsetOverride) {
     }
 }
 
+# Windows SDK: prefer 22621 (xllama/scaffold pin) when installed; else newest 10.0.*.
+# windows-2025-vs2026 ships 10.0.26100.0 only (no 22621).
+$WindowsSdkVersion = $env:XBB_WINDOWS_SDK_VERSION
+if (-not $WindowsSdkVersion) {
+    $kitInclude = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\Include"
+    $preferred = @("10.0.22621.0", "10.0.26100.0")
+    foreach ($cand in $preferred) {
+        if (Test-Path (Join-Path $kitInclude $cand)) {
+            $WindowsSdkVersion = $cand
+            break
+        }
+    }
+    if (-not $WindowsSdkVersion -and (Test-Path $kitInclude)) {
+        $WindowsSdkVersion = Get-ChildItem $kitInclude -Directory -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match '^10\.0\.\d+\.0$' } |
+            Sort-Object Name -Descending |
+            Select-Object -First 1 -ExpandProperty Name
+    }
+}
+if ($WindowsSdkVersion) {
+    Write-Host "WindowsTargetPlatformVersion=$WindowsSdkVersion"
+} else {
+    Write-Warning "No Windows 10 SDK detected under Kits\10\Include"
+}
+
 # --- NuGet restore ---
 Write-Host "Restoring NuGet packages ..."
 $nuget = Get-Command nuget -ErrorAction SilentlyContinue

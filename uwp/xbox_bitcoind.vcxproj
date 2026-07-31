@@ -22,8 +22,9 @@
     <AppxPackage>true</AppxPackage>
     <ApplicationType>Windows Store</ApplicationType>
     <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
-    <!-- Pin 22621: same rationale as xllama (MarkupCompile stability). -->
-    <WindowsTargetPlatformVersion>10.0.22621.0</WindowsTargetPlatformVersion>
+    <!-- Prefer 22621 when present; build-uwp.ps1 overrides to installed SDK
+         (VS2026 GHA images ship 10.0.26100.0 only). -->
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">10.0.22621.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.19041.0</WindowsTargetPlatformMinVersion>
   </PropertyGroup>
 
