@@ -24,6 +24,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <ctime>
 #include <iomanip>
 #include <sstream>
 
@@ -130,6 +131,37 @@ std::wstring FormatUptime(int64_t sec) {
         os << m << L"m";
     }
     return os.str();
+}
+
+// Age of chain tip from mediantime (consensus-operational, not soft-fork signaling).
+std::wstring FormatTipAge(int64_t mediantime_unix) {
+    if (mediantime_unix <= 0) {
+        return {};
+    }
+    const auto now = static_cast<int64_t>(std::time(nullptr));
+    int64_t age = now - mediantime_unix;
+    if (age < 0) {
+        age = 0;
+    }
+    if (age < 90) {
+        return L"tip now";
+    }
+    if (age < 3600) {
+        return L"tip " + std::to_wstring(age / 60) + L"m";
+    }
+    if (age < 86400) {
+        return L"tip " + std::to_wstring(age / 3600) + L"h";
+    }
+    return L"tip " + std::to_wstring(age / 86400) + L"d";
+}
+
+int64_t TipAgeSec(int64_t mediantime_unix) {
+    if (mediantime_unix <= 0) {
+        return -1;
+    }
+    const auto now = static_cast<int64_t>(std::time(nullptr));
+    int64_t age = now - mediantime_unix;
+    return age < 0 ? 0 : age;
 }
 
 // MSIX package identity (app), e.g. "0.1.0.65" — not Bitcoin Core.
@@ -1002,13 +1034,24 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(true);
         StylePrimaryButton(m_btn_start, false);
-    } else if (st.initial_block_download || st.verification_progress < 0.999) {
-        SetPill(L"SYNCING", kOrange);
+    } else if (st.rpc_ready && (st.initial_block_download || st.verification_progress < 0.999)) {
+        // Operational consensus: headers race vs block validation.
+        const int behind0 = (st.headers > st.blocks) ? (st.headers - st.blocks) : 0;
+        const bool headers_phase = st.blocks < 1000 && behind0 > 5000;
+        SetPill(headers_phase ? L"HEADERS" : L"SYNCING", kOrange);
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(true);
         StylePrimaryButton(m_btn_start, false);
-    } else {
-        SetPill(L"SYNCED", kGreen);
+    } else if (st.rpc_ready) {
+        // Near tip: flag stale chain tip (no new blocks for a long time).
+        const int64_t age = TipAgeSec(st.mediantime);
+        if (age > 45 * 60 && st.connections > 0) {
+            SetPill(L"STALE", kYellow);
+        } else if (age > 45 * 60) {
+            SetPill(L"STALE", kOrange);
+        } else {
+            SetPill(L"SYNCED", kGreen);
+        }
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(true);
         StylePrimaryButton(m_btn_start, false);
@@ -1059,6 +1102,7 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
                                                   m_hist_progress.size(), kRefreshIntervalSec);
             eta = FormatEtaHours(hours);
         }
+        const std::wstring tip_age = FormatTipAge(st.mediantime);
 
         if (m_progress_label) {
             std::wostringstream os;
@@ -1068,6 +1112,11 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
             }
             if (!eta.empty()) {
                 os << L"  ·  ETA " << eta;
+            }
+            if (!tip_age.empty() && !syncing) {
+                os << L"  ·  " << tip_age;
+            } else if (!tip_age.empty() && st.blocks > 0) {
+                os << L"  ·  " << tip_age;
             }
             m_progress_label.Text(os.str());
             m_progress_label.Foreground(SolidColorBrush{prog_c});
@@ -1079,6 +1128,9 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         }
         if (st.initial_block_download) {
             net += L" · IBD";
+        } else if (!tip_age.empty()) {
+            net += L" · ";
+            net += tip_age;
         }
         m_network_label.Text(net);
     } else if (st.running) {

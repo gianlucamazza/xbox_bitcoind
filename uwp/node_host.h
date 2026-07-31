@@ -30,6 +30,7 @@ struct NodeStatus {
     int64_t prune_target_size = 0;
     int64_t mempool_bytes = 0;
     int64_t uptime_sec = 0;
+    int64_t mediantime = 0; // tip median time (unix s); 0 if unknown
 };
 
 // Snapshot for UI (mutex-protected message + atomics).

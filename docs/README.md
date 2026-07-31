@@ -73,8 +73,9 @@ Snapshot (see also [ops.md](ops.md) · [tracking.md](tracking.md)):
 
 1. [README](../README.md) — install & features  
 2. [ops.md](ops.md) — if you operate the Series S  
-3. [plan-core-uwp.md](plan-core-uwp.md) — how the node is embedded  
-4. [uwp-scaffold.md](uwp-scaffold.md) + [ci.md](ci.md) — if you build  
+3. [pre-lightning.md](pre-lightning.md) — after tip, before any Lightning work  
+4. [plan-core-uwp.md](plan-core-uwp.md) — how the node is embedded  
+5. [uwp-scaffold.md](uwp-scaffold.md) + [ci.md](ci.md) — if you build  
 
 ---
 

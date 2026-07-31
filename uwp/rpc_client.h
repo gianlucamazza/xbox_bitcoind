@@ -17,6 +17,7 @@ struct BlockchainInfo {
     bool pruned = false;
     int64_t size_on_disk = 0;       // bytes
     int64_t prune_target_size = 0;  // bytes (0 if unknown / not set)
+    int64_t mediantime = 0;         // unix seconds (tip median time)
     std::string warnings;
 };
 

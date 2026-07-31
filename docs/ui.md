@@ -70,12 +70,25 @@ Secondary: **HEADERS · DISK · MEMPOOL · UPTIME** (or meta line when hidden)
 | Status pill | Coarse state + `updated HH:MM:SS`; **STOPPING Ns** while soft-stop joins |
 | Header subtitle | **Bitcoin Core v31.1 · app 0.1.0.xx** — Core pin (build-time via `xbb_version.generated.h`) + MSIX package (runtime). Do not confuse app rev with Core. |
 | Progress % | One decimal while syncing (`14.0%`); whole percent near tip |
+| Tip age | From `mediantime` — `tip 2m` / `tip now` on progress line + network label when useful |
 | KPI cards | Label + value centered in each metric box |
 | Splash / tiles | Official Core mark from `share/pixmaps` (`scripts/generate-uwp-assets.py`) |
 
 ### Status pill
 
-`NO CORE` · `STOPPED` · `ERROR` · `STARTING` · `STOPPING` · `SYNCING` · `SYNCED` · `NET OFF`
+| Pill | Meaning |
+|------|---------|
+| `NO CORE` | Scaffold / not WithCore |
+| `STOPPED` / `ERROR` | Node thread not running |
+| `STARTING` | Running, RPC not ready |
+| `STOPPING Ns` | Soft-stop in progress |
+| `NET OFF` | `networkactive=false` |
+| `HEADERS` | Early IBD: mostly header download |
+| `SYNCING` | Block validation / IBD |
+| `SYNCED` | Near tip |
+| `STALE` | Near tip but `mediantime` older than ~45 minutes (stall / isolation) |
+
+No soft-fork **signaling** UI (BIP9 deployments) — operational consensus only.
 
 ## Verification checklist (post-deploy)
 

@@ -175,6 +175,7 @@ NodeStatus NodeStatusLive() {
         s.pruned = chain->pruned;
         s.size_on_disk = chain->size_on_disk;
         s.prune_target_size = chain->prune_target_size;
+        s.mediantime = chain->mediantime;
         s.warnings = chain->warnings;
         const int behind = (s.headers > s.blocks) ? (s.headers - s.blocks) : 0;
         if (s.initial_block_download || s.verification_progress < 0.999) {

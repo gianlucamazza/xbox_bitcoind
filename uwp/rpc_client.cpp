@@ -286,6 +286,9 @@ std::optional<BlockchainInfo> RpcGetBlockchainInfo(const std::string& datadir_ut
     if (auto pts = JsonIntField(*result, "prune_target_size")) {
         info.prune_target_size = *pts;
     }
+    if (auto mt = JsonIntField(*result, "mediantime")) {
+        info.mediantime = *mt;
+    }
     if (auto w = JsonStringField(*result, "warnings")) {
         info.warnings = *w;
     }

@@ -11,22 +11,50 @@ Dev Mode, pin **v31.1**, with status UI + logs + durable chain state.
 ## Architecture
 
 ```
-xbox_bitcoind.exe (UWP AppContainer, Game class)
-├── MainPage — status dashboard (RPC metrics, Start/Stop, log tail)
+xbox_bitcoind.exe (UWP AppContainer, Game class — more RAM/CPU, not anti-suspend)
+├── App — OnSuspending soft-stop · OnResuming auto-restart if was running
+├── MainPage — 10-foot ops dashboard (consensus *health*, not soft-fork signaling)
 ├── probes — AppContainer capability checks
-├── rpc_client — loopback JSON-RPC + cookie
+├── rpc_client — loopback JSON-RPC + cookie (flat JSON extractors)
 └── node_host → BitcoindMain(argc, argv)   [XBB_WITH_CORE]
         │
         ├── -datadir=<LocalState>\bitcoin
-        ├── -conf=<LocalState>\bitcoin\bitcoin.conf
-        ├── prune=550 listen=0 server=1 dbcache=512 (console defaults)
-        └── links: bitcoin_embed → bitcoin_node + util + common + deps (x64-uwp)
+        ├── -conf=<LocalState>\bitcoin\bitcoin.conf   (profiles: console|tip)
+        ├── prune=550 listen=0 server=1 dbcache=512   (IBD defaults)
+        └── links: bitcoin_embed + node stack + event.dll (x64-uwp)
 ```
 
-**In-process only** (no `CreateProcess`). Clean shutdown:
+**In-process only** (no `CreateProcess`). No Tor/mining/LN in this package.
 
-- UI Stop / app suspend → RPC `stop` → join node thread → LevelDB flush
-- `deploy.sh stop-app` posts **suspend** first, then taskmanager DELETE
+### Lifecycle (Xbox)
+
+| Event | Behaviour |
+|-------|-----------|
+| Launch | probes → auto-start node (WithCore) |
+| UI Stop soft | RPC `stop` + join (~150s) |
+| Home / suspend | soft-stop (durable LevelDB); IBD **pauses** |
+| Resume | auto-restart node if it was running (on `main`; ship next MSIX) |
+| Host `deploy.sh stop-app` | Portal suspend → wait → DELETE fallback |
+
+Game class ≠ background daemon. Keep title focused for long IBD.
+
+### Host ops plane
+
+```
+Linux host
+├── health-check.sh / node-status / ibd-sample timer
+├── deploy.sh (MSIX + VCLibs Dependencies/x64)
+└── conf profiles: apply-console-conf --profile console|tip
+```
+
+### UI scope (consensus display)
+
+**In scope:** tip height, headers, behind, progress, peers, tip age (`mediantime`),
+HEADERS/SYNCING/SYNCED/STALE pills, ETA, warnings, log.
+
+**Out of scope:** BIP9 soft-fork signaling panels, fork graphs, mining UI, LN graph.
+
+Pre-LN product boundary: [pre-lightning.md](pre-lightning.md).
 
 ## Toolchain (non-negotiable)
 
