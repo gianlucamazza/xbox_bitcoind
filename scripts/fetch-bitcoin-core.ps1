@@ -40,10 +40,43 @@ if (-not $tag -or -not $commit -or -not $repo) {
 
 New-Item -ItemType Directory -Force -Path (Join-Path $Root "third_party") | Out-Null
 
+# Cache may restore only build-uwp/ under Dest without a git tree — treat as incomplete.
+if ((Test-Path $Dest) -and -not (Test-Path (Join-Path $Dest ".git"))) {
+    Write-Host "Removing incomplete third_party/bitcoin (no .git; typically cache residue) ..."
+    # Keep build-uwp if present by moving it aside.
+    $buildUwp = Join-Path $Dest "build-uwp"
+    $stash = Join-Path $Root "third_party\bitcoin-build-uwp-stash"
+    if (Test-Path $buildUwp) {
+        if (Test-Path $stash) { Remove-Item -Recurse -Force $stash }
+        Move-Item $buildUwp $stash
+    }
+    Remove-Item -Recurse -Force $Dest
+    if (Test-Path $stash) {
+        New-Item -ItemType Directory -Force -Path $Dest | Out-Null
+        Move-Item $stash (Join-Path $Dest "build-uwp")
+    }
+}
+
 if (-not (Test-Path (Join-Path $Dest ".git"))) {
     Write-Host "Cloning $repo ($tag) -> $Dest"
-    git clone --branch $tag --depth 1 $repo $Dest
-    if ($LASTEXITCODE -ne 0) { throw "git clone failed" }
+    # Clone into a temp dir if Dest already has build-uwp only leftovers after partial clean.
+    if ((Test-Path $Dest) -and (Get-ChildItem $Dest -Force | Measure-Object).Count -gt 0) {
+        $tmp = Join-Path $Root "third_party\bitcoin-clone-tmp"
+        if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
+        git clone --branch $tag --depth 1 $repo $tmp
+        if ($LASTEXITCODE -ne 0) { throw "git clone failed" }
+        # Merge: keep existing build-uwp, copy source from clone.
+        Get-ChildItem $tmp -Force | ForEach-Object {
+            $target = Join-Path $Dest $_.Name
+            if (-not (Test-Path $target)) {
+                Move-Item $_.FullName $target
+            }
+        }
+        Remove-Item -Recurse -Force $tmp
+    } else {
+        git clone --branch $tag --depth 1 $repo $Dest
+        if ($LASTEXITCODE -ne 0) { throw "git clone failed" }
+    }
 } else {
     Write-Host "Updating existing clone at $Dest"
     Push-Location $Dest
