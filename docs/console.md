@@ -1,11 +1,8 @@
 # Target console (shared with xllama)
 
-This project uses the **same Xbox Series S** already configured for
-[`xllama`](../../xllama/) (Dev Mode + Device Portal).
+Same **Xbox Series S** as [`xllama`](../../xllama/) (Dev Mode + Device Portal).
 
 ## Live baseline
-
-Probed from the Linux host via Device Portal (`scripts/probe-console.sh`).
 
 | Field | Value |
 |-------|--------|
@@ -14,63 +11,48 @@ Probed from the Linux host via Device Portal (`scripts/probe-console.sh`).
 | OS version | `26100.8866.amd64fre.xb_flt_2607ge.260630-2200` |
 | OsEdition | SystemOS |
 | Device Portal | `https://192.168.1.44:11443` (DHCP — update if IP changes) |
-| Credentials | `~/.config/xllama/xbox-env` (shared; see `scripts/env.sh`) |
-| Sibling package | `GianlucaMazza.xllama_*` installed |
-| This package | `GianlucaMazza.xboxbitcoind_*` (WithCore, mainnet IBD) |
+| Credentials | `~/.config/xllama/xbox-env` (see `scripts/env.sh`) |
+| Sibling | `GianlucaMazza.xllama_1.5.2.836_x64__pj67f1fcj4n14` |
+| This package | `GianlucaMazza.xboxbitcoind_0.1.0.42_x64__m0e4707sws2jw` |
 
-**Last probe baseline:** 2026-07-30 — HTTP 200 on `/api/os/info`.
-Node live verification continued through 2026-07-31 (UI + persistence).
-
-```
-Platform: Xbox Series S
-OsVersion: 26100.8866.amd64fre.xb_flt_2607ge.260630-2200
-env: ~/.config/xllama/xbox-env
-sibling: GianlucaMazza.xllama_1.5.2.825_x64__pj67f1fcj4n14
-```
-
-Note: `/api/devices/file/usage` returns **HTTP 404** on this OS build — free space
-is managed in Dev Home → Manage Dev Storage (~90 GB allocation from xllama notes).
-Prefer the Dev Home UI or Device Portal File Explorer until a working API path is found.
-
-Re-run:
+**Last full ops check:** 2026-07-31 — portal HTTP 200; node process
+`xbox_bitcoind.exe` running; mainnet IBD ~height **318k**.
 
 ```bash
 ./scripts/probe-console.sh
-# or
 ./scripts/deploy.sh probe
 ```
 
-## Storage (measured in xllama on this console)
+Note: `/api/devices/file/usage` returns **HTTP 404** on this OS build. Free space
+is managed in Dev Home → Manage Dev Storage (~90 GB from xllama notes).
 
-| Item | Value | Source |
-|------|--------|--------|
-| Dev Mode storage allocation | raised to **~90 GB** | xllama `uwp-constraints.md` §9 (2026-07-08) |
-| Default Dev storage after activation | ~2.2–2.5 GB free (before raise) | same |
-| Per-file limit (Dev Mode UWP) | **~2 GB** | xllama §8–§9 / community |
-| Package type for budgets | **Game** (not App) | xllama §5 — set after each reinstall |
+## Storage
 
-Pruned `bitcoind` datadir is expected to fit in the 90 GB allocation; still plan for
-USB later if chain + indexes grow or xllama models share the partition.
+| Item | Value |
+|------|--------|
+| Dev Mode allocation | ~**90 GB** |
+| Per-file limit (Dev Mode UWP) | ~**2 GB** |
+| Package resource class | **Game** (set after every reinstall) |
 
-## Memory / CPU (Series S, Game package)
+Pruned datadir should fit the 90 GB allocation; USB later if chain + xllama models
+contend for space.
 
-| Item | Value | Relevance to bitcoind |
-|------|--------|------------------------|
-| System RAM | 10 GB GDDR6 shared (Series S) | AppContainer quota is lower |
-| GPU process budget (Game) | **~3801 MB** measured | Mostly irrelevant (CPU node) |
-| CPU | 8× Zen 2; ~6–7 usable | Keep `par` / thread defaults modest |
-| App vs Game | Game grants more OS resources | **Always set Game** after install |
+## Memory / CPU (Series S, Game)
 
-Working set during pruned IBD is still being observed under bitcoind; start with
-`dbcache=256` (`config/bitcoin.conf.console`).
+| Item | Value | Relevance |
+|------|--------|-----------|
+| System RAM | 10 GB GDDR6 shared | AppContainer quota lower |
+| GPU process budget (Game) | ~3801 MB measured | Mostly irrelevant (CPU node) |
+| CPU | 8× Zen 2; ~6–7 usable | Keep `par` / threads modest |
+| App vs Game | Game → more resources | **Always Game** after install |
+
+Start with `dbcache=256` (`config/bitcoin.conf.console`).
 
 ## Network
 
-- Outbound Internet works (xllama downloads / LAN API patterns).
-- Manifest declares `internetClient` + `privateNetworkClientServer` +
-  `removableStorage` (USB datadir optional later).
-- v1 default: `listen=0` (outbound peers only).
-- Local RPC: `127.0.0.1:8332` with cookie auth under the datadir.
+- Manifest: `internetClient`, `privateNetworkClientServer`, `removableStorage`
+- v1: `listen=0` (outbound peers only)
+- RPC: `127.0.0.1:8332`, cookie under datadir
 
 ## Package identity
 
@@ -79,15 +61,15 @@ Working set during pruned IBD is still being observed under bitcoind; start with
 | Identity Name | `GianlucaMazza.xboxbitcoind` |
 | Application Id | `App` |
 | Executable | `xbox_bitcoind.exe` |
-| Manifest version base | `0.1.0.0` (deployed builds may bump patch, e.g. `0.1.0.42`) |
+| Manifest base version | `0.1.0.0` (CI/deploy stamps revision, e.g. `.42`) |
 | Datadir | `LocalState\bitcoin` |
 | Node log | `LocalState\bitcoin\debug.log` |
 | App log | `LocalState\bitcoind.log` |
 
 ## Operational notes
 
-1. **Do not** put secrets in this repo; only `config/xbox-env.example`.
-2. IP may change with DHCP — update `xbox-env` from Dev Home if probe fails.
-3. xllama and xbox_bitcoind **share disk** on the Dev partition — watch free space before / during IBD.
-4. After every MSIX install: Dev Home → package tile → **View details → App type → Game**.
-5. Prefer `./scripts/deploy.sh stop-app` (soft stop) over hard kill — see [persistence.md](persistence.md).
+1. No secrets in the repo — only `config/xbox-env.example`.
+2. DHCP may change IP — update `xbox-env` if probe fails.
+3. xllama and xbox_bitcoind share the Dev partition — watch free space during IBD.
+4. After every MSIX install: **App type → Game**.
+5. Prefer `./scripts/deploy.sh stop-app` (soft stop) — [persistence.md](persistence.md).

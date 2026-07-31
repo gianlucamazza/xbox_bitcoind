@@ -1,8 +1,9 @@
 # Feasibility research: bitcoind on Xbox Series X|S
 
-**Date:** 2026-07-30 (research); product status updated 2026-07-31  
-**Status:** Research complete. **Product later:** Core v31.1 embedded on Series S,
-dashboard UI, soft-stop persistence verified — see root [README](../../README.md).  
+**Date:** 2026-07-30 (research)  
+**Status:** Research complete (archive). **Product (2026-07-31):** Core v31.1 on
+Series S, dashboard UI, soft-stop verified, mainnet IBD in progress — root
+[README](../../README.md) is SSOT.  
 **Target:** Pruned validating full node as UWP package, Dev Mode sideload
 
 ## Summary

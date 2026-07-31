@@ -1,5 +1,8 @@
 # Chain state persistence (Xbox / UWP)
 
+Soft stop is the supported lifecycle path. See also [device-portal.md](device-portal.md)
+(`deploy.sh stop-app`) and [ui.md](ui.md) (Stop / suspend).
+
 ## Result (2026-07-31, package `0.1.0.42`)
 
 Soft stop (Device Portal **suspend** → `App::OnSuspending` → RPC `stop`) then restart:
@@ -11,6 +14,8 @@ Soft stop (Device Portal **suspend** → `App::OnSuspending` → RPC `stop`) the
 | Next `UpdateTip` | — | **102 032+** (continues IBD) |
 
 **Verdict: chain state is conserved** under clean shutdown.
+
+Post-restart IBD continued on the same package (e.g. tip past **~318k** the same day).
 
 ## What failed earlier
 

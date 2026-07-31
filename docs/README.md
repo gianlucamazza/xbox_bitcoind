@@ -1,53 +1,73 @@
 # Documentation
 
-Entry point for humans and agents. Product status and quick start live in the
-root [README](../README.md).
+**Product status and quick start:** root [README](../README.md).
 
-## Current product
+| | |
+|--|--|
+| Pin | Bitcoin Core **v31.1** |
+| Console package | `GianlucaMazza.xboxbitcoind` **0.1.0.42** (WithCore, Game) |
+| Datadir | `LocalState\bitcoin` |
+| Last status pass | 2026-07-31 — IBD ~height **318k**, soft-stop OK |
 
-| Doc | What it covers |
-|-----|----------------|
-| [plan-core-uwp.md](plan-core-uwp.md) | Architecture, toolchain, work packages, success checklist |
-| [ui.md](ui.md) | Status dashboard (metrics, RPC, Start/Stop, log tail) |
-| [persistence.md](persistence.md) | Soft-stop flush path and verified chain conservation |
-| [console.md](console.md) | Shared Series S baseline (OS, storage, package identity) |
-| [device-portal.md](device-portal.md) | Device Portal env, `deploy.sh` / `probe-console.sh` |
-| [uwp-scaffold.md](uwp-scaffold.md) | UWP app layout, probes, build & deploy |
-| [uwp-constraints.md](uwp-constraints.md) | AppContainer / disk / RAM constraints (bitcoind view) |
-| [ci.md](ci.md) | GitHub Actions (Linux, MSVC, UWP scaffold + core) |
-| [build-msvc-baseline.md](build-msvc-baseline.md) | Desktop Core pin build on Windows |
+## Map
 
-## Assets
+### Operate (Series S)
+
+| Doc | Contents |
+|-----|----------|
+| [console.md](console.md) | Shared Series S baseline, package identity |
+| [device-portal.md](device-portal.md) | Portal env, `deploy.sh` / soft stop / screenshots |
+| [ui.md](ui.md) | Dashboard metrics, RPC sources |
+| [persistence.md](persistence.md) | Soft-stop flush + verified conservation |
+
+### Build & integrate
+
+| Doc | Contents |
+|-----|----------|
+| [plan-core-uwp.md](plan-core-uwp.md) | Architecture, toolchain, checklist |
+| [uwp-scaffold.md](uwp-scaffold.md) | UWP tree, probes, local build/deploy |
+| [uwp-constraints.md](uwp-constraints.md) | AppContainer / disk / RAM |
+| [build-msvc-baseline.md](build-msvc-baseline.md) | Desktop Core pin (not Xbox) |
+| [ci.md](ci.md) | GHA: path filters, no overlap, cost matrix |
+| [`../patches/uwp/README.md`](../patches/uwp/README.md) | Patches 0001–0010 |
+
+### Assets
 
 | Path | Description |
 |------|-------------|
-| [assets/screenshot-console.png](assets/screenshot-console.png) | Live Series S dashboard (README hero) |
+| [assets/screenshot-console.png](assets/screenshot-console.png) | Live dashboard (README hero) |
 
-## Code & patches
+### Code entry points
 
-| Path | Description |
-|------|-------------|
-| [`../uwp/`](../uwp/) | C++/WinRT app source |
-| [`../patches/uwp/`](../patches/uwp/README.md) | Core AppContainer + durability patches (0001–0010) |
+| Path | Role |
+|------|------|
+| [`../uwp/`](../uwp/) | C++/WinRT app |
 | [`../scripts/`](../scripts/) | Fetch, patch, build, deploy |
-| [`../config/`](../config/) | Pin, console `bitcoin.conf`, env example |
+| [`../config/`](../config/) | Pin, `bitcoin.conf.console`, env example |
 
-## Research archive (phase 0)
+### Research archive (phase 0)
 
-Historical feasibility and spikes — not day-to-day ops.
+Historical only — not day-to-day ops.
 
 | Doc | Topic |
 |-----|--------|
-| [research/00-feasibility.md](research/00-feasibility.md) | Initial feasibility |
+| [research/00-feasibility.md](research/00-feasibility.md) | Feasibility |
 | [research/01-phase0-spikes.md](research/01-phase0-spikes.md) | Spike plan |
-| [research/SOURCES.md](research/SOURCES.md) | Source list |
+| [research/SOURCES.md](research/SOURCES.md) | Sources |
 | [research/spikes/api-matrix.md](research/spikes/api-matrix.md) | Win32 / UWP API matrix |
-| [research/spikes/desktop-baseline.md](research/spikes/desktop-baseline.md) | MSVC baseline results log |
+| [research/spikes/desktop-baseline.md](research/spikes/desktop-baseline.md) | MSVC results log |
 
-## Suggested reading order
+## Reading order
 
-1. Root README (status + architecture)  
-2. `plan-core-uwp.md` (how the node is embedded)  
-3. `persistence.md` + `ui.md` (runtime behaviour)  
-4. `device-portal.md` + `console.md` (operate the Series S)  
-5. `uwp-scaffold.md` / `ci.md` / `patches/uwp/README.md` when building
+1. Root README  
+2. `plan-core-uwp.md`  
+3. `persistence.md` + `ui.md`  
+4. `device-portal.md` + `console.md`  
+5. When building: `uwp-scaffold.md` → `ci.md` → `patches/uwp/README.md`
+
+## Doc conventions
+
+- **English** for all project docs.
+- Root README is SSOT for status; this index is SSOT for navigation.
+- `docs/**` and README-only edits do **not** start CI (see [ci.md](ci.md)).
+- Prefer updating an existing doc over adding a new top-level file.

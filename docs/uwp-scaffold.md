@@ -47,8 +47,15 @@ Requirements:
 | Scaffold | VS 2022+ with UWP C++, Windows SDK (auto / props) |
 | WithCore | **VS 2026 18.3+**, C++ desktop + UWP, vcpkg `x64-uwp` |
 
-CI: `.github/workflows/build-uwp.yml` — `uwp-scaffold` on `windows-2022`,
-`uwp-core` on `windows-2025-vs2026`.
+CI (path-filtered — see [ci.md](ci.md)):
+
+| Job | When | Runner |
+|-----|------|--------|
+| `uwp-scaffold` | **PR** (or dispatch `with_core=false`) | `windows-2022` |
+| `uwp-core` | **push main** (path match) or dispatch `with_core=true` | `windows-2025-vs2026` |
+
+On main, only the product MSIX (`xbox_bitcoind-msix-core`) is built — no double
+scaffold + core Windows bill.
 
 ## Deploy (Linux host → Series S)
 

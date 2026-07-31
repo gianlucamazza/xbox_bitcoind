@@ -3,21 +3,22 @@
 **Pin:** see [`config/bitcoin-core.pin`](../config/bitcoin-core.pin)  
 **Current:** **v31.1** @ `9be056a8a72b624dae9623b2f7bded92c2a21c91` (2026-07-08 release)
 
-This is the **Windows desktop reference build** of the same tree we will port to
-UWP. It is **not** an Xbox package.
+**Windows desktop reference build** of the same pin used on UWP. It is **not** an
+Xbox package. UWP product builds: [uwp-scaffold.md](uwp-scaffold.md) /
+[plan-core-uwp.md](plan-core-uwp.md). CI gates: [ci.md](ci.md).
 
-Upstream guide: [bitcoin/doc/build-windows-msvc.md](https://github.com/bitcoin/bitcoin/blob/v31.1/doc/build-windows-msvc.md)
+Upstream: [bitcoin/doc/build-windows-msvc.md](https://github.com/bitcoin/bitcoin/blob/v31.1/doc/build-windows-msvc.md)
 
-## Why MSVC first
+## Why keep a desktop baseline
 
 | Reason | Detail |
 |--------|--------|
 | Official Windows path | CMake + vcpkg presets (`vs2026`, `vs2026-static`) |
-| Closest to UWP toolchain | Same MSVC family as Appx packaging later |
-| Catch Core issues early | Unit tests on desktop before AppContainer |
+| Same MSVC family as UWP | Catch Core / pin issues before AppContainer |
+| Unit tests on desktop | `ctest` on main when the MSVC workflow runs |
 
 Linux smoke (`scripts/build-linux-smoke.sh`) only proves the pin configures/builds
-on Arch; ship decisions still require the MSVC artifact.
+on Linux; ship decisions for Windows still use this MSVC artifact.
 
 ## Prerequisites (Windows)
 

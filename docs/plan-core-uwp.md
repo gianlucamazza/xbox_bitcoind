@@ -1,7 +1,7 @@
 # Plan: Bitcoin Core → UWP full node
 
-Implementation plan and live checklist. High-level status: root
-[README](../README.md). Index: [docs/README.md](README.md).
+Implementation plan and live checklist. Status: root [README](../README.md).
+Index: [docs/README.md](README.md).
 
 ## Goal
 
@@ -34,28 +34,29 @@ xbox_bitcoind.exe (UWP AppContainer, Game class)
 |-------|-------------|-----|
 | Bitcoin Core pin | **v31.1** | product pin |
 | MSVC for Core | **VS 2026 18.3+** | Core docs + working consteval C++20 |
-| CI `uwp-core` | `windows-2025-vs2026` | same as `ci-msvc-baseline` |
-| CI `uwp-scaffold` | `windows-2022` | UWP v143 workload preinstalled |
+| CI `uwp-core` | `windows-2025-vs2026` | same family as `ci-msvc-baseline` |
+| CI `uwp-scaffold` | `windows-2022` (PR only) | UWP v143 workload, no Core |
 | UWP app toolset | **v145** on VS2026 hosts | match Core objects |
 
-Building Core for UWP on VS2022 produces **C7595** (`consteval`). That is an
-unsupported toolchain — do **not** paper over it with language hacks in Core headers.
+Building Core for UWP on VS2022 produces **C7595** (`consteval`). Unsupported
+toolchain — do **not** paper over it with language hacks in Core headers.
 
 ## Work packages
 
 | # | Package | Deliverable | Status |
 |---|---------|-------------|--------|
-| 1 | **Patches** | AppContainer + durability (`patches/uwp/0001`–`0010`) | **done** |
+| 1 | **Patches** | AppContainer + durability (`0001`–`0010`) | **done** |
 | 2 | **Core UWP build** | `build-core-uwp.ps1` → `bitcoin_embed` + stack | **done** |
 | 3 | **Embed + UI** | `node_host` + dashboard RPC | **done** |
 | 4 | **Package** | `build-uwp.ps1 -WithCore` MSIX (+ `event.dll`) | **done** |
-| 5 | **CI** | `uwp-core` on VS2026; artifact MSIX | **green** |
+| 5 | **CI** | Path-filtered workflows; no scaffold+core double bill on main | **done** |
 | 6 | **Console** | deploy, Game class, mainnet pruned IBD | **running** |
 | 7 | **Persistence** | soft stop + LevelDB durability | **verified** |
+| 8 | **Docs** | README + docs map consolidated | **done** |
 
 ## Patch set (`patches/uwp/`)
 
-AppContainer + UWP durability only — see [patches/uwp/README.md](../patches/uwp/README.md).
+See [patches/uwp/README.md](../patches/uwp/README.md).
 
 | Range | Role |
 |-------|------|
@@ -71,6 +72,8 @@ fetch pin → apply patches 0001–0010
   → write xbb-core-libs.props
   → MSBuild UWP app (v145) XbbWithCore → ship event.dll → sign MSIX
 ```
+
+CI matrix and path filters: [ci.md](ci.md).
 
 ## Config defaults
 
@@ -91,35 +94,36 @@ fetch pin → apply patches 0001–0010
 - [x] Core static libs full compile for UWP on GHA (VS2026)
 - [x] MSIX WithCore links `BitcoindMain` (CI green)
 - [x] Deploy WithCore package to Series S
-- [x] Console: `DefaultUWPContentTypeToGame=true` + `BitcoindMain` / `debug.log`
-- [x] Node running on Series S (v31.1, prune=550, LevelDB/chainstate open)
+- [x] Console: Game class + `BitcoindMain` / `debug.log`
+- [x] Node running (v31.1, prune=550, LevelDB/chainstate open)
 - [x] Status dashboard (RPC live metrics, Start/Stop, log tail)
-- [x] Chain state conserved across soft stop (see [persistence.md](persistence.md))
+- [x] Chain state conserved across soft stop ([persistence.md](persistence.md))
+- [x] Path-filtered CI (docs free; no scaffold+core on main)
 - [ ] mainnet IBD complete / long-run stability
 
 ### Implementation status
 
 | Layer | Status |
 |-------|--------|
-| Scaffold UI + probes | **Done**, deployed on console |
-| Desktop Core pin v31.1 | **Done**, MSVC 137/137 on VS2026 |
+| Scaffold UI + probes | **Done** |
+| Desktop Core pin v31.1 | **Done** (MSVC baseline on VS2026) |
 | UWP patches 0001–0010 | **Done** (API + durability; no language hacks) |
-| `build-core-uwp` / `-WithCore` | **Done** (`bitcoin_embed` + package `event.dll`) |
-| CI `uwp-core` | **Green** on VS2026 |
-| Package on Series S | **WithCore** running (manifest base `0.1.0.0`; deploy bumps e.g. `0.1.0.42`) |
-| Full node sync | **In progress** (mainnet pruned IBD) |
+| `build-core-uwp` / `-WithCore` | **Done** (`bitcoin_embed` + `event.dll`) |
+| CI | **Path-filtered**; `uwp-core` on VS2026 |
+| Package on Series S | **`0.1.0.42`** WithCore, mainnet IBD |
+| Full node sync | **In progress** (~height 318k as of 2026-07-31) |
 | Soft-stop persistence | **Verified** 2026-07-31 |
 
 ## Risks (known)
 
 | Risk | Mitigation |
 |------|------------|
-| VS2026 image missing UWP VC | CI step installs Universal + UWP.VC components |
+| VS2026 image missing UWP VC | CI installs Universal + UWP.VC when needed |
 | Boost/libevent UWP | x64-uwp + current libevent (0004) |
 | LevelDB / LocalState | datadir only under LocalState; 0009/0010 |
 | Hard kill loses unflushed tip | Soft stop via suspend; faster write interval |
 | RAM / dbcache | start 128–256 MiB; Game package |
-| Long CI | cache vcpkg + core build dir (keyed by VS2026) |
+| Long CI | path filters + caches (keyed by pin / patches) |
 
 ## Out of scope v1
 
