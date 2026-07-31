@@ -734,10 +734,12 @@ void MainPageController::BuildUI() {
     m_root.XYFocusKeyboardNavigation(XYFocusKeyboardNavigationMode::Enabled);
     m_root.Background(SolidColorBrush{kBg});
 
-    // Shell: Header | Metrics (primary+secondary) | Sync | Actions | Log*
+    // Shell rows (each metric band is its own Auto row so secondary cannot be
+    // painted over by Sync):
+    //   0 Header | 1 Primary | 2 Secondary | 3 Sync | 4 Actions | 5 Log*
     m_root_grid = Grid{};
     m_root_grid.Background(SolidColorBrush{kBg});
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 5; ++i) {
         m_root_grid.RowDefinitions().Append(RowDefinition{});
     }
     auto log_row = RowDefinition{};
@@ -748,23 +750,26 @@ void MainPageController::BuildUI() {
     Grid::SetRow(header, 0);
     m_root_grid.Children().Append(header);
 
-    m_metrics_block = StackPanel{};
-    m_metrics_block.Spacing(6);
-    m_metrics_block.Children().Append(BuildPrimaryMetrics());
-    m_metrics_block.Children().Append(BuildSecondaryMetrics());
-    Grid::SetRow(m_metrics_block, 1);
-    m_root_grid.Children().Append(m_metrics_block);
+    auto primary = BuildPrimaryMetrics();
+    primary.Margin(ThicknessHelper::FromLengths(0, 0, 0, 6));
+    Grid::SetRow(primary, 1);
+    m_root_grid.Children().Append(primary);
+
+    auto secondary = BuildSecondaryMetrics();
+    secondary.Margin(ThicknessHelper::FromLengths(0, 0, 0, 6));
+    Grid::SetRow(secondary, 2);
+    m_root_grid.Children().Append(secondary);
 
     auto prog = BuildProgressSection();
-    Grid::SetRow(prog, 2);
+    Grid::SetRow(prog, 3);
     m_root_grid.Children().Append(prog);
 
     auto actions = BuildActions();
-    Grid::SetRow(actions, 3);
+    Grid::SetRow(actions, 4);
     m_root_grid.Children().Append(actions);
 
     auto log = BuildLogPanel();
-    Grid::SetRow(log, 4);
+    Grid::SetRow(log, 5);
     m_root_grid.Children().Append(log);
 
     m_root.Content(m_root_grid);
@@ -825,11 +830,6 @@ void MainPageController::ApplyLayout(UiLayout const& L, LayoutPlan const& plan) 
         m_pill_text.FontSize(L.pill_fs);
     }
 
-    if (m_metrics_block) {
-        m_metrics_block.Spacing(L.section_gap);
-        m_metrics_block.Margin(ThicknessHelper::FromLengths(0, 0, 0, L.section_gap));
-    }
-
     auto style_cards = [&](std::vector<Border>& cards, std::vector<TextBlock>& labels,
                            std::vector<TextBlock>& values) {
         for (size_t i = 0; i < cards.size(); ++i) {
@@ -851,23 +851,24 @@ void MainPageController::ApplyLayout(UiLayout const& L, LayoutPlan const& plan) 
     LayoutMetricRow(m_primary_grid, m_primary_cards, L.primary_columns);
     LayoutMetricRow(m_secondary_grid, m_secondary_cards, L.primary_columns);
 
+    // Shell row 2 is dedicated to secondary — collapse the whole row via Visibility
+    // so Auto height becomes 0 when budget hides secondary (no paint-over).
     if (m_secondary_grid) {
         if (plan.show_secondary) {
             m_secondary_grid.Visibility(Visibility::Visible);
-            // Reserve full row so the next shell row cannot paint over secondary cards.
-            m_secondary_grid.MinHeight(L.card_min_h);
-            m_secondary_grid.Height(L.card_min_h);
-            m_secondary_grid.Margin(ThicknessHelper::FromLengths(0, L.section_gap * 0.5, 0, L.section_gap));
+            const double sh = (L.primary_columns >= 4) ? L.card_min_h : (L.card_min_h * 2 + L.card_gap);
+            m_secondary_grid.MinHeight(sh);
+            m_secondary_grid.Height(sh);
         } else {
             m_secondary_grid.Visibility(Visibility::Collapsed);
-            m_secondary_grid.Height(0);
+            m_secondary_grid.ClearValue(FrameworkElement::HeightProperty());
             m_secondary_grid.MinHeight(0);
-            m_secondary_grid.Margin(ThicknessHelper::FromUniformLength(0));
         }
     }
     if (m_primary_grid) {
         const double ph = (L.primary_columns >= 4) ? L.card_min_h : (L.card_min_h * 2 + L.card_gap);
         m_primary_grid.MinHeight(ph);
+        m_primary_grid.Height(ph);
     }
 
     if (m_progress_label) {
@@ -918,8 +919,9 @@ void MainPageController::ApplyLayout(UiLayout const& L, LayoutPlan const& plan) 
     if (m_log) {
         m_log.FontSize(L.log_fs);
     }
-    if (m_root_grid && m_root_grid.RowDefinitions().Size() >= 5) {
-        m_root_grid.RowDefinitions().GetAt(4).MinHeight(plan.log_min_h);
+    // Log is last shell row (index 5 after Header/Primary/Secondary/Sync/Actions).
+    if (m_root_grid && m_root_grid.RowDefinitions().Size() >= 6) {
+        m_root_grid.RowDefinitions().GetAt(5).MinHeight(plan.log_min_h);
     }
 
     RedrawSparkline();

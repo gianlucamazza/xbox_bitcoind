@@ -137,8 +137,6 @@ class MainPageController : public std::enable_shared_from_this<MainPageControlle
     std::vector<winrt::Windows::UI::Xaml::Controls::Border> m_secondary_cards;
     std::vector<winrt::Windows::UI::Xaml::Controls::TextBlock> m_secondary_labels;
     std::vector<winrt::Windows::UI::Xaml::Controls::TextBlock> m_secondary_values;
-    winrt::Windows::UI::Xaml::Controls::StackPanel m_metrics_block{nullptr};
-
     winrt::Windows::UI::Xaml::Controls::ProgressBar m_bar_headers{nullptr};
     winrt::Windows::UI::Xaml::Controls::ProgressBar m_bar_verify{nullptr};
     winrt::Windows::UI::Xaml::Controls::TextBlock m_progress_label{nullptr};
