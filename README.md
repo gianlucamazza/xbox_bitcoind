@@ -64,6 +64,11 @@ xbox_bitcoind.exe  (UWP AppContainer, Game class)
 
 Details: [docs/plan-core-uwp.md](docs/plan-core-uwp.md).
 
+## Download
+
+Latest packaged build: **[Releases](https://github.com/gianlucamazza/xbox_bitcoind/releases/latest)**  
+(`xbox_bitcoind_*.msix` + `xbox_bitcoind-dev.cer`). Install via `./scripts/deploy.sh` after trusting the cert; set **App type → Game**.
+
 ## Console (shared with xllama)
 
 | | |
