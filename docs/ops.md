@@ -152,18 +152,31 @@ Live open work: [tracking.md](tracking.md).
 ./scripts/deploy.sh package-gc --keep 1 --yes    # uninstall older
 ```
 
-## Measured budgets (package `0.1.0.42`, 2026-07-31; re-sample at tip)
+## Measured budgets & sync benchmarks
 
-Captured during mainnet IBD (~height 320–327k, progress ~3.5%):
+**SSOT for short form:** root [README § Sync benchmarks](../README.md#sync-benchmarks-measured).  
+Platform: Series S Dev Mode, Game, Core **v31.1**, `prune=550`, `dbcache=512`, `blocksonly=1`. Re-sample at tip.
+
+### Throughput
+
+| Window | Height / progress | Rate | When / package |
+|--------|-------------------|------|----------------|
+| 1 h `UpdateTip` | 327k→370k · 3.6%→5.8% | ~**43k** blk/h · ~**2.2** pp/h | 2026-08-01 · **0.1.0.10017** |
+| ~1.2 h `ibd.jsonl` post-wipe | 191k→346k · 0.4%→4.4% | ~**126k** blk/h · ~**3.3** pp/h | 2026-07-31 evening |
+| Soft-stop mid-IBD | tip 367530→367533 | **8 s** clean, no DELETE | 2026-08-01 · **0.1.0.75** |
+
+Progress rate is the better planner; blocks/h looks high early (small historical blocks) and falls later.
+
+### Resource budgets
 
 | Metric | Observed | Notes |
 |--------|----------|--------|
-| Working set | **~0.7–1.0 GiB** | Peak during active `UpdateTip` |
-| Private WS | **~0.7–0.9 GiB** | |
-| Log `cache=` | **~240–520 MiB** | UTXO/cache lines at `dbcache=256`; expect higher with package default 512 |
-| Datadir ≈ | **~1.5–2.0 GiB** mid-IBD | blocks + chainstate via portal listings (grows then prunes) |
-| `debug.log` | **~60 MiB** then rotated/truncated after restart | Expect growth during long IBD |
-| Soft-stop exit | **~36 s** | Clean process exit after suspend (no DELETE needed) |
+| Working set | **~0.7–1.1 GiB** | Peak during active `UpdateTip` |
+| Private WS | **~0.7–1.0 GiB** | |
+| Log `cache=` | **~50–540 MiB** | Cycles under `dbcache=512` |
+| Datadir ≈ | **~1.5–2.1 GiB** mid-IBD (~5–6%) | blocks + chainstate; then prunes |
+| `debug.log` | tens of MiB; truncates on restart | Expect growth during long IBD |
+| Soft-stop exit | **~8–36 s** clean mid-IBD | Prefer `IsRunning`-aware `stop-app` |
 
 ### Guidance
 

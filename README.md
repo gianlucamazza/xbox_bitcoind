@@ -15,9 +15,9 @@ Companion project on the same console: [xllama](https://github.com/gianlucamazza
 [![GitHub release](https://img.shields.io/github/v/release/gianlucamazza/xbox_bitcoind)](https://github.com/gianlucamazza/xbox_bitcoind/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-![Status dashboard on Xbox Series S (package 0.1.0.75)](docs/assets/screenshot-console.png)
+![Status dashboard on Xbox Series S](docs/assets/screenshot-console.png)
 
-*Live capture, Series S Dev Mode — package **0.1.0.75** (tip-age UI; baseline release **[v0.1.1](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1)**), mid-IBD ~5%. Subtitle **Bitcoin Core v31.1 · app 0.1.0.75**. Ops: [docs/tracking.md](docs/tracking.md).*
+*Live capture, Series S Dev Mode — mid-IBD dashboard (Core **v31.1** · app package). Ops: [docs/tracking.md](docs/tracking.md).*
 
 ## Features
 
@@ -26,17 +26,46 @@ Companion project on the same console: [xllama](https://github.com/gianlucamazza
 - Controller-first **10-foot dashboard**: primary/secondary metrics, dual progress bars,
   session sparkline, rough **ETA**, tip age (`mediantime`), live log tail
 - Status pills: `HEADERS` / `SYNCING` / `SYNCED` / `STALE` (ops consensus, not BIP9 signaling)
-- Clear versioning: **Core pin** vs **app MSIX** (e.g. `Bitcoin Core v31.1 · app 0.1.0.6`)
+- Clear versioning: **Core pin** vs **app MSIX** (e.g. `Bitcoin Core v31.1 · app 0.1.0.10017`)
 - **Soft-stop** on Home suspend + **auto-restart** on resume (continue IBD)
 - Path-filtered CI + automated **GitHub Releases** on `v*` tags
 
 | | |
 |--|--|
 | Package identity | `GianlucaMazza.xboxbitcoind` · App Id `App` · type **Game** |
-| Latest release | **[v0.1.1](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1)** (MSIX e.g. `0.1.0.6`) |
+| Latest release | **[v0.1.2](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.2)** (MSIX e.g. `0.1.0.10017`) |
 | Live console | `./scripts/node-status.sh` · [docs/tracking.md](docs/tracking.md) |
 | Datadir | `LocalState\bitcoin` |
 | Core pin | [config/bitcoin-core.pin](config/bitcoin-core.pin) (**v31.1**) |
+
+## Sync benchmarks (measured)
+
+Field numbers from a **Xbox Series S** Dev Mode install (Game class), mainnet, Bitcoin Core **v31.1**, package defaults `prune=550` · `dbcache=512` · `maxconnections=16` · `blocksonly=1` · outbound-only. Keep the title **focused** (Home suspends IBD).
+
+Prefer **progress rate** over raw blocks/h: early chain blocks are small; rate drops as blocks grow.
+
+### Throughput (mid-IBD, ~2015-era tip)
+
+| Window | Height | Progress | Rate | Source |
+|--------|--------|----------|------|--------|
+| ~1 h continuous (`UpdateTip`) | 327k → 370k | 3.6% → 5.8% | **~43k blocks/h** · **~2.2 pp progress/h** | `debug.log` on **0.1.0.10017** |
+| ~1.2 h host samples (post-wipe segment) | 191k → 346k | 0.4% → 4.4% | **~126k blocks/h** · **~3.3 pp progress/h** | hourly `ibd.jsonl` |
+| Rough ETA from mid-IBD progress rate | — | @ ~6% | **~40–45 h** wall-clock to tip *if rate held* | optimistic; later years slower |
+
+### Resources (while syncing)
+
+| Metric | Observed mid-IBD | Notes |
+|--------|------------------|--------|
+| Working set | **~0.7–1.1 GiB** | Peak during active verification |
+| Core `cache=` line | **~50–540 MiB** | Cycles with flushes; conf `dbcache=512` |
+| Datadir (pruned) | **~1.5–2.1 GiB** at ~5–6% | Grows then prunes; shared Dev storage ~90 GB |
+| Soft-stop (mid-IBD) | **~8 s** clean, tip conserved | Host `IsRunning`-aware stop; see [docs/persistence.md](docs/persistence.md) |
+
+### Caveats
+
+- Not a lab benchmark: home LAN, concurrent Dev apps (e.g. xllama) may reduce headroom.
+- After datadir wipe / redeploy, wall-clock restarts; tip is conserved across **soft-stop** upgrades.
+- Re-measure at tip with `./scripts/ibd-report.sh` and `./scripts/node-status.sh` — full results live in [docs/ops.md](docs/ops.md) and [docs/tracking.md](docs/tracking.md).
 
 ## Quick start
 
