@@ -24,7 +24,7 @@ original product shape (pruned validating node + UI + deploy + CI).
 
 | Gate | How to verify | Status |
 |------|----------------|--------|
-| Mainnet IBD finished | `tip_progress >= 0.999` via `node-status` / UI | **in progress** (~13.7% @ height ~450k, package 0.1.0.63) — [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) |
+| Mainnet IBD finished | `tip_progress >= 0.999` via `node-status` / UI | **in progress** (~14% @ height ~452k, package 0.1.0.65) — [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) |
 | ≥24h stable at tip | Hourly samples in `ibd.jsonl` all running near tip | **pending** IBD — [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) |
 | Soft-stop at tip | `./scripts/soft-stop-test.sh` + note in [persistence.md](persistence.md) | **pending** tip — [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
 

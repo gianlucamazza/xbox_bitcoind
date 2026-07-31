@@ -36,6 +36,16 @@ Soft stop then restart:
 | Block tree | **960 384** |
 | **Verdict** | **PASS** (tip conserved; IBD resumed) |
 
+### Deploy upgrade mid IBD (2026-07-31, 0.1.0.63 → 0.1.0.65)
+
+| Metric | Value |
+|--------|--------|
+| Pre-stop tip height | **452 198** |
+| Soft-stop | `XBB_SOFT_STOP_MAX_WAIT=300` → still running → **DELETE** |
+| Post-restart `Loaded best chain` / nBestHeight | **452 201** |
+| Live tip shortly after | **452 212** |
+| **Verdict** | **PASS tip conservation**; **FAIL clean exit** (DELETE path — [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
+
 ## How to re-test
 
 ```bash

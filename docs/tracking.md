@@ -19,15 +19,15 @@ Update this file when gates move; use Issues for discussion and assignment.
 |------|--------|
 | Engineering v1 | **Complete** |
 | Git tag / Release | **v0.1.0** published |
-| Console package | **0.1.0.63** WithCore · App type **Game** |
+| Console package | **0.1.0.65** WithCore · App type **Game** (set after reinstall) |
 | Pin | Bitcoin Core **v31.1** |
-| Dashboard | Responsive 10-foot UI (primary/secondary metrics, dual bars, sparkline) |
-| Soft-stop (early / mid IBD) | **Verified** — [persistence.md](persistence.md) |
-| Mainnet IBD | **In progress** (~13.7% tip progress, height ~**450k**) |
+| Dashboard | Responsive 10-foot UI (primary/secondary metrics, dual bars, sparkline, ETA) |
+| Soft-stop (early / mid IBD) | Early/mid **PASS** tip conservation; mid-IBD stop may still hit **DELETE** after 300s ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
+| Mainnet IBD | **In progress** (~14.0% tip progress, height ~**452k**) |
 | 24h stable at tip | **Pending** IBD |
 | Soft-stop at tip | **Pending** tip |
 | Pre-Lightning | Blocked on IBD closure gates |
-| Soft-stop wait mitigation | Host **180s** live (`deploy.sh`); in-app **150s** join on next package after `37a2bdc` |
+| Soft-stop wait mitigation | Host **180s** (tried **300s** on deploy); in-app join **150s** on **0.1.0.65** — DELETE still used mid-IBD |
 
 Verify live:
 
