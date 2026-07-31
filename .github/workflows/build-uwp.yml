@@ -51,8 +51,8 @@ on:
         default: false
       build_revision:
         description: "MSIX version 4th component (0 = use run_number)"
-        type: number
-        default: 0
+        type: string
+        default: "0"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
