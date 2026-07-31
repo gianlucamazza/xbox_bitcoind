@@ -13,3 +13,7 @@ distributed under the MIT License. See:
 
 UWP patches under patches/uwp/ are adaptations for AppContainer and do not
 change the upstream license of Bitcoin Core.
+
+UWP package splash/tile images under uwp/Assets/ are derived from Bitcoin Core
+pixmaps (share/pixmaps/bitcoin*.png) via scripts/generate-uwp-assets.py and are
+subject to the same MIT license as Bitcoin Core.

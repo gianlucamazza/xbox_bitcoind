@@ -30,6 +30,9 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ### Changed
 
+- Splash/tile assets use Bitcoin Core official icons (`share/pixmaps`) on dark bg;
+  regenerate with `scripts/generate-uwp-assets.py`
+- Progress % display: **1 decimal** while syncing (e.g. `14.0%`), whole near tip
 - Soft-stop host wait default **180s** (`XBB_SOFT_STOP_MAX_WAIT`), re-suspend at 45s;
   in-app node join wait **150s** (mid-IBD flush)
 - `deploy.sh package-list` / `package-gc` for multi-revision cleanup

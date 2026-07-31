@@ -159,10 +159,15 @@
 
   <ItemGroup>
     <Image Include="Assets\StoreLogo.png" />
+    <Image Include="Assets\StoreLogo.scale-200.png" />
     <Image Include="Assets\Square150x150Logo.png" />
+    <Image Include="Assets\Square150x150Logo.scale-200.png" />
     <Image Include="Assets\Square44x44Logo.png" />
+    <Image Include="Assets\Square44x44Logo.scale-200.png" />
     <Image Include="Assets\Wide310x150Logo.png" />
+    <Image Include="Assets\Wide310x150Logo.scale-200.png" />
     <Image Include="Assets\SplashScreen.png" />
+    <Image Include="Assets\SplashScreen.scale-200.png" />
   </ItemGroup>
 
   <!-- Ship console bitcoin.conf template into package (copy to LocalState by probes). -->

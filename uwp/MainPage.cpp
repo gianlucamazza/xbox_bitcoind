@@ -89,9 +89,11 @@ std::wstring FormatInt(int v) {
 }
 
 std::wstring FormatPct(double p) {
+    // TV-friendly: one decimal while syncing (14.0%), whole percent near tip (100%).
     std::wostringstream os;
-    const int prec = (p < 0.999) ? 3 : 1;
-    os << std::fixed << std::setprecision(prec) << (p * 100.0) << L"%";
+    const double pct = std::clamp(p, 0.0, 1.0) * 100.0;
+    const int prec = (p < 0.999) ? 1 : 0;
+    os << std::fixed << std::setprecision(prec) << pct << L"%";
     return os.str();
 }
 

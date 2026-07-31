@@ -29,6 +29,7 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 | `v1-close-check.sh` | Gate: IBD done + 24h stability (exit 0 = close v1 ops) |
 | `apply-console-conf.sh` | Soft-stop → push `config/bitcoin.conf.console` → start (IBD knobs) |
 | `test-ui-layout.sh` | Pure layout unit tests (no Xbox; used by ci-linux) |
+| `generate-uwp-assets.py` | Rebuild splash/tiles from Core `share/pixmaps` icons |
 
 ```bash
 # Off home LAN: standard SSH local forward (see docs/device-portal.md)
