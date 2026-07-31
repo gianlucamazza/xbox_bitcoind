@@ -8,9 +8,19 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 > **Note:** The UWP package identity version (`Major.Minor.Build.Revision`) may use
 > CI `run_number` as the fourth component (e.g. `0.1.0.42`). That revision is
-> **not** the same as the git tag.
+> **not** the same as the git tag. Bitcoin Core pin (**v31.1**) is also separate
+> from the app package revision.
 
 ## [Unreleased]
+
+### Added
+
+### Changed
+
+## [0.1.1] — 2026-07-31
+
+Ops polish, UI/branding, and operator tooling after first public release.
+Bitcoin Core pin remains **v31.1**.
 
 ### Added
 
@@ -24,25 +34,29 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
   + `scripts/apply-console-conf.sh`
 - Off-LAN console access via standard OpenSSH LocalForward (Odroid Tailscale)
 - Auto-start node after probes (WithCore)
-- `SECURITY.md`, this changelog, `NOTICE` (since v0.1.0)
-- Release automation, ops tooling, hourly IBD timer, `v1-close-check.sh`
-- Path-filtered CI; Core vs MSIX build split
+- `scripts/generate-version-header.py` — pin → `uwp/xbb_version.generated.h`
+- `scripts/generate-uwp-assets.py` — Core official icons for splash/tiles
+- `deploy.sh package-list` / `package-gc` for multi-revision cleanup
 
 ### Changed
 
-- Splash/tile assets use Bitcoin Core official icons (`share/pixmaps`) on dark bg;
-  regenerate with `scripts/generate-uwp-assets.py`
+- Header subtitle: **Bitcoin Core v\<pin\> · app \<MSIX\>** (Core pin vs package identity)
+- Splash/tile assets use Bitcoin Core official icons (`share/pixmaps`)
 - Progress % display: **1 decimal** while syncing (e.g. `14.0%`), whole near tip
-- Header subtitle: **Bitcoin Core v\<pin\> · app \<MSIX\>** (auto from pin + package identity)
+- Metric card label/value text optically centered
 - Soft-stop host wait default **180s** (`XBB_SOFT_STOP_MAX_WAIT`), re-suspend at 45s;
   in-app node join wait **150s** (mid-IBD flush)
-- `deploy.sh package-list` / `package-gc` for multi-revision cleanup
-- Ops scripts: temp/logs under `$STATE_DIR` (no hard-coded `/tmp` for soft-stop/sample)
+- Ops scripts: temp/logs under `$STATE_DIR`
 - Probes no longer overwrite operator `bitcoin.conf`
 - Fetch Bitcoin Core by pin **COMMIT** (quiet annotated-tag noise)
 - package-uwp: assert UWP workload before VS installer when possible
-- Soft-stop UI state (`STOPPING`, “Stop soft”); richer RPC metrics
-- Docs reconciled to package **0.1.0.65** / IBD ~14% · Core-vs-app versioning · roadmap/tracking
+- Docs: roadmap / tracking / ops / ci reconciled (console **0.1.0.65**, IBD in progress)
+
+### Known limits (unchanged)
+
+- Dev Mode only; mainnet IBD still wall-clock  
+- Mid-IBD soft-stop may still fall back to DELETE after long host wait (tip usually conserved)  
+- No wallet UI; `listen=0` by default  
 
 ## [0.1.0] — 2026-07-31
 
@@ -55,6 +69,8 @@ First public release.
 - Soft-stop lifecycle (suspend → RPC stop → LevelDB flush)
 - MSIX package `GianlucaMazza.xboxbitcoind` (WithCore), e.g. revision **0.1.0.42**
 - Device Portal deploy scripts and docs (`docs/ops.md`, plan, CI)
+- `SECURITY.md`, release automation, ops tooling, hourly IBD timer, `v1-close-check.sh`
+- Path-filtered CI; Core vs MSIX build split
 
 ### Limits (v0.1)
 
@@ -62,5 +78,6 @@ First public release.
 - Mainnet IBD can take a long time on a fresh datadir  
 - No wallet UI; `listen=0` by default  
 
-[Unreleased]: https://github.com/gianlucamazza/xbox_bitcoind/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/gianlucamazza/xbox_bitcoind/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1
 [0.1.0]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.0

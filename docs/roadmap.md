@@ -17,7 +17,8 @@ Live ops status: [tracking.md](tracking.md).
 | Docs / SECURITY / CHANGELOG / CONTRIBUTING | **done** |
 | Ops tooling + hourly IBD monitor timer | **done** (`ibd-report` rate/ETA, `v1-close-check`) |
 | Public release **v0.1.0** | **published** |
-| Branding (Core icons splash/tiles) + version header | **done** on `main` (next MSIX after **0.1.0.65**) |
+| Release **v0.1.1** (UI/ops polish) | **tagged** — MSIX via `release.yml` |
+| Branding (Core icons splash/tiles) + version header | **in v0.1.1** |
 
 **Verdict: v1 engineering is complete.** Remaining work is **ops wall-clock** (IBD) plus optional package upgrades.
 

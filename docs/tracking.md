@@ -18,8 +18,8 @@ Update this file when gates move; use Issues for discussion and assignment.
 | Area | State |
 |------|--------|
 | Engineering v1 | **Complete** |
-| Git tag / Release | **v0.1.0** published |
-| Console package | **0.1.0.65** WithCore · App type **Game** |
+| Git tag / Release | **v0.1.1** (cut from main; MSIX via release CI) · **v0.1.0** previous |
+| Console package | **0.1.0.65** WithCore · App type **Game** (upgrade to release MSIX when convenient) |
 | Pin | Bitcoin Core **v31.1** (`config/bitcoin-core.pin`) |
 | Version labeling | UI must show **Core pin** vs **app MSIX** separately (`xbb_version.generated.h` + package identity) — on `main`; console until next deploy still older subtitle |
 | Dashboard | 10-foot UI: primary/secondary metrics, dual bars, sparkline, ETA, centered KPI text |
