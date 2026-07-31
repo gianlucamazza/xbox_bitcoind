@@ -21,7 +21,7 @@ Update this file when gates move; use Issues for discussion and assignment.
 | Architecture + UI | **Complete** (lifecycle SSOT, tip age, HEADERS/STALE) — [plan-core-uwp.md](plan-core-uwp.md) · [ui.md](ui.md) |
 | Git tag / Release | **[v0.1.1](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1)** (baseline); console ahead via CI MSIX |
 | Console package | **0.1.0.75** WithCore · reinstall **complete** (cert + VCLibs + MSIX + start) |
-| Game class | Console `DefaultUWPContentTypeToGame=true`; WS ~0.9–1.0 GiB mid-IBD — glance Dev Home if App type shows App |
+| Game class | **Confirmed Game** (user) · `DefaultUWPContentTypeToGame=true` · WS ~0.9–1.0 GiB mid-IBD |
 | Pin | Bitcoin Core **v31.1** |
 | UI on console | **Live** Core **v31.1 · app 0.1.0.75** — tip age, dual bars, spark, ETA (screenshot refreshed) |
 | Soft-stop | Tip conserved across deploy; mid-IBD host wait sometimes DELETE after node already exited ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |

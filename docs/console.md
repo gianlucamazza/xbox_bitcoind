@@ -15,7 +15,7 @@ Same **Xbox Series S** as [`xllama`](../../xllama/) (Dev Mode + Device Portal).
 | Sibling | `GianlucaMazza.xllama_1.5.2.836_x64__pj67f1fcj4n14` |
 | This package | `GianlucaMazza.xboxbitcoind_0.1.0.75_x64__m0e4707sws2jw` (CI tip-age UI; above release **v0.1.1** / `0.1.0.6`) |
 
-**Last full ops check:** 2026-08-01 — reinstall **complete** for **`0.1.0.75`**: cert + VCLibs + MSIX, probes 4/4, conf console kept, health green, UI screenshot live (height ~357k / ~5%). Portal `DefaultUWPContentTypeToGame=true`. Soft-stop mid-IBD may still host-DELETE after clean node exit ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)).
+**Last full ops check:** 2026-08-01 — reinstall **complete** for **`0.1.0.75`**: cert + VCLibs + MSIX, probes 4/4, conf console kept, health green, UI screenshot live, **App type → Game confirmed**. Soft-stop mid-IBD may still host-DELETE after clean node exit ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)).
 
 **Version labels:** Bitcoin Core pin is **v31.1**; `0.1.0.75` is the **MSIX app** revision only.
 
