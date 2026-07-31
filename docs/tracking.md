@@ -23,10 +23,11 @@ Update this file when gates move; use Issues for discussion and assignment.
 | Pin | Bitcoin Core **v31.1** |
 | Dashboard | Responsive 10-foot UI (primary/secondary metrics, dual bars, sparkline) |
 | Soft-stop (early / mid IBD) | **Verified** — [persistence.md](persistence.md) |
-| Mainnet IBD | **In progress** (~13% tip progress, height ~444k) |
+| Mainnet IBD | **In progress** (~13.7% tip progress, height ~**450k**) |
 | 24h stable at tip | **Pending** IBD |
 | Soft-stop at tip | **Pending** tip |
 | Pre-Lightning | Blocked on IBD closure gates |
+| Soft-stop wait mitigation | Host **180s** live (`deploy.sh`); in-app **150s** join on next package after `37a2bdc` |
 
 Verify live:
 

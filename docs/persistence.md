@@ -5,8 +5,8 @@ Portal: [device-portal.md](device-portal.md). UI Stop / suspend: [ui.md](ui.md).
 
 ## Mitigations in tree
 
-1. **`App::OnSuspending`** → `NodeStop()` (RPC `stop` + join) with deferral  
-2. **`deploy.sh stop-app`**: POST suspend, wait up to **90s** for process exit, then DELETE only if needed  
+1. **`App::OnSuspending`** → `NodeStop()` (RPC `stop` + join) with deferral; join wait up to **~150s** before detach  
+2. **`deploy.sh stop-app`**: POST suspend, wait up to **180s** for process exit (`XBB_SOFT_STOP_MAX_WAIT`, re-suspend at 45s), then DELETE only if needed  
 3. **Patch 0009**: LevelDB no-mmap + WRITE_THROUGH on UWP  
 4. **Patch 0010**: UWP write interval **30–60 s**
 
