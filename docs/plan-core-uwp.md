@@ -76,9 +76,10 @@ fetch pin → apply patches 0001–0008
 - [x] Toolchain aligned with Core requirement (VS2026 for `uwp-core`)  
 - [x] Core static libs full compile for UWP on GHA (VS2026)  
 - [x] MSIX WithCore links `BitcoindMain` (exe contains symbol; CI green)  
-- [x] Deploy WithCore package to Series S (`0.1.0.34`)  
-- [ ] Console: App type **Game** + confirm node thread / `debug.log`  
-- [ ] regtest / mainnet pruned progress  
+- [x] Deploy WithCore package to Series S  
+- [x] Console: `DefaultUWPContentTypeToGame=true` (Device Portal) + `BitcoindMain` / `debug.log`  
+- [x] Node running on Series S (v31.1, prune=550, LevelDB/chainstate open)  
+- [ ] mainnet IBD progress / long-run stability  
 
 ### Implementation status
 
@@ -87,10 +88,10 @@ fetch pin → apply patches 0001–0008
 | Scaffold UI + probes | **Done**, deployed on console |
 | Desktop Core pin v31.1 | **Done**, MSVC 137/137 on VS2026 |
 | UWP patches 0001–0008 | **Done** (API surface; no language hacks) |
-| `build-core-uwp` / `-WithCore` | **Done** (`bitcoin_embed`, props-based link) |
-| CI `uwp-core` | **Green** on `windows-2025-vs2026` ([run 30594425693](https://github.com/gianlucamazza/xbox_bitcoind/actions/runs/30594425693)) |
-| Package on Series S | **Installed** `GianlucaMazza.xboxbitcoind_0.1.0.34_*` (probes OK; set App type Game) |
-| Full node sync | **Next** — Game class + BitcoindMain runtime validation |
+| `build-core-uwp` / `-WithCore` | **Done** (`bitcoin_embed` + package `event.dll`) |
+| CI `uwp-core` | **Green** on VS2026 |
+| Package on Series S | **`0.1.0.39`** — `xbox_bitcoind.exe` running, Core init OK |
+| Full node sync | **In progress** on-console (mainnet pruned IBD) |
 
 ## Risks (known)
 

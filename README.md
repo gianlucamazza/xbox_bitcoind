@@ -6,7 +6,7 @@ Port of **Bitcoin Core (`bitcoind`)** to **Xbox Series S** (shared Dev Mode cons
 [![ci-msvc-baseline](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml)
 [![build-uwp](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml)
 
-> Status: **`uwp-core` green (VS2026)** — WithCore MSIX links Core v31.1; package `0.1.0.34` on Series S (probes OK). Next: App type Game + node runtime.
+> Status: **bitcoind v31.1 running on Series S** (WithCore MSIX `0.1.0.39`, prune=550). CI `uwp-core` green on VS2026.
 
 ## Goals (v1)
 
@@ -128,8 +128,8 @@ Details: [docs/uwp-scaffold.md](docs/uwp-scaffold.md)
 | **0b′** | GitHub Actions (Linux + MSVC) | **green on main** |
 | **0c** | API matrix | **done** (static) |
 | **0d** | Hello-UWP scaffold + probes | **scaffold in tree** |
-| **1** | Link Core into UWP (`-WithCore`, VS2026 CI) | **in progress — toolchain aligned** |
-| **2** | Node: regtest → testnet → mainnet pruned | pending |
+| **1** | Link Core into UWP (`-WithCore`, VS2026 CI) | **done** |
+| **2** | Node: mainnet pruned on console | **running** (`0.1.0.39`, IBD) |
 | **3** | Hardening, docs, optional wallet | pending |
 
 Research: [docs/research/00-feasibility.md](docs/research/00-feasibility.md) · spikes: [docs/research/01-phase0-spikes.md](docs/research/01-phase0-spikes.md)
