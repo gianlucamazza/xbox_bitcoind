@@ -6,9 +6,22 @@ Portal: [device-portal.md](device-portal.md). UI Stop / suspend: [ui.md](ui.md).
 ## Mitigations in tree
 
 1. **`App::OnSuspending`** → `NodeStop()` (RPC `stop` + join) with deferral; join wait up to **~150s** before detach  
-2. **`deploy.sh stop-app`**: POST suspend, wait up to **180s** for process exit (`XBB_SOFT_STOP_MAX_WAIT`, re-suspend at 45s), then DELETE only if needed  
+2. **`deploy.sh stop-app`**: POST suspend → poll until clean, then DELETE only if still **actively** running  
 3. **Patch 0009**: LevelDB no-mmap + WRITE_THROUGH on UWP  
 4. **Patch 0010**: UWP write interval **30–60 s**
+
+### Host soft-stop success criteria (2026-08-01)
+
+| Signal | Meaning | DELETE? |
+|--------|---------|---------|
+| Process row **gone** | Full exit | No — clean |
+| `IsRunning=false` (after grace ~8s) | Residual UWP shell; node already stopped | No — clean |
+| App log: `OnSuspending complete` / `node thread joined` **and** not active | Durable stop confirmed | No — clean |
+| Still `IsRunning=true` after `XBB_SOFT_STOP_MAX_WAIT` | Flush stuck or suspend missed | **Yes** — last resort |
+
+**Root cause of false DELETE ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)):** host treated “ImageName listed” as running. After clean OnSuspending the shell often remains listed while the node has already exited (`BitcoindMain rc=0` in a few seconds). Host now uses Device Portal **`IsRunning`**.
+
+Env: `XBB_SOFT_STOP_MAX_WAIT` (default 180), `XBB_SOFT_STOP_MIN_GRACE` (default 8), `XBB_SOFT_STOP_REQUIRE_EXIT=1` to force full process exit.
 
 ## Verified results (package `0.1.0.42`)
 

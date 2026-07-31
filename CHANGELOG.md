@@ -32,6 +32,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 - Tracking/roadmap: architecture+UI complete; console package **0.1.0.75**
 - `release.yml`: compute MSIX revision offset in shell (GHA expressions have no `+`)
 - Console screenshot + docs for reinstall complete (**0.1.0.75**, ~5% IBD)
+- **`deploy.sh stop-app`**: treat Device Portal `IsRunning` (not ImageName alone); residual shell OK; DELETE only if still active ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4))
 
 ## [0.1.1] — 2026-07-31
 

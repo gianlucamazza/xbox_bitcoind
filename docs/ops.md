@@ -39,8 +39,11 @@ not self-sabotaged** on Xbox Dev Mode (not a Linux systemd daemon).
 |----|--------|
 | Keep **xbox_bitcoind focused** during long IBD | Expect sync while in **Home** (UWP **suspends**; Game ≠ background daemon) |
 | Soft-stop: `deploy.sh stop-app` | Taskmanager DELETE / hard kill as normal path |
+| Treat **clean stop** as `IsRunning=false` or process gone (shell residual OK) | Assume “process still listed” means bitcoind is still flushing |
 | Re-open app after leaving Home | Leave suspended for hours without noticing |
 | **Game** class after every reinstall | Confuse Game with “always running” |
+
+`stop-app` polls Device Portal **`IsRunning`** (not mere ImageName presence), optional app-log markers, then DELETE only if still active after `XBB_SOFT_STOP_MAX_WAIT`. Details: [persistence.md](persistence.md).
 
 ### Deploy / package
 

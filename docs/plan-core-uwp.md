@@ -28,13 +28,25 @@ xbox_bitcoind.exe (UWP AppContainer, Game class — more RAM/CPU, not anti-suspe
 
 ### Lifecycle (Xbox)
 
+```text
+  RUNNING  ──Home / stop-app / UI Stop──►  STOPPING (RPC stop + flush)
+     ▲                                        │
+     │ OnResuming (was_running)               ▼
+     └──────────────────────────────  STOPPED (durable tip)
+                                              │ only if still IsRunning after budget
+                                              ▼
+                                           DELETE (last resort)
+```
+
 | Event | Behaviour |
 |-------|-----------|
 | Launch | probes → auto-start node (WithCore) |
 | UI Stop soft | RPC `stop` + join (~150s) |
 | Home / suspend | soft-stop (durable LevelDB); IBD **pauses** |
-| Resume | auto-restart node if it was running (on `main`; ship next MSIX) |
-| Host `deploy.sh stop-app` | Portal suspend → wait → DELETE fallback |
+| Resume | auto-restart node if it was running |
+| Host `deploy.sh stop-app` | Portal suspend → poll **IsRunning** + log markers → DELETE only if still active |
+
+**Host success ≠ process row gone.** After a clean OnSuspending the UWP shell may stay listed with `IsRunning=false`. That is a clean stop (no DELETE). See [persistence.md](persistence.md).
 
 Game class ≠ background daemon. Keep title focused for long IBD.
 
@@ -43,6 +55,7 @@ Game class ≠ background daemon. Keep title focused for long IBD.
 ```
 Linux host
 ├── health-check.sh / node-status / ibd-sample timer
+├── deploy.sh stop-app (IsRunning-aware soft-stop)
 ├── deploy.sh (MSIX + VCLibs Dependencies/x64)
 └── conf profiles: apply-console-conf --profile console|tip
 ```

@@ -24,7 +24,9 @@
 #   deploy.sh diagnose-startup [pfn]
 #
 # Env:
-#   XBB_SOFT_STOP_MAX_WAIT   Seconds to wait after suspend before DELETE (default 180)
+#   XBB_SOFT_STOP_MAX_WAIT     Seconds after suspend before DELETE if still active (default 180)
+#   XBB_SOFT_STOP_MIN_GRACE    Min seconds before accepting !IsRunning alone (default 8)
+#   XBB_SOFT_STOP_REQUIRE_EXIT If 1, require process fully gone (not just !IsRunning); default 0
 #
 # Required: source scripts/env.sh credentials (XBOX_IP, XBOX_USER, XBOX_PASS)
 
@@ -196,9 +198,85 @@ start_app() {
 	echo "Started ${pfn}."
 }
 
-process_running() {
+# True if any xbox_bitcoind process row exists (running or residual suspended shell).
+process_listed() {
 	curl "${CURL_AUTH[@]}" "${BASE_URL}/api/resourcemanager/processes" 2>/dev/null |
-		python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if any('xbox_bitcoind' in (p.get('ImageName') or '') for p in d.get('Processes',[])) else 1)"
+		APP_ID="${APP_ID}" python3 -c '
+import json, os, sys
+app = (os.environ.get("APP_ID") or "").lower()
+d = json.load(sys.stdin)
+for p in d.get("Processes", []):
+    img = (p.get("ImageName") or "").lower()
+    pkg = (p.get("PackageFullName") or "").lower()
+    if "xbox_bitcoind" in img or (app and app in pkg):
+        sys.exit(0)
+sys.exit(1)
+'
+}
+
+# True only if process is actively running (IsRunning true). Residual UWP shells after a
+# clean OnSuspending often stay listed with IsRunning=false — that is NOT "running".
+process_actively_running() {
+	curl "${CURL_AUTH[@]}" "${BASE_URL}/api/resourcemanager/processes" 2>/dev/null |
+		APP_ID="${APP_ID}" python3 -c '
+import json, os, sys
+app = (os.environ.get("APP_ID") or "").lower()
+d = json.load(sys.stdin)
+for p in d.get("Processes", []):
+    img = (p.get("ImageName") or "").lower()
+    pkg = (p.get("PackageFullName") or "").lower()
+    if "xbox_bitcoind" not in img and not (app and app in pkg):
+        continue
+    # Missing IsRunning → assume active (older portals).
+    ir = p.get("IsRunning", True)
+    if ir in (True, "true", "True", 1, "1"):
+        sys.exit(0)
+sys.exit(1)
+'
+}
+
+# Backward-compatible name used by package-gc / diagnose: "is the app up?"
+process_running() {
+	process_actively_running
+}
+
+# App log markers written after RPC stop + join (LocalState\bitcoind.log).
+soft_stop_log_clean() {
+	local pfn="${1:-}"
+	local tmp
+	tmp="$(mktemp)"
+	# Best-effort; portal/file may lag mid-IBD.
+	if ! fetch_file_quiet "${pfn}" "${LOG_NAME}" "${tmp}" 2>/dev/null; then
+		rm -f "${tmp}"
+		return 1
+	fi
+	if grep -E -q 'OnSuspending complete|node thread joined|BitcoindMain exited rc=0' "${tmp}" 2>/dev/null; then
+		# Prefer recent tail so an old successful stop does not mask a failed one.
+		if tail -n 80 "${tmp}" | grep -E -q 'OnSuspending complete|node thread joined|BitcoindMain exited rc=0'; then
+			rm -f "${tmp}"
+			return 0
+		fi
+	fi
+	rm -f "${tmp}"
+	return 1
+}
+
+# fetch_file without noisy stdout (used by soft-stop polling).
+fetch_file_quiet() {
+	local pfn="$1"
+	local name="$2"
+	local out="$3"
+	local subdir="${4:-}"
+	local path='\LocalState'
+	if [[ -n "${subdir}" ]]; then
+		path="\\LocalState\\${subdir}"
+	fi
+	local code
+	code=$(curl "${CURL_AUTH[@]}" \
+		-o "${out}" \
+		-w "%{http_code}" \
+		"${BASE_URL}/api/filesystem/apps/file?knownfolderid=LocalAppData&packagefullname=${pfn}&path=${path}&filename=${name}" 2>/dev/null || echo "000")
+	[[ "${code}" == "200" ]]
 }
 
 suspend_package() {
@@ -218,30 +296,93 @@ stop_app() {
 	local pkg_b64
 	pkg_b64=$(printf '%s' "${pfn}" | base64 -w0)
 	# Soft-stop: suspend → OnSuspending → RPC stop → LevelDB flush.
+	# Success = node durable stop, NOT necessarily UWP process row gone.
 	# Mid-IBD chainstate can take minutes; default wait 180s (override XBB_SOFT_STOP_MAX_WAIT).
 	local max_wait="${XBB_SOFT_STOP_MAX_WAIT:-180}"
+	local min_grace="${XBB_SOFT_STOP_MIN_GRACE:-8}"
+	local require_exit="${XBB_SOFT_STOP_REQUIRE_EXIT:-0}"
 	if ! [[ "${max_wait}" =~ ^[0-9]+$ ]] || (( max_wait < 30 )); then
 		max_wait=180
 	fi
-	echo "Soft-stop ${pfn} (suspend → wait up to ${max_wait}s for process exit)…"
+	if ! [[ "${min_grace}" =~ ^[0-9]+$ ]] || (( min_grace < 0 )); then
+		min_grace=8
+	fi
+	if (( min_grace > max_wait )); then
+		min_grace=$max_wait
+	fi
+	echo "Soft-stop ${pfn} (suspend → wait up to ${max_wait}s; grace ${min_grace}s; require_exit=${require_exit})…"
 	suspend_package "${pkg_b64}"
 	local waited=0
 	# Re-post suspend periodically: Xbox may drop the first suspend before OnSuspending runs.
 	local re_suspend_every=45
+	local log_check_every=10
+	local log_clean=0
+	local active=1
+	local listed=1
 	while (( waited < max_wait )); do
-		if ! process_running; then
-			echo "Process exited after ${waited}s (clean soft stop)."
+		if process_actively_running; then
+			active=1
+		else
+			active=0
+		fi
+		if process_listed; then
+			listed=1
+		else
+			listed=0
+		fi
+		if (( waited > 0 && waited % log_check_every == 0 )); then
+			if soft_stop_log_clean "${pfn}"; then
+				log_clean=1
+			fi
+		fi
+
+		# Strong: process fully gone.
+		if (( listed == 0 )); then
+			echo "Clean soft stop after ${waited}s (process gone)."
 			echo "Stopped ${pfn}."
 			return 0
 		fi
+		# Strong: durable stop markers + not actively running (ignore old log alone).
+		if (( log_clean == 1 && active == 0 )); then
+			echo "Clean soft stop after ${waited}s (log markers + not actively running)."
+			echo "Stopped ${pfn}."
+			return 0
+		fi
+		# Weak: !IsRunning after grace — residual suspended shell is OK (do not DELETE).
+		# Grace avoids racing OS IsRunning=false before OnSuspending finishes flush.
+		if (( active == 0 && require_exit == 0 && waited >= min_grace )); then
+			echo "Clean soft stop after ${waited}s (not actively running; residual shell OK, no DELETE)."
+			echo "Stopped ${pfn}."
+			return 0
+		fi
+
 		if (( waited > 0 && waited % re_suspend_every == 0 )); then
-			echo "Still running at ${waited}s — re-posting suspend…"
-			suspend_package "${pkg_b64}"
+			if (( active == 1 )); then
+				echo "Still active at ${waited}s — re-posting suspend…"
+				suspend_package "${pkg_b64}"
+			else
+				echo "Shell residual at ${waited}s (IsRunning=false) — waiting for grace/log…"
+			fi
 		fi
 		waited=$((waited + 1))
 		sleep 1
 	done
-	echo "Warning: process still running after ${max_wait}s suspend; sending taskmanager DELETE (may skip final flush)." >&2
+
+	# Final checks before DELETE — never treat stale log markers as success while active.
+	if soft_stop_log_clean "${pfn}"; then
+		log_clean=1
+	fi
+	if ! process_actively_running; then
+		if (( log_clean == 1 )); then
+			echo "Clean soft stop after ${max_wait}s (log markers + not active at deadline; no DELETE)."
+		else
+			echo "Clean soft stop after ${max_wait}s (not actively running at deadline; no DELETE)."
+		fi
+		echo "Stopped ${pfn}."
+		return 0
+	fi
+
+	echo "Warning: still actively running after ${max_wait}s suspend; sending taskmanager DELETE (may skip final flush)." >&2
 	echo "  Tip: raise wait with XBB_SOFT_STOP_MAX_WAIT=300 (or 600) for deep IBD." >&2
 	curl "${CURL_AUTH[@]}" \
 		-H "X-CSRF-Token:${CSRF_TOKEN}" \
@@ -251,8 +392,10 @@ stop_app() {
 		"${BASE_URL}/api/taskmanager/app?package=${pkg_b64}" >/dev/null 2>&1 || true
 	# Give DELETE a moment; report residual process if any.
 	sleep 2
-	if process_running; then
-		echo "Warning: process still listed after DELETE." >&2
+	if process_actively_running; then
+		echo "Warning: process still actively running after DELETE." >&2
+	elif process_listed; then
+		echo "Process not active after DELETE (shell may remain listed)."
 	else
 		echo "Process gone after DELETE fallback."
 	fi
@@ -378,7 +521,8 @@ Usage:
   $0 package-list | package-gc [--keep N] [--yes]
   $0 status | health | soft-stop-test
 
-Env: XBB_SOFT_STOP_MAX_WAIT (default 180) — seconds after suspend before DELETE.
+Env: XBB_SOFT_STOP_MAX_WAIT (default 180), XBB_SOFT_STOP_MIN_GRACE (8),
+     XBB_SOFT_STOP_REQUIRE_EXIT (0) — soft-stop poll / DELETE policy.
 EOF
 }
 
