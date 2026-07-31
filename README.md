@@ -6,7 +6,7 @@ Port of **Bitcoin Core (`bitcoind`)** to **Xbox Series S** (shared Dev Mode cons
 [![ci-msvc-baseline](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml)
 [![build-uwp](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml)
 
-> Status: **UWP scaffold on console (probes green)** + **Core→UWP on VS2026** (`uwp-core`, patches 0001–0008 AppContainer only). Pin v31.1.
+> Status: **`uwp-core` green (VS2026)** — WithCore MSIX links Core v31.1; package `0.1.0.34` on Series S (probes OK). Next: App type Game + node runtime.
 
 ## Goals (v1)
 
