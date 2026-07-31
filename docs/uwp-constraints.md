@@ -61,22 +61,35 @@ scheduler behavior.
 
 ## 7. Network capabilities
 
-Declare in the package manifest (planned, same as xllama):
+Declared in `uwp/AppxManifest.xml` (same pattern as xllama):
 
 - `internetClient` — P2P outbound, DNS, seeds  
 - `privateNetworkClientServer` — LAN RPC/debug if needed  
 - `removableStorage` — optional USB datadir  
 
-v1: `listen=0` (outbound-only). Inbound 8333 is optional and may fight NAT/UWP.
+v1: `listen=0` (outbound-only). RPC binds `127.0.0.1:8332` with cookie auth.
+Inbound 8333 is optional and may fight NAT/UWP.
 
 ## 8. No unsigned `dlopen` / desktop-only Win32
 
 UWP will not load arbitrary unsigned desktop DLLs. Link dependencies
-**app-local** into the MSIX (static or side-by-side), similar to how xllama
-ships ORT/DirectML DLLs.
+**app-local** into the MSIX (static or side-by-side). WithCore packages ship
+`event.dll` from vcpkg `x64-uwp` next to the exe; Core itself is static
+`bitcoin_embed` + stack.
 
-Stock Bitcoin Core MSVC desktop builds are the starting point; expect
-`WINAPI_PARTITION_APP` / AppContainer guards.
+AppContainer gaps are covered by [`patches/uwp/`](../patches/uwp/README.md)
+(no VirtualLock, CreateProcess stubs, CreateFile2/CSIDL/netif shims, LevelDB
+no-mmap + durable writes).
+
+## 9. Process lifecycle vs chain flush
+
+Bitcoin Core may keep block index / chainstate dirty until
+`DATABASE_WRITE_INTERVAL` or clean shutdown. On UWP:
+
+- Prefer **suspend** → `OnSuspending` → RPC `stop` (see [persistence.md](persistence.md))
+- Patches 0009–0010 tighten LevelDB durability and flush interval (30–60 s)
+
+Hard kill without flush can leave `nBestHeight = 0` with orphan `blk*.dat`.
 
 ## 9. Long-running process / suspension
 

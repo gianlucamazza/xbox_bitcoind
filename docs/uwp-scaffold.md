@@ -1,8 +1,8 @@
-# UWP scaffold (xbox_bitcoind)
+# UWP package (xbox_bitcoind)
 
 **C++/WinRT** UWP app for Xbox Series S Dev Mode: AppContainer probes, **status
-dashboard** (RPC metrics / Start-Stop / log tail), optional Bitcoin Core embed
-(`-WithCore`). UI details: [ui.md](./ui.md).
+dashboard** (RPC metrics / Start-Stop / log tail), Bitcoin Core embed via
+`-WithCore`. UI: [ui.md](ui.md). Architecture: [plan-core-uwp.md](plan-core-uwp.md).
 
 ## Layout
 
@@ -10,26 +10,45 @@ dashboard** (RPC metrics / Start-Stop / log tail), optional Bitcoin Core embed
 uwp/
   AppxManifest.xml          # GianlucaMazza.xboxbitcoind, capabilities
   xbox_bitcoind.sln|.vcxproj
-  packages.config           # Microsoft.Windows.CppWinRT only
-  App.* / MainPage.*        # programmatic XAML UI
+  packages.config           # Microsoft.Windows.CppWinRT
+  App.* / MainPage.*        # lifecycle + programmatic XAML dashboard
   probes.cpp                # LocalState, VirtualAlloc, outbound TCP, datadir
-  node_host.cpp             # stub for future bitcoind
+  node_host.cpp             # BitcoindMain thread (XBB_WITH_CORE) / stub
+  rpc_client.cpp            # loopback JSON-RPC + cookie
   log.cpp                   # LocalState\bitcoind.log
+  bitcoind_embed.h          # BitcoindMain declaration
   Assets/*.png
 scripts/build-uwp.ps1
+scripts/build-core-uwp.ps1
 ```
 
 ## Build (Windows)
+
+Scaffold only (no Core — fast iterate on UI/probes):
 
 ```powershell
 .\scripts\build-uwp.ps1
 # outputs under uwp\AppPackages\ + xbox_bitcoind-dev.cer
 ```
 
-Requirements: VS 2022+ with **Universal Windows Platform** + C++ desktop, Windows
-SDK **10.0.22621**, `nuget`.
+Full node package (**VS 2026 18.3+**):
 
-CI: `.github/workflows/build-uwp.yml` on `windows-2022`.
+```powershell
+.\scripts\fetch-bitcoin-core.ps1
+.\scripts\apply-uwp-patches.ps1
+.\scripts\build-core-uwp.ps1
+.\scripts\build-uwp.ps1 -WithCore
+```
+
+Requirements:
+
+| Build | Toolchain |
+|-------|-----------|
+| Scaffold | VS 2022+ with UWP C++, Windows SDK (auto / props) |
+| WithCore | **VS 2026 18.3+**, C++ desktop + UWP, vcpkg `x64-uwp` |
+
+CI: `.github/workflows/build-uwp.yml` — `uwp-scaffold` on `windows-2022`,
+`uwp-core` on `windows-2025-vs2026`.
 
 ## Deploy (Linux host → Series S)
 
@@ -39,8 +58,11 @@ source ~/.config/xllama/xbox-env   # or scripts/env.sh
 # first time / new cert:
 ./scripts/deploy.sh install-cert path/to/xbox_bitcoind-dev.cer
 ./scripts/deploy.sh start-app
+./scripts/deploy.sh stop-app       # soft stop (suspend → flush)
 ./scripts/deploy.sh get-log        # LocalState\bitcoind.log
 ./scripts/deploy.sh list-localstate
+# Node debug log:
+./scripts/deploy.sh fetch-file "$(./scripts/deploy.sh pfn)" debug.log /tmp/d.log bitcoin
 ```
 
 **After install:** Dev Home → package tile → **View details → App type → Game**.
@@ -56,17 +78,9 @@ source ~/.config/xllama/xbox-env   # or scripts/env.sh
 
 Results also in `LocalState\probe-results.txt`.
 
-## Full Core build (optional, slow)
+## Related
 
-```powershell
-.\scripts\build-uwp.ps1 -WithCore
-# or step by step:
-.\scripts\fetch-bitcoin-core.ps1
-.\scripts\apply-uwp-patches.ps1
-.\scripts\build-core-uwp.ps1
-.\scripts\build-uwp.ps1 -WithCore
-```
-
-CI job `uwp-core` on `main` / dispatch with `with_core=true`.
-
-See [plan-core-uwp.md](./plan-core-uwp.md) and [api-matrix.md](./research/spikes/api-matrix.md).
+- [persistence.md](persistence.md) — soft stop and chain conservation  
+- [device-portal.md](device-portal.md) — full `deploy.sh` surface  
+- [patches/uwp/README.md](../patches/uwp/README.md) — Core patch set  
+- [research/spikes/api-matrix.md](research/spikes/api-matrix.md) — API matrix  

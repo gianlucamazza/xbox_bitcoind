@@ -1,5 +1,5 @@
-# Draft defaults for Xbox Series S (UWP / Dev Mode) — not final until measured under bitcoind.
-# Host app should place datadir under ApplicationData LocalFolder (e.g. LocalState\bitcoin).
+# Console defaults for Xbox Series S (UWP / Dev Mode).
+# Host places datadir under ApplicationData LocalFolder (LocalState\bitcoin).
 
 # Pruned validating node (v1 target)
 prune=550

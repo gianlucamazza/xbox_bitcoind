@@ -1,7 +1,7 @@
 # Continuous Integration (GitHub Actions)
 
-Phase A CI builds the **pinned Bitcoin Core** tree and verifies desktop baselines.
-It does **not** deploy to the Xbox (use `scripts/deploy.sh` locally).
+CI builds the **pinned Bitcoin Core** tree (desktop + UWP WithCore) and the
+UWP scaffold. It does **not** deploy to the Xbox (use `scripts/deploy.sh` locally).
 
 ## Workflows
 
@@ -9,7 +9,7 @@ It does **not** deploy to the Xbox (use `scripts/deploy.sh` locally).
 |----------|--------|---------|
 | [`ci-linux.yml`](../.github/workflows/ci-linux.yml) | `ubuntu-24.04` | shellcheck, pin validation, Linux `bitcoind` smoke |
 | [`ci-msvc-baseline.yml`](../.github/workflows/ci-msvc-baseline.yml) | `windows-2025-vs2026` | MSVC + vcpkg desktop baseline (VS 2026) |
-| [`build-uwp.yml`](../.github/workflows/build-uwp.yml) | scaffold: `windows-2022`; **core: `windows-2025-vs2026`** | Hello-UWP MSIX; WithCore links pin on VS 2026 |
+| [`build-uwp.yml`](../.github/workflows/build-uwp.yml) | scaffold: `windows-2022`; **core: `windows-2025-vs2026`** | Scaffold MSIX; WithCore links pin on VS 2026 |
 
 No auto-deploy to the console; download the MSIX artifact and use `scripts/deploy.sh`.
 
@@ -77,7 +77,10 @@ CI_SKIP_TESTS=1 ./scripts/build-linux-smoke.sh
 |------|----------|
 | `bitcoind-linux-x64` | `bitcoind`, `bitcoin-cli` |
 | `bitcoind-msvc-x64` | `bitcoind.exe`, `bitcoin-cli.exe` |
-| `xbox_bitcoind-msix-scaffold` | Hello-UWP MSIX + test cert |
+| `xbox_bitcoind-msix-scaffold` | Scaffold UWP MSIX + test cert |
+| `xbox_bitcoind-msix-core` | WithCore MSIX (`uwp-core` job) |
+
+Download the MSIX from the Actions run and install with `./scripts/deploy.sh <msix>`.
 | `xbox_bitcoind-msix-core` | WithCore MSIX (when `uwp-core` green) |
 
 Retention: 14 days. Download from the Actions run UI.

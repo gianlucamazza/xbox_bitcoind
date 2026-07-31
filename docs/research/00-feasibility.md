@@ -1,7 +1,8 @@
 # Feasibility research: bitcoind on Xbox Series X|S
 
-**Date:** 2026-07-30  
-**Status:** Research complete; console config done; **Core pin v31.1** + Linux smoke PASS; MSVC baseline script ready  
+**Date:** 2026-07-30 (research); product status updated 2026-07-31  
+**Status:** Research complete. **Product later:** Core v31.1 embedded on Series S,
+dashboard UI, soft-stop persistence verified — see root [README](../../README.md).  
 **Target:** Pruned validating full node as UWP package, Dev Mode sideload
 
 ## Summary
