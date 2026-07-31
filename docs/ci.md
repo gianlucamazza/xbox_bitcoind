@@ -180,9 +180,23 @@ Manual first release was `v0.1.0`; later tags should use this path only.
 
 ## Pin bumps
 
-1. Edit `config/bitcoin-core.pin`  
-2. Push → linux smoke + msvc + full core rebuild (new cache keys)  
-3. Update baseline docs if needed  
+1. Edit `config/bitcoin-core.pin` (`TAG` + peeled `COMMIT`)  
+2. `./scripts/fetch-bitcoin-core.sh` (or `.ps1` on Windows)  
+3. `./scripts/generate-version-header.py` — updates UI Core version header (also run by `build-uwp.ps1`)  
+4. Commit pin + generated header  
+5. Push → linux smoke + msvc + full core rebuild (new cache keys)  
+6. Update baseline docs if needed  
+
+`ci-linux` fails if `uwp/xbb_version.generated.h` does not match the pin.
+
+### Version labels (Core vs app)
+
+| Label | Source |
+|-------|--------|
+| Bitcoin Core **v31.1** | `config/bitcoin-core.pin` → `scripts/generate-version-header.py` → `uwp/xbb_version.generated.h` |
+| App **0.1.0.N** | MSIX identity; CI stamps revision with `GITHUB_RUN_NUMBER` |
+
+UI subtitle format: `Bitcoin Core v31.1 · app 0.1.0.N` ([ui.md](ui.md)).
 
 ## Badges
 
