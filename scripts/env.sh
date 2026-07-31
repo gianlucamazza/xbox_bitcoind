@@ -15,6 +15,12 @@
 
 _xbox_bitcoind_env_loaded=1
 
+# Optional overrides (set before source scripts/env.sh):
+#   XBOX_IP_OVERRIDE / XBOX_PORT_OVERRIDE  — e.g. tunnel via Odroid (127.0.0.1)
+#   XBOX_ENV_FILE                          — explicit credentials path
+_xbox_ip_override="${XBOX_IP_OVERRIDE:-}"
+_xbox_port_override="${XBOX_PORT_OVERRIDE:-}"
+
 _xbox_env_candidates=()
 if [[ -n "${XBOX_ENV_FILE:-}" ]]; then
 	_xbox_env_candidates+=("${XBOX_ENV_FILE}")
@@ -49,11 +55,20 @@ fi
 : "${XBOX_USER:?XBOX_USER not set in ${_xbox_env_found}}"
 : "${XBOX_PASS:?XBOX_PASS not set in ${_xbox_env_found}}"
 
+# Tunnel / jump-host overrides win over the file (LAN IP may be unreachable).
+if [[ -n "${_xbox_ip_override}" ]]; then
+	XBOX_IP="${_xbox_ip_override}"
+fi
+if [[ -n "${_xbox_port_override}" ]]; then
+	XBOX_PORT="${_xbox_port_override}"
+fi
+
 export XBOX_IP
 export XBOX_USER
 export XBOX_PASS
 export XBOX_PORT="${XBOX_PORT:-11443}"
 export XBOX_ENV_SOURCE="${_xbox_env_found}"
+unset _xbox_ip_override _xbox_port_override
 
 # Package identity for this project (WDP helpers).
 # AppX Identity Name: only [-.A-Za-z0-9] (no underscore)

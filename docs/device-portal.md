@@ -28,6 +28,47 @@ source scripts/env.sh
 
 Resolution order is documented in `scripts/env.sh`.
 
+## Off-LAN via Tailscale + Odroid
+
+When the laptop is **not** on `192.168.1.0/24` but Odroid is (Tailscale /
+Headscale host `odroid-ts` → `100.64.0.2`), reach Device Portal through Odroid.
+
+**Constraint:** Odroid `sshd` has `AllowTcpForwarding no`, so plain
+`ssh -L 11443:192.168.1.44:11443` is refused. We use a **socat + ssh + nc**
+bridge instead (TCP over an SSH remote command, not SSH port-forwarding).
+
+```bash
+# once per session (needs: socat, ssh Host odroid-ts, console powered + Portal on)
+source scripts/console-via-odroid.sh    # start bridge → 127.0.0.1:11443
+# sets XBOX_IP_OVERRIDE=127.0.0.1 so env.sh / deploy use the tunnel
+
+./scripts/probe-console.sh
+./scripts/node-status.sh
+./scripts/apply-console-conf.sh         # optional: push IBD conf
+
+scripts/console-via-odroid.sh status
+scripts/console-via-odroid.sh stop
+```
+
+| Piece | Role |
+|-------|------|
+| `ssh odroid-ts` | Tailnet jump (`~/.ssh/config` HostName `100.64.0.2`, port 2233) |
+| Odroid `192.168.1.103` | Same LAN as Xbox `192.168.1.44` |
+| Bridge listen | `127.0.0.1:11443` → `nc 192.168.1.44 11443` on Odroid |
+| Creds | Still from `xbox-env` (`XBOX_USER` / `XBOX_PASS`); only IP is overridden |
+
+Overrides (optional env before `source`):
+
+| Variable | Default |
+|----------|---------|
+| `ODROID_SSH` | `odroid-ts` |
+| `XBOX_LAN_IP` | `192.168.1.44` |
+| `XBOX_PORT_LOCAL` | `11443` |
+
+If you later enable `AllowTcpForwarding yes` (or `Match User`) on Odroid, a
+classic `ssh -N -L 127.0.0.1:11443:192.168.1.44:11443 odroid-ts` also works;
+keep the same `XBOX_IP_OVERRIDE=127.0.0.1`.
+
 ## Scripts
 
 | Command | Purpose |
