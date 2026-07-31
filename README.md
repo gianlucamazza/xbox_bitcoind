@@ -7,6 +7,7 @@ shipped as a **UWP Game package** via Device Portal. Same console as
 [![ci-linux](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-linux.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-linux.yml)
 [![ci-msvc-baseline](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml)
 [![build-uwp](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml)
+[![Release](https://img.shields.io/github/v/release/gianlucamazza/xbox_bitcoind)](https://github.com/gianlucamazza/xbox_bitcoind/releases/latest)
 
 > **Status (2026-07-31):** bitcoind **v31.1** on Series S · package **`0.1.0.42`** ·
 > dashboard UI · soft-stop **PASS** (early + mid IBD ~327k) · mainnet IBD **in progress**
