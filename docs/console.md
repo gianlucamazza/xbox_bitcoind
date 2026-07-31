@@ -13,9 +13,9 @@ Same **Xbox Series S** as [`xllama`](../../xllama/) (Dev Mode + Device Portal).
 | Device Portal | `https://192.168.1.44:11443` (DHCP — update if IP changes) |
 | Credentials | `~/.config/xllama/xbox-env` (see `scripts/env.sh`) |
 | Sibling | `GianlucaMazza.xllama_1.5.2.836_x64__pj67f1fcj4n14` |
-| This package | `GianlucaMazza.xboxbitcoind_0.1.0.75_x64__m0e4707sws2jw` (CI build of tip-age UI; above release **v0.1.1** / `0.1.0.6`) |
+| This package | `GianlucaMazza.xboxbitcoind_0.1.0.75_x64__m0e4707sws2jw` (CI tip-age UI; above release **v0.1.1** / `0.1.0.6`) |
 
-**Last full ops check:** 2026-07-31 night deploy CI MSIX **`0.1.0.75`** (tip age + HEADERS/STALE + resume). Soft-stop mid-IBD hit **DELETE after 300s**; tip conserved (~326k). VCLibs shipped next to MSIX. **Re-set App type → Game** after this install.
+**Last full ops check:** 2026-08-01 — reinstall **complete** for **`0.1.0.75`**: cert + VCLibs + MSIX, probes 4/4, conf console kept, health green, UI screenshot live (height ~357k / ~5%). Portal `DefaultUWPContentTypeToGame=true`. Soft-stop mid-IBD may still host-DELETE after clean node exit ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)).
 
 **Version labels:** Bitcoin Core pin is **v31.1**; `0.1.0.75` is the **MSIX app** revision only.
 

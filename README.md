@@ -15,9 +15,9 @@ Companion project on the same console: [xllama](https://github.com/gianlucamazza
 [![GitHub release](https://img.shields.io/github/v/release/gianlucamazza/xbox_bitcoind)](https://github.com/gianlucamazza/xbox_bitcoind/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-![Status dashboard on Xbox Series S (package 0.1.0.6 / release v0.1.1)](docs/assets/screenshot-console.png)
+![Status dashboard on Xbox Series S (package 0.1.0.75)](docs/assets/screenshot-console.png)
 
-*Live capture, Series S Dev Mode — package **0.1.0.6** (Release **[v0.1.1](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1)**), mid-IBD after fresh datadir. Subtitle **Bitcoin Core v31.1 · app 0.1.0.6**. Ops: [docs/tracking.md](docs/tracking.md).*
+*Live capture, Series S Dev Mode — package **0.1.0.75** (tip-age UI; baseline release **[v0.1.1](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1)**), mid-IBD ~5%. Subtitle **Bitcoin Core v31.1 · app 0.1.0.75**. Ops: [docs/tracking.md](docs/tracking.md).*
 
 ## Features
 

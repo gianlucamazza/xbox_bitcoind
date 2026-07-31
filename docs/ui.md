@@ -4,7 +4,7 @@ Controller-first **10-foot** status UI for Series S Dev Mode (programmatic XAML)
 
 ![Status dashboard on console](assets/screenshot-console.png)
 
-*Live capture, package **0.1.0.6** (release **v0.1.1**), mid-IBD: Core **v31.1 · app** subtitle, primary/secondary KPIs, dual bars, sparkline, log. Ops: [tracking.md](tracking.md).*
+*Live capture, package **0.1.0.75**, mid-IBD (~5%): Core **v31.1 · app 0.1.0.75** subtitle, tip age, primary/secondary KPIs, dual bars, sparkline, log. Ops: [tracking.md](tracking.md).*
 
 ## Best practices (10-foot / TV)
 

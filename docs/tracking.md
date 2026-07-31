@@ -13,21 +13,35 @@ Update this file when gates move; use Issues for discussion and assignment.
 
 ---
 
-## Status snapshot (2026-07-31 night)
+## Status snapshot (2026-08-01)
 
 | Area | State |
 |------|--------|
 | Engineering v1 | **Complete** |
 | Architecture + UI | **Complete** (lifecycle SSOT, tip age, HEADERS/STALE) — [plan-core-uwp.md](plan-core-uwp.md) · [ui.md](ui.md) |
 | Git tag / Release | **[v0.1.1](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1)** (baseline); console ahead via CI MSIX |
-| Console package | **0.1.0.75** WithCore (CI `3959ae9` + resume) · re-set **App type → Game** after deploy |
+| Console package | **0.1.0.75** WithCore · reinstall **complete** (cert + VCLibs + MSIX + start) |
+| Game class | Console `DefaultUWPContentTypeToGame=true`; WS ~0.9–1.0 GiB mid-IBD — glance Dev Home if App type shows App |
 | Pin | Bitcoin Core **v31.1** |
-| UI on console | Core **v31.1 · app 0.1.0.75** — tip age, HEADERS/STALE, dual bars, spark, ETA, resume auto-restart |
-| Soft-stop | Tip conserved; mid-IBD deploy used DELETE after 300s wait ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)); tip ~326k retained |
-| Mainnet IBD | **In progress** (~**326k**, progress ~**3.6%**) — leave focused; no further redeploy unless needed |
+| UI on console | **Live** Core **v31.1 · app 0.1.0.75** — tip age, dual bars, spark, ETA (screenshot refreshed) |
+| Soft-stop | Tip conserved across deploy; mid-IBD host wait sometimes DELETE after node already exited ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
+| Mainnet IBD | **In progress** (~**357k**, progress ~**5%**) — leave focused; no further redeploy |
 | 24h stable at tip | **Pending** IBD |
 | Soft-stop at tip | **Pending** tip |
 | Pre-Lightning | Blocked on IBD closure gates |
+
+### Reinstall checklist (0.1.0.75) — closed
+
+| Step | Status |
+|------|--------|
+| Soft-stop previous package | done (node `rc=0`; host may still DELETE) |
+| Install cert + VCLibs + MSIX | done |
+| Package identity | `…_0.1.0.75_…` only (package-gc keep=1) |
+| Probes 4/4 | done |
+| Conf profile | `console` kept (`dbcache=512`, `prune=550`) |
+| Auto-start node + IBD continue | tip advanced past pre-deploy height |
+| Health / timer | healthy · timer active |
+| Screenshot / UI verify | done (`docs/assets/screenshot-console.png`) |
 
 Verify live:
 
@@ -52,7 +66,7 @@ Full hygiene guide: [ops.md § Ops hygiene](ops.md#ops-hygiene--best-practices).
 | ops-ibd | Finish mainnet IBD | `v1-close-check.sh` `sync_near_tip` PASS · [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) |
 | ops-24h | ≥24h stable at tip | Hourly `ibd.jsonl` near tip · [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) |
 | ops-soft-tip | Soft-stop @ tip | `soft-stop-test.sh` + [persistence.md](persistence.md) · [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
-| ops-game | Confirm Dev Home **App type → Game** | Manual after each reinstall |
+| ops-game | Confirm Dev Home **App type → Game** | **Mostly done** — `DefaultUWPContentTypeToGame=true`; optional Dev Home glance |
 
 ### P1 — Quality / reliability
 
@@ -83,7 +97,7 @@ Wallet UI · Store · `listen=1` · CLN on-console · USB datadir UX
 
 | Issue | Title | Status |
 |-------|-------|--------|
-| [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close) | open — ~326k / ~3.6% post-wipe |
+| [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close) | open — ~357k / ~5% |
 | [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) | 24h stability at tip (v1 close) | open |
 | [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) | Soft-stop retest at tip (v1 close) | open |
 | [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop → DELETE fallback | mitigated / field |
@@ -107,4 +121,4 @@ gh issue list --label v1-close
 
 ---
 
-*Last consolidated: 2026-07-31 night — console **0.1.0.75** (tip age/HEADERS/STALE); IBD ~326k; tip conserved across mid-IBD deploy.*
+*Last consolidated: 2026-08-01 — reinstall **0.1.0.75** complete; IBD ~357k / ~5%; leave focused.*

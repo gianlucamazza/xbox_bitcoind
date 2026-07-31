@@ -31,6 +31,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 - Docs screenshot refreshed for package **0.1.0.6** / release **v0.1.1**
 - Tracking/roadmap: architecture+UI complete; console package **0.1.0.75**
 - `release.yml`: compute MSIX revision offset in shell (GHA expressions have no `+`)
+- Console screenshot + docs for reinstall complete (**0.1.0.75**, ~5% IBD)
 
 ## [0.1.1] — 2026-07-31
 
