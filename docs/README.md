@@ -46,6 +46,8 @@ Snapshot (see also [ops.md](ops.md)):
 |------|----------------|
 | Cut a release | `./scripts/cut-release.sh X.Y.Z` · [ci.md § Releases](ci.md#releases-automated) |
 | Pin bump | [ci.md § Pin bumps](ci.md#pin-bumps) · `config/bitcoin-core.pin` |
+| Security reports | [../SECURITY.md](../SECURITY.md) |
+| Changelog | [../CHANGELOG.md](../CHANGELOG.md) |
 
 ---
 

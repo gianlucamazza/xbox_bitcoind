@@ -118,6 +118,8 @@ docs/         guides — [docs/README.md](docs/README.md)
 | CI / releases | [docs/ci.md](docs/ci.md) |
 | Scripts | [scripts/README.md](scripts/README.md) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Security | [SECURITY.md](SECURITY.md) |
+| Changelog | [CHANGELOG.md](CHANGELOG.md) |
 
 Research archive (phase 0): [docs/research/](docs/research/00-feasibility.md).
 
@@ -142,6 +144,7 @@ See [docs/ci.md § Releases](docs/ci.md#releases-automated).
 
 - This repository (app glue, scripts, docs): [MIT](LICENSE).
 - [Bitcoin Core](https://github.com/bitcoin/bitcoin) is MIT; keep upstream notices when redistributing derived trees or patches.
+- Third-party attribution: [NOTICE](NOTICE).
 
 ## Disclaimer
 

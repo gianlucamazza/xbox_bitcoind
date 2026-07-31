@@ -1,0 +1,15 @@
+xbox_bitcoind
+Copyright (c) 2026 Gianluca Mazza
+
+This product includes software developed in this repository under the MIT License
+(see LICENSE).
+
+This product embeds or builds against Bitcoin Core when configured WithCore.
+Bitcoin Core is Copyright (c) Bitcoin Core developers and contributors and is
+distributed under the MIT License. See:
+
+  https://github.com/bitcoin/bitcoin
+  third_party/bitcoin/COPYING (after fetch)
+
+UWP patches under patches/uwp/ are adaptations for AppContainer and do not
+change the upstream license of Bitcoin Core.

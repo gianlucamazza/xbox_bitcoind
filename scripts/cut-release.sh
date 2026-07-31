@@ -98,11 +98,21 @@ if [[ "${DRY}" -eq 1 ]]; then
 	exit 0
 fi
 
+# Remind to move CHANGELOG Unreleased → version section before tagging.
+if [[ -f CHANGELOG.md ]] && grep -q '## \[Unreleased\]' CHANGELOG.md; then
+	if ! grep -q "## \[${VERSION}\]" CHANGELOG.md; then
+		echo "Note: CHANGELOG.md has no '## [${VERSION}]' section yet."
+		echo "      Prefer documenting the release in CHANGELOG before tagging."
+	fi
+fi
+
 git tag -a "${TAG}" -m "${MSG}"
 echo "Created ${TAG}"
 
 git push origin "${TAG}"
 echo "Pushed ${TAG} to origin."
+REPO_SLUG="$(git remote get-url origin | sed -E 's#.*github.com[:/]##' | sed 's/\.git$//')"
 echo
-echo "Watch: https://github.com/$(git remote get-url origin | sed -E 's#.*github.com[:/](.+)(\.git)?#\1#' | sed 's/\.git$//')/actions/workflows/release.yml"
-echo "When green: https://github.com/$(git remote get-url origin | sed -E 's#.*github.com[:/](.+)(\.git)?#\1#' | sed 's/\.git$//')/releases/tag/${TAG}"
+echo "Watch: https://github.com/${REPO_SLUG}/actions/workflows/release.yml"
+echo "When green: https://github.com/${REPO_SLUG}/releases/tag/${TAG}"
+echo "After publish: move Unreleased notes under ## [${VERSION}] in CHANGELOG.md on main."

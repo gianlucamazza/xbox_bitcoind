@@ -34,6 +34,15 @@ Maintainers:
 
 CI builds the MSIX and publishes the GitHub Release. Details: [docs/ci.md](docs/ci.md#releases-automated).
 
+## Security
+
+Do **not** file public issues for vulnerabilities. See [SECURITY.md](SECURITY.md).
+
+## Changelog
+
+User-facing changes: [CHANGELOG.md](CHANGELOG.md). Update the **Unreleased** section
+in the same PR when behaviour or packaging changes meaningfully.
+
 ## Code of conduct
 
 Be respectful. This is an unsupported hobby/dev-mode project; treat console and network use responsibly.
