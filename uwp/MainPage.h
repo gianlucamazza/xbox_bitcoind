@@ -27,13 +27,14 @@ class MainPageController : public std::enable_shared_from_this<MainPageControlle
 
   private:
     void BuildUI();
-    winrt::Windows::UI::Xaml::UIElement BuildHeader();
-    winrt::Windows::UI::Xaml::UIElement BuildMetricGrid(
+    // FrameworkElement (not UIElement): required by Grid::SetRow/SetColumn.
+    winrt::Windows::UI::Xaml::FrameworkElement BuildHeader();
+    winrt::Windows::UI::Xaml::FrameworkElement BuildMetricGrid(
         std::array<winrt::Windows::UI::Xaml::Controls::TextBlock*, 4> values,
         std::array<wchar_t const*, 4> labels);
-    winrt::Windows::UI::Xaml::UIElement BuildProgressSection();
-    winrt::Windows::UI::Xaml::UIElement BuildActions();
-    winrt::Windows::UI::Xaml::UIElement BuildLogPanel();
+    winrt::Windows::UI::Xaml::FrameworkElement BuildProgressSection();
+    winrt::Windows::UI::Xaml::FrameworkElement BuildActions();
+    winrt::Windows::UI::Xaml::FrameworkElement BuildLogPanel();
 
     void WireButtons();
     void WireGamepadFocus();

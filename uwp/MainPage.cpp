@@ -248,7 +248,7 @@ void MainPageController::Init() {
     StartUiTimer();
 }
 
-UIElement MainPageController::BuildHeader() {
+FrameworkElement MainPageController::BuildHeader() {
     auto header = Grid{};
     header.ColumnDefinitions().Append(ColumnDefinition{});
     auto mid = ColumnDefinition{};
