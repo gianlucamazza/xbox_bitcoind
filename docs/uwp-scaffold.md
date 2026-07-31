@@ -31,13 +31,16 @@ Scaffold only (no Core — fast iterate on UI/probes):
 # outputs under uwp\AppPackages\ + xbox_bitcoind-dev.cer
 ```
 
-Full node package (**VS 2026 18.3+**):
+Full node package (**VS 2026 18.3+**) — **split stages** (reuse Core across app iterates):
 
 ```powershell
 .\scripts\fetch-bitcoin-core.ps1
-.\scripts\apply-uwp-patches.ps1
-.\scripts\build-core-uwp.ps1
+.\scripts\build-uwp.ps1 -CoreOnly                 # Core libs once (or when pin/patches change)
+.\scripts\build-uwp.ps1 -WithCore -SkipCoreBuild  # MSIX only — fast path
+
+# Monolithic (always rebuild Core):
 .\scripts\build-uwp.ps1 -WithCore
+# Force Core rebuild: .\scripts\build-core-uwp.ps1 -Force
 ```
 
 Requirements:
@@ -52,10 +55,10 @@ CI (path-filtered — see [ci.md](ci.md)):
 | Job | When | Runner |
 |-----|------|--------|
 | `uwp-scaffold` | **PR** (or dispatch `with_core=false`) | `windows-2022` |
-| `uwp-core` | **push main** (path match) or dispatch `with_core=true` | `windows-2025-vs2026` |
+| `core-uwp` | **push main** / dispatch WithCore | `windows-2025-vs2026` — libs only, SkipIfFresh |
+| `package-uwp` | after `core-uwp` | `windows-2025-vs2026` — MSIX only |
 
-On main, only the product MSIX (`xbox_bitcoind-msix-core`) is built — no double
-scaffold + core Windows bill.
+Warm pin/patches cache → Core stage is near-instant; package dominates.
 
 ## Deploy (Linux host → Series S)
 

@@ -1,7 +1,11 @@
 name: build-uwp
 
-# UWP package only. Does not rebuild the desktop MSVC baseline (see ci-msvc-baseline).
-# Path filters exclude docs and bitcoin.conf.console (runtime defaults, not build inputs).
+# Split pipeline (fast path when only the UWP app changes):
+#   core-uwp    — Core static libs; SkipIfFresh if pin/patches cache warm
+#   package-uwp — MSIX only (SkipCoreBuild); reuses this run's core cache entry
+#   uwp-scaffold — PR-only, no Core
+#
+# Cache key includes github.run_id on save so package always sees this run's libs.
 
 on:
   push:
@@ -28,19 +32,24 @@ on:
   workflow_dispatch:
     inputs:
       with_core:
-        description: "Build and link Bitcoin Core into the MSIX (slow)"
+        description: "Build WithCore product path (core libs + MSIX)"
         type: boolean
         default: true
+      force_core:
+        description: "Force Core rebuild (ignore SkipIfFresh stamp)"
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
+env:
+  # Shared prefix for restore-keys (pin + patches only).
+  CORE_CACHE_PREFIX: core-uwp-v4-vs2026
+
 jobs:
-  # Fast path: scaffold without Core.
-  # PR: always (validates UI/probes package).
-  # Dispatch with with_core=false: scaffold only.
-  # main push: skipped — uwp-core already produces the product MSIX (avoids double Windows bill).
+  # PR-only scaffold (no Core).
   uwp-scaffold:
     if: |
       github.event_name == 'pull_request' ||
@@ -64,67 +73,111 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # Full path: Core UWP libs + linked package (product artifact).
-  # Bitcoin Core v31.1 requires VS 2026 18.3+. Same runner family as ci-msvc-baseline
-  # but different target (WindowsStore / x64-uwp) — not interchangeable with desktop MSVC.
-  uwp-core:
+  # Stage 1: Core UWP libraries only.
+  core-uwp:
     if: |
       (github.event_name == 'workflow_dispatch' && inputs.with_core == true) ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: windows-2025-vs2026
-    timeout-minutes: 360
+    timeout-minutes: 300
+    env:
+      VCPKG_ROOT: C:\vcpkg
+      VCPKG_INSTALLATION_ROOT: C:\vcpkg
     steps:
       - uses: actions/checkout@v7
 
-      - uses: microsoft/setup-msbuild@v2
-      - uses: nuget/setup-nuget@v2
-
-      - name: Ensure UWP C++ workload (VS 2026)
-        shell: pwsh
-        run: |
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $ip = & $vswhere -latest -products * -property installationPath
-          if (-not $ip) { throw "Visual Studio installation not found" }
-          Write-Host "VS install: $ip"
-          & $vswhere -latest -products * -requires Microsoft.VisualStudio.ComponentGroup.UWP.VC -property installationPath 2>$null
-          $setup = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\setup.exe"
-          if (Test-Path $setup) {
-            Write-Host "Adding UWP VC + Windows app development components if missing ..."
-            & $setup modify --installPath $ip `
-              --add Microsoft.VisualStudio.ComponentGroup.UWP.VC `
-              --add Microsoft.VisualStudio.ComponentGroup.WindowsAppDevelopment.Prerequisites `
-              --add Microsoft.VisualStudio.Workload.Universal `
-              --quiet --norestart --force |
-              Out-Host
-            Write-Host "setup.exe exit: $LASTEXITCODE"
-          }
-
-      - name: Cache vcpkg UWP + core build
-        uses: actions/cache@v6
+      - name: Restore Core / vcpkg cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             third_party/bitcoin/build-uwp
             ~/AppData/Local/vcpkg/archives
             C:/vcpkg/installed/x64-uwp
             C:/vcpkg-bt
-          key: core-uwp-v3-vs2026-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}
+          key: ${{ env.CORE_CACHE_PREFIX }}-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}-${{ github.run_id }}
           restore-keys: |
-            core-uwp-v3-vs2026-
+            ${{ env.CORE_CACHE_PREFIX }}-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}-
+            ${{ env.CORE_CACHE_PREFIX }}-
 
-      - name: Build UWP package with Core
+      - name: Build Core UWP libraries
         shell: pwsh
         env:
-          VCPKG_ROOT: C:\vcpkg
-          VCPKG_INSTALLATION_ROOT: C:\vcpkg
+          XBB_CORE_SKIP_IF_FRESH: ${{ github.event_name == 'workflow_dispatch' && inputs.force_core && '0' || '1' }}
         run: |
-          if (Test-Path third_party\bitcoin\build-uwp\CMakeCache.txt) {
-            $gen = Select-String -Path third_party\bitcoin\build-uwp\CMakeCache.txt -Pattern 'CMAKE_GENERATOR:' | ForEach-Object { $_.Line }
-            if ($gen -match 'Ninja') {
-              Write-Host "Removing stale Ninja build dir"
-              Remove-Item -Recurse -Force third_party\bitcoin\build-uwp
-            }
+          if ("${{ github.event_name }}" -eq "workflow_dispatch" -and "${{ inputs.force_core }}" -eq "true") {
+            .\scripts\build-uwp.ps1 -Configuration Release -CoreOnly -ForceCore
+          } else {
+            $env:XBB_CORE_SKIP_IF_FRESH = "1"
+            .\scripts\build-uwp.ps1 -Configuration Release -CoreOnly
           }
-          .\scripts\build-uwp.ps1 -Configuration Release -BuildRevision ${{ github.run_number }} -WithCore
+          if (-not (Test-Path "third_party\bitcoin\build-uwp\xbb-core-libs.props")) {
+            throw "missing xbb-core-libs.props after core build"
+          }
+          if (-not (Get-ChildItem "third_party\bitcoin\build-uwp" -Recurse -Filter "bitcoin_embed.lib" -EA SilentlyContinue)) {
+            throw "missing bitcoin_embed.lib after core build"
+          }
+
+      # Always save under run_id key so package-uwp sees this run's tree.
+      - name: Save Core / vcpkg cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            third_party/bitcoin/build-uwp
+            ~/AppData/Local/vcpkg/archives
+            C:/vcpkg/installed/x64-uwp
+            C:/vcpkg-bt
+          key: ${{ env.CORE_CACHE_PREFIX }}-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}-${{ github.run_id }}
+
+  # Stage 2: MSIX package only (no Core recompile).
+  package-uwp:
+    if: |
+      (github.event_name == 'workflow_dispatch' && inputs.with_core == true) ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    needs: [core-uwp]
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 90
+    env:
+      VCPKG_ROOT: C:\vcpkg
+      VCPKG_INSTALLATION_ROOT: C:\vcpkg
+    steps:
+      - uses: actions/checkout@v7
+      - uses: microsoft/setup-msbuild@v2
+      - uses: nuget/setup-nuget@v2
+
+      - name: Ensure UWP C++ workload if missing
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $ip = & $vswhere -latest -products * -property installationPath
+          if (-not $ip) { throw "Visual Studio installation not found" }
+          $uwp = & $vswhere -latest -products * -requires Microsoft.VisualStudio.ComponentGroup.UWP.VC -property installationPath 2>$null
+          if ($uwp) {
+            Write-Host "UWP.VC already present"
+            exit 0
+          }
+          $setup = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\setup.exe"
+          Write-Host "Installing UWP VC components ..."
+          & $setup modify --installPath $ip `
+            --add Microsoft.VisualStudio.ComponentGroup.UWP.VC `
+            --add Microsoft.VisualStudio.ComponentGroup.WindowsAppDevelopment.Prerequisites `
+            --add Microsoft.VisualStudio.Workload.Universal `
+            --quiet --norestart --force | Out-Host
+
+      - name: Restore Core cache from this run
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            third_party/bitcoin/build-uwp
+            ~/AppData/Local/vcpkg/archives
+            C:/vcpkg/installed/x64-uwp
+            C:/vcpkg-bt
+          key: ${{ env.CORE_CACHE_PREFIX }}-${{ hashFiles('config/bitcoin-core.pin', 'patches/uwp/**') }}-${{ github.run_id }}
+          fail-on-cache-miss: true
+
+      - name: Package MSIX (SkipCoreBuild)
+        shell: pwsh
+        run: |
+          .\scripts\build-uwp.ps1 -Configuration Release -BuildRevision ${{ github.run_number }} -WithCore -SkipCoreBuild
 
       - uses: actions/upload-artifact@v7
         with:

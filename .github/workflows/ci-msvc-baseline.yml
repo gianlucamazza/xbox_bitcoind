@@ -44,16 +44,17 @@ jobs:
         shell: pwsh
         run: .\scripts\fetch-bitcoin-core.ps1
 
-      - name: Cache vcpkg packages
+      # vcpkg + CMake build tree for incremental / warm MSVC rebuilds
+      - name: Cache MSVC build + vcpkg
         uses: actions/cache@v6
         with:
           path: |
-            third_party/bitcoin/build-msvc-baseline/vcpkg_installed
+            third_party/bitcoin/build-msvc-baseline
             ~/AppData/Local/vcpkg/archives
-          key: msvc-vcpkg-${{ runner.os }}-${{ hashFiles('config/bitcoin-core.pin') }}-${{ hashFiles('third_party/bitcoin/vcpkg.json') }}
+          key: msvc-v2-${{ runner.os }}-${{ hashFiles('config/bitcoin-core.pin') }}
           restore-keys: |
-            msvc-vcpkg-${{ runner.os }}-${{ hashFiles('config/bitcoin-core.pin') }}-
-            msvc-vcpkg-${{ runner.os }}-
+            msvc-v2-${{ runner.os }}-${{ hashFiles('config/bitcoin-core.pin') }}-
+            msvc-v2-${{ runner.os }}-
 
       - name: List CMake presets (debug)
         if: github.event_name == 'workflow_dispatch'

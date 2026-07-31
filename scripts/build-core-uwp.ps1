@@ -6,21 +6,92 @@
 .DESCRIPTION
   Fetches pin if needed, applies UWP patches, configures CMake with WindowsStore
   + vcpkg triplet x64-uwp, builds bitcoin_node stack (no GUI/wallet).
-  Output: third_party/bitcoin/build-uwp/ (libs under src/ or lib/)
+  Output: third_party/bitcoin/build-uwp/ (+ xbb-core-libs.props)
+
+  Use -SkipIfFresh to no-op when pin+patches stamp and bitcoin_embed.lib match
+  (CI path: app-only changes reuse the cached Core build).
+
+.PARAMETER Configuration
+  Release (default) or Debug.
+
+.PARAMETER BuildDirName
+  CMake build directory name under third_party/bitcoin (default build-uwp).
+
+.PARAMETER SkipIfFresh
+  Skip configure/build when stamp matches and embed lib + props exist.
+
+.PARAMETER Force
+  Ignore SkipIfFresh / stamp; always rebuild.
 #>
 param(
     [string] $Configuration = "Release",
-    [string] $BuildDirName = "build-uwp"
+    [string] $BuildDirName = "build-uwp",
+    [switch] $SkipIfFresh = $false,
+    [switch] $Force = $false
 )
 
 $ErrorActionPreference = "Stop"
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $Src = Join-Path $Root "third_party\bitcoin"
 $BuildDir = Join-Path $Src $BuildDirName
+$PinFile = Join-Path $Root "config\bitcoin-core.pin"
+$PatchDir = Join-Path $Root "patches\uwp"
+$StampPath = Join-Path $BuildDir "xbb-core-uwp.stamp"
+$PropsPath = Join-Path $BuildDir "xbb-core-libs.props"
+
+function Get-CoreInputStamp {
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $ms = New-Object System.IO.MemoryStream
+    $w = New-Object System.IO.StreamWriter($ms)
+    $w.WriteLine("v1")
+    if (Test-Path $PinFile) {
+        $w.WriteLine((Get-Content -Raw $PinFile))
+    }
+    Get-ChildItem $PatchDir -Filter "*.patch" -ErrorAction SilentlyContinue |
+        Sort-Object Name |
+        ForEach-Object {
+            $w.WriteLine($_.Name)
+            $w.WriteLine([System.BitConverter]::ToString($sha.ComputeHash([IO.File]::ReadAllBytes($_.FullName))))
+        }
+    $w.Flush()
+    $ms.Position = 0
+    $hash = [System.BitConverter]::ToString($sha.ComputeHash($ms)).Replace("-", "").ToLowerInvariant()
+    $w.Dispose()
+    $ms.Dispose()
+    $sha.Dispose()
+    return $hash
+}
+
+function Test-CoreArtifactsPresent {
+    if (-not (Test-Path $PropsPath)) { return $false }
+    $embed = Get-ChildItem $BuildDir -Recurse -Filter "bitcoin_embed.lib" -ErrorAction SilentlyContinue |
+        Select-Object -First 1
+    return [bool]$embed
+}
 
 if (-not (Test-Path (Join-Path $Src "CMakeLists.txt"))) {
     Write-Host "Fetching Bitcoin Core pin ..."
     & (Join-Path $PSScriptRoot "fetch-bitcoin-core.ps1")
+}
+
+$wantStamp = Get-CoreInputStamp
+$haveStamp = if (Test-Path $StampPath) { (Get-Content -Raw $StampPath).Trim() } else { "" }
+
+if (-not $Force -and ($SkipIfFresh -or $env:XBB_CORE_SKIP_IF_FRESH -eq "1") -and
+    $haveStamp -eq $wantStamp -and (Test-CoreArtifactsPresent)) {
+    Write-Host "SkipIfFresh: Core UWP libs match stamp $wantStamp (pin+patches unchanged)."
+    Write-Host "  props: $PropsPath"
+    if ($env:GITHUB_OUTPUT) {
+        "core_build_dir=$BuildDir" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
+        "core_skipped=true" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
+    }
+    exit 0
+}
+
+if ($Force) {
+    Write-Host "Force: rebuilding Core UWP (ignoring stamp)."
+} elseif ($haveStamp -and $haveStamp -ne $wantStamp) {
+    Write-Host "Stamp changed ($haveStamp → $wantStamp); rebuilding Core UWP."
 }
 
 Write-Host "Applying UWP patches ..."
@@ -48,7 +119,6 @@ $Toolchain = Join-Path $env:VCPKG_ROOT "scripts\buildsystems\vcpkg.cmake"
 $Triplet = "x64-uwp"
 
 # Bitcoin Core v31.1 requires VS 2026 18.3+ (same as desktop baseline / vs2026 preset).
-# Prefer VS 18 generator; fall back to VS 17 only if 18 is unavailable (will fail Core consteval).
 $Generator = "Visual Studio 17 2022"
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 if (Test-Path $vswhere) {
@@ -59,6 +129,17 @@ if (Test-Path $vswhere) {
         $Generator = "Visual Studio 18 2026"
     } else {
         Write-Warning "VS 2026 not detected. Core v31.1 needs VS 2026 18.3+; expect consteval (C7595) failures on older MSVC."
+    }
+}
+
+if (Test-Path (Join-Path $BuildDir "CMakeCache.txt")) {
+    $genLine = Select-String -Path (Join-Path $BuildDir "CMakeCache.txt") -Pattern 'CMAKE_GENERATOR:' -ErrorAction SilentlyContinue |
+        Select-Object -First 1 -ExpandProperty Line
+    if ($genLine -match 'Ninja') {
+        Write-Host "Removing stale Ninja build dir (VS generator required)"
+        Remove-Item -Recurse -Force $BuildDir
+    } elseif ($genLine) {
+        Write-Host "Existing CMake cache: $genLine"
     }
 }
 
@@ -85,10 +166,8 @@ $cmakeArgs = @(
     "-DBUILD_TX=OFF",
     "-DBUILD_UTIL=OFF",
     "-DBUILD_BITCOIN_BIN=OFF",
-    # Daemon target pulls bitcoin_node static lib; we only need libs for the UWP app embed.
     "-DBUILD_DAEMON=ON",
     "-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON",
-    # libevent marks !uwp in vcpkg; allow-unsupported to attempt AppContainer build (Dev Mode).
     "-DVCPKG_INSTALL_OPTIONS=--allow-unsupported;--x-buildtrees-root=C:/vcpkg-bt"
 )
 
@@ -112,13 +191,13 @@ $CoreTargets = @(
     "bitcoin_node",
     "bitcoin_embed"
 )
-Write-Host "Building Core UWP libraries: $($CoreTargets -join ', ') ..."
+Write-Host "Building Core UWP libraries (parallel): $($CoreTargets -join ', ') ..."
 $targetArgs = @()
 foreach ($t in $CoreTargets) { $targetArgs += @("--target", $t) }
+# Single cmake --build with all targets + MSBuild parallelism
 & cmake --build $BuildDir --config $Configuration --parallel @targetArgs
 if ($LASTEXITCODE -ne 0) { throw "cmake build failed (Core UWP static libs)" }
 
-# Collect every directory that holds a .lib under the Core build (MSVC multi-config scatters some).
 $allLibs = Get-ChildItem $BuildDir -Recurse -Filter "*.lib" -ErrorAction SilentlyContinue
 if (-not $allLibs) {
     throw "No .lib files produced under $BuildDir"
@@ -133,9 +212,7 @@ if (-not $found) {
 }
 if (-not $found) { throw "bitcoin_embed.lib / bitcoin_node.lib missing after build" }
 Write-Host "Primary Core lib dir: $found"
-Write-Host "All Core lib dirs: $($libDirs -join ';')"
 
-# vcpkg installed libs/bin (libevent, etc.) for final UWP link + MSIX packaging
 $vcpkgLibCandidates = @(
     (Join-Path $BuildDir "vcpkg_installed\$Triplet\lib"),
     (Join-Path $env:VCPKG_ROOT "installed\$Triplet\lib")
@@ -154,30 +231,24 @@ foreach ($c in $vcpkgBinCandidates) {
 }
 if ($vcpkgLib) {
     Write-Host "vcpkg libs: $vcpkgLib"
-    Get-ChildItem $vcpkgLib -Filter "*.lib" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ("  vcpkg: " + $_.Name) }
 } else {
     Write-Warning "vcpkg lib dir not found (link may miss libevent)"
 }
 if ($vcpkgBin) {
     Write-Host "vcpkg bin: $vcpkgBin"
-    Get-ChildItem $vcpkgBin -Filter "*.dll" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ("  vcpkg dll: " + $_.Name) }
 } else {
     Write-Warning "vcpkg bin dir not found (MSIX may miss event.dll — app will fail to launch)"
 }
 
-# Semicolon-separated path list for MSBuild AdditionalLibraryDirectories.
-# Do NOT pass this via /p: (MSBuild splits on ';'). Put it in a .props file instead.
 $allLibDirs = @($libDirs) + @($vcpkgLib) | Where-Object { $_ } | Sort-Object -Unique
-$libPathList = $allLibDirs -join ";"
 
 if ($env:GITHUB_OUTPUT) {
     "core_build_dir=$BuildDir" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
     "core_lib_dir=$found" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
+    "core_skipped=false" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8
     if ($vcpkgLib) { "vcpkg_lib_dir=$vcpkgLib" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8 }
 }
 
-# Props file imported by the UWP project when WithCore=true (avoids /p: semicolon split).
-$propsPath = Join-Path $BuildDir "xbb-core-libs.props"
 $libDirsXml = ($allLibDirs | ForEach-Object { "      $_;" }) -join "`n"
 @"
 <?xml version="1.0" encoding="utf-8"?>
@@ -197,6 +268,8 @@ $libDirsXml
     </Link>
   </ItemDefinitionGroup>
 </Project>
-"@ | Set-Content -Path $propsPath -Encoding UTF8
-Write-Host "Wrote $propsPath"
+"@ | Set-Content -Path $PropsPath -Encoding UTF8
+Set-Content -Path $StampPath -Value $wantStamp -NoNewline -Encoding ASCII
+Write-Host "Wrote $PropsPath"
+Write-Host "Wrote stamp $StampPath = $wantStamp"
 Write-Host "OK: Core UWP build finished ($BuildDir)"

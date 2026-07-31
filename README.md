@@ -97,11 +97,11 @@ Ops: [docs/ops.md](docs/ops.md) · [console](docs/console.md) ·
 
 ```bash
 ./scripts/fetch-bitcoin-core.sh
-# Windows (VS 2026 Developer PowerShell):
+# Windows (VS 2026 Developer PowerShell) — split stages (faster iterate):
 #   .\scripts\fetch-bitcoin-core.ps1
-#   .\scripts\apply-uwp-patches.ps1
-#   .\scripts\build-core-uwp.ps1
-#   .\scripts\build-uwp.ps1 -WithCore
+#   .\scripts\build-uwp.ps1 -CoreOnly                 # Core libs (cached / SkipIfFresh)
+#   .\scripts\build-uwp.ps1 -WithCore -SkipCoreBuild  # MSIX only
+# Monolithic: .\scripts\build-uwp.ps1 -WithCore
 ```
 
 ## Repo layout

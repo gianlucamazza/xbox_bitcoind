@@ -150,13 +150,13 @@ try {
     & cmake @cmakeArgs
     if ($LASTEXITCODE -ne 0) { throw "cmake configure failed ($LASTEXITCODE)" }
 
-    Write-Host "cmake build ($Configuration)..."
-    & cmake --build $BuildDir --config $Configuration
+    Write-Host "cmake build ($Configuration, parallel)..."
+    & cmake --build $BuildDir --config $Configuration --parallel
     if ($LASTEXITCODE -ne 0) { throw "cmake build failed ($LASTEXITCODE)" }
 
     if ($buildTests) {
-        Write-Host "ctest..."
-        & ctest --test-dir $BuildDir --build-config $Configuration --output-on-failure
+        Write-Host "ctest (parallel)..."
+        & ctest --test-dir $BuildDir --build-config $Configuration --output-on-failure -j $env:NUMBER_OF_PROCESSORS
         if ($LASTEXITCODE -ne 0) { throw "ctest failed ($LASTEXITCODE)" }
     }
 } finally {

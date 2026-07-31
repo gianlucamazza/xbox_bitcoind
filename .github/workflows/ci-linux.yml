@@ -95,19 +95,22 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential cmake pkg-config python3 \
+            build-essential cmake ninja-build ccache pkg-config python3 \
             libboost-dev libevent-dev
 
       - name: Fetch pinned Bitcoin Core
         run: ./scripts/fetch-bitcoin-core.sh
 
-      - name: Cache Linux smoke build
+      - name: Cache Linux smoke build + ccache
         uses: actions/cache@v6
         with:
-          path: third_party/bitcoin/build-linux-smoke
-          key: linux-smoke-${{ hashFiles('config/bitcoin-core.pin') }}-${{ runner.os }}
+          path: |
+            third_party/bitcoin/build-linux-smoke
+            .ccache-linux-smoke
+          key: linux-smoke-v2-${{ hashFiles('config/bitcoin-core.pin') }}-${{ runner.os }}
           restore-keys: |
-            linux-smoke-${{ hashFiles('config/bitcoin-core.pin') }}-
+            linux-smoke-v2-${{ hashFiles('config/bitcoin-core.pin') }}-
+            linux-smoke-v2-
 
       - name: Linux smoke build
         id: build
@@ -115,6 +118,7 @@ jobs:
           CI_SKIP_TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.run_tests && '0' || '1' }}
           BUILD_TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.run_tests && 'ON' || 'OFF' }}
           CMAKE_BUILD_TYPE: Release
+          CCACHE_DIR: ${{ github.workspace }}/.ccache-linux-smoke
         run: ./scripts/build-linux-smoke.sh
 
       - name: Assert version string

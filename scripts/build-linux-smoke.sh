@@ -45,7 +45,30 @@ echo "=== Linux smoke (pin ${TAG} @ ${HEAD}) ==="
 echo "Build dir: ${BUILD}"
 echo "Flags: type=${CMAKE_BUILD_TYPE} GUI=${BUILD_GUI} WALLET=${ENABLE_WALLET} ZMQ=${WITH_ZMQ} IPC=${ENABLE_IPC} TESTS=${BUILD_TESTS}"
 
+# Prefer Ninja + ccache when available (much faster incremental / CI warm runs).
+CMAKE_GENERATOR_ARGS=()
+if command -v ninja >/dev/null 2>&1; then
+	CMAKE_GENERATOR_ARGS=(-G Ninja)
+	echo "Generator: Ninja"
+else
+	echo "Generator: default (install ninja for faster builds)"
+fi
+
+CMAKE_CCACHE_ARGS=()
+if command -v ccache >/dev/null 2>&1; then
+	export CCACHE_DIR="${CCACHE_DIR:-${ROOT}/.ccache-linux-smoke}"
+	mkdir -p "${CCACHE_DIR}"
+	CMAKE_CCACHE_ARGS=(
+		-DCMAKE_C_COMPILER_LAUNCHER=ccache
+		-DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+	)
+	echo "ccache: ${CCACHE_DIR}"
+	ccache -z >/dev/null 2>&1 || true
+fi
+
 cmake -B "${BUILD}" -S "${SRC}" \
+	"${CMAKE_GENERATOR_ARGS[@]}" \
+	"${CMAKE_CCACHE_ARGS[@]}" \
 	-DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" \
 	-DBUILD_GUI="${BUILD_GUI}" \
 	-DENABLE_WALLET="${ENABLE_WALLET}" \
@@ -61,6 +84,11 @@ cmake --build "${BUILD}" -j"$(nproc)"
 
 if [[ "${BUILD_TESTS}" == "ON" ]]; then
 	ctest --test-dir "${BUILD}" --output-on-failure -j"$(nproc)"
+fi
+
+if command -v ccache >/dev/null 2>&1; then
+	echo "=== ccache stats ==="
+	ccache -s || true
 fi
 
 BITCOIND="$(find "${BUILD}" -type f -name bitcoind | head -n1)"

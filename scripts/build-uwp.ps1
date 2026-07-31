@@ -13,9 +13,24 @@
 .PARAMETER BuildRevision
   MSIX Identity Version revision (4th component). CI passes GITHUB_RUN_NUMBER.
 
+.PARAMETER WithCore
+  Link Bitcoin Core UWP static libs into the package (needs vcpkg x64-uwp).
+
+.PARAMETER CoreOnly
+  Only run build-core-uwp.ps1 (no MSIX). Implies WithCore pipeline for libs.
+
+.PARAMETER SkipCoreBuild
+  WithCore: do not rebuild Core; require existing xbb-core-libs.props + bitcoin_embed.lib.
+  Use after a separate build-core-uwp.ps1 (or warm CI cache).
+
+.PARAMETER ForceCore
+  WithCore: pass -Force to build-core-uwp.ps1 (ignore SkipIfFresh stamp).
+
 .EXAMPLE
   .\scripts\build-uwp.ps1
   .\scripts\build-uwp.ps1 -Configuration Debug -ForceNewCert
+  .\scripts\build-uwp.ps1 -CoreOnly
+  .\scripts\build-uwp.ps1 -WithCore -SkipCoreBuild
 #>
 param(
     [ValidateSet("Release", "Debug")]
@@ -26,6 +41,9 @@ param(
     [string] $PlatformToolsetOverride = "",
     # Build+link Bitcoin Core UWP static libs into the package (slow; needs vcpkg x64-uwp).
     [switch] $WithCore = $false,
+    [switch] $CoreOnly = $false,
+    [switch] $SkipCoreBuild = $false,
+    [switch] $ForceCore = $false,
     [string] $CoreBuildDir = ""
 )
 
@@ -45,6 +63,17 @@ if (-not $IsWindows -and $PSVersionTable.PSEdition -eq "Core" -and -not $env:OS.
 if ($env:OS -and $env:OS -notlike "*Windows*") {
     Write-Error "UWP packaging requires Windows with Visual Studio UWP workload."
     exit 1
+}
+
+# Fast path: Core libraries only (no cert / NuGet / MSBuild package).
+if ($CoreOnly) {
+    Write-Host "=== CoreOnly: build-core-uwp.ps1 ==="
+    $coreArgs = @{ Configuration = $Configuration }
+    if ($ForceCore) { $coreArgs["Force"] = $true }
+    elseif ($env:XBB_CORE_SKIP_IF_FRESH -eq "1") { $coreArgs["SkipIfFresh"] = $true }
+    & (Join-Path $PSScriptRoot "build-core-uwp.ps1") @coreArgs
+    if ($LASTEXITCODE -ne 0) { throw "build-core-uwp.ps1 failed" }
+    exit 0
 }
 
 if (-not (Test-Path $SlnPath)) {
@@ -167,23 +196,36 @@ if ($BuildRevision -gt 0) {
     Write-Host "Version stamped: $stamped"
 }
 
-$CoreProps = ""
+$coreRoot = if ($CoreBuildDir) { $CoreBuildDir } else { Join-Path $RepoRoot "third_party\bitcoin\build-uwp" }
+$CoreProps = Join-Path $coreRoot "xbb-core-libs.props"
+
 if ($WithCore) {
-    Write-Host "=== WithCore: building Bitcoin Core for UWP ==="
-    & (Join-Path $PSScriptRoot "build-core-uwp.ps1") -Configuration $Configuration
-    if ($LASTEXITCODE -ne 0) { throw "build-core-uwp.ps1 failed" }
-    $coreRoot = if ($CoreBuildDir) { $CoreBuildDir } else { Join-Path $RepoRoot "third_party\bitcoin\build-uwp" }
-    $CoreProps = Join-Path $coreRoot "xbb-core-libs.props"
-    if (-not (Test-Path $CoreProps)) {
-        throw "WithCore set but missing $CoreProps (build-core-uwp should write it)"
-    }
-    if (-not (Get-ChildItem $coreRoot -Recurse -Filter "bitcoin_embed.lib" -ErrorAction SilentlyContinue)) {
-        throw "WithCore set but bitcoin_embed.lib not found under $coreRoot"
+    if ($SkipCoreBuild) {
+        Write-Host "=== WithCore: SkipCoreBuild (reuse $coreRoot) ==="
+        if (-not (Test-Path $CoreProps)) {
+            throw "SkipCoreBuild but missing $CoreProps — run build-core-uwp.ps1 first"
+        }
+        if (-not (Get-ChildItem $coreRoot -Recurse -Filter "bitcoin_embed.lib" -ErrorAction SilentlyContinue)) {
+            throw "SkipCoreBuild but bitcoin_embed.lib not found under $coreRoot"
+        }
+    } else {
+        Write-Host "=== Core UWP libraries ==="
+        $coreArgs = @{ Configuration = $Configuration }
+        if ($ForceCore) { $coreArgs["Force"] = $true }
+        elseif ($env:XBB_CORE_SKIP_IF_FRESH -eq "1") { $coreArgs["SkipIfFresh"] = $true }
+        & (Join-Path $PSScriptRoot "build-core-uwp.ps1") @coreArgs
+        if ($LASTEXITCODE -ne 0) { throw "build-core-uwp.ps1 failed" }
+        if (-not (Test-Path $CoreProps)) {
+            throw "WithCore set but missing $CoreProps (build-core-uwp should write it)"
+        }
+        if (-not (Get-ChildItem $coreRoot -Recurse -Filter "bitcoin_embed.lib" -ErrorAction SilentlyContinue)) {
+            throw "WithCore set but bitcoin_embed.lib not found under $coreRoot"
+        }
     }
     Write-Host "Core link props: $CoreProps"
 }
 
-Write-Host "Building $Configuration|$Platform ..."
+Write-Host "Building UWP package $Configuration|$Platform ..."
 $MsBuildArgs = @(
     $SlnPath,
     "/p:Configuration=$Configuration",
@@ -204,14 +246,12 @@ if ($PlatformToolsetOverride) {
 if ($WindowsSdkVersion) {
     $MsBuildArgs += "/p:WindowsTargetPlatformVersion=$WindowsSdkVersion"
 }
-if ($WithCore -and $CoreProps) {
+if ($WithCore) {
     $MsBuildArgs += "/p:XbbWithCore=true"
     $MsBuildArgs += "/p:XbbCoreProps=$CoreProps"
     $MsBuildArgs += "/p:XbbCoreSrcDir=$(Join-Path $RepoRoot 'third_party\bitcoin\src')"
-    $coreRootForMs = if ($CoreBuildDir) { $CoreBuildDir } else { Join-Path $RepoRoot 'third_party\bitcoin\build-uwp' }
-    $MsBuildArgs += "/p:XbbCoreBuildDir=$coreRootForMs"
-    # Also surface vcpkg bin for event.dll packaging (props may set this too).
-    $vcpkgBin = Join-Path $coreRootForMs "vcpkg_installed\x64-uwp\bin"
+    $MsBuildArgs += "/p:XbbCoreBuildDir=$coreRoot"
+    $vcpkgBin = Join-Path $coreRoot "vcpkg_installed\x64-uwp\bin"
     if (Test-Path $vcpkgBin) {
         $MsBuildArgs += "/p:XbbVcpkgBinDir=$vcpkgBin"
         if (-not (Test-Path (Join-Path $vcpkgBin "event.dll"))) {
@@ -231,7 +271,6 @@ if ($LASTEXITCODE -ne 0) {
 $Msix = Get-ChildItem -Path (Join-Path $UwpDir "AppPackages") -Filter "*.msix" -Recurse -ErrorAction SilentlyContinue |
     Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if (-not $Msix) {
-    # Some SDKs emit .appx
     $Msix = Get-ChildItem -Path (Join-Path $UwpDir "AppPackages") -Filter "*.appx" -Recurse -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTime -Descending | Select-Object -First 1
 }
