@@ -17,6 +17,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ### Changed
 
+- Docs screenshot refreshed for package **0.1.0.6** / release **v0.1.1**
+
 ## [0.1.1] — 2026-07-31
 
 Ops polish, UI/branding, and operator tooling after first public release.
