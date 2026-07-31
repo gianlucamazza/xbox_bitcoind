@@ -9,6 +9,7 @@
 #   $EDITOR ~/.config/xbox_bitcoind/xbox-env
 #
 # Never commit real passwords.
+# Loaded by scripts/env.sh (also sets XBOX_BITCOIND_* package identity).
 
 # LAN IP of the Series S (Device Portal).
 # Off-LAN via Odroid (standard OpenSSH):
@@ -18,3 +19,12 @@ export XBOX_IP=192.168.1.44
 export XBOX_PORT=11443
 export XBOX_USER=Xbox
 export XBOX_PASS=change-me
+
+# Optional (usually leave unset; export in shell when needed):
+# export XBOX_IP_OVERRIDE=127.0.0.1
+# export XBOX_PORT_OVERRIDE=11443
+# export XBB_SOFT_STOP_MAX_WAIT=300
+# export XBB_STATE_DIR=$HOME/.local/state/xbox_bitcoind
+# export XBB_ASSUME_TIP_HEIGHT=920000
+# export XBOX_BITCOIND_APP_ID=GianlucaMazza.xboxbitcoind
+# export XBOX_BITCOIND_APP_ENTRY=App

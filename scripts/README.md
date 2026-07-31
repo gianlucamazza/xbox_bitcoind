@@ -28,7 +28,7 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 | `ibd-report.sh` | Summarize JSONL history, rate, rough ETA, errors (wipe-aware) |
 | `install-ibd-timer.sh` | Enable hourly user systemd timer |
 | `v1-close-check.sh` | Gate: IBD done + 24h stability (exit 0 = close v1 ops) |
-| `apply-console-conf.sh` | Soft-stop → push `config/bitcoin.conf.console` → start (IBD knobs) |
+| `apply-console-conf.sh` | Soft-stop → push conf profile (`console`/`ibd`/`tip`) → start |
 | `test-ui-layout.sh` | Pure layout unit tests (no Xbox; used by ci-linux) |
 | `generate-uwp-assets.py` | Rebuild splash/tiles from Core `share/pixmaps` icons |
 | `generate-version-header.py` | `config/bitcoin-core.pin` → `uwp/xbb_version.generated.h` (UI Core version) |

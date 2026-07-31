@@ -1,10 +1,16 @@
-# Console defaults for Xbox Series S (UWP / Dev Mode).
+# Console defaults for Xbox Series S (UWP / Dev Mode) — IBD / sync profile.
 # Host places datadir under ApplicationData LocalFolder (LocalState\bitcoin).
 # Prefer stock Bitcoin Core options only — no custom consensus / forks.
 #
+# Profile name: console | ibd
+# Apply: ./scripts/apply-console-conf.sh
+#        ./scripts/apply-console-conf.sh --profile console
+# At tip / pre-LN: config/bitcoin.conf.tip → --profile tip
+# See config/README.md · docs/pre-lightning.md · docs/ops.md
+#
 # Sync policy (Series S, 10 GiB RAM shared with OS/UI/other Dev apps):
 #   - Raise dbcache / peers for IBD; re-measure WS at tip before going higher.
-#   - Conf is copied only when LocalState\bitcoin\bitcoin.conf is missing.
+#   - Conf is copied only when LocalState\bitcoin\bitcoin.conf is missing on first start.
 #     To re-apply: ./scripts/apply-console-conf.sh
 
 # --- Pruned validating full node (standard bitcoind operator setup) ---
@@ -38,8 +44,7 @@ maxconnections=16
 maxmempool=50
 
 # During pure IBD, blocksonly skips mempool + tx relay (less CPU/RAM/bandwidth
-# on non-block traffic). Disable (comment out) before Lightning / when you want
-# a normal mempool at tip.
+# on non-block traffic). Disable via --profile tip before Lightning / full mempool.
 blocksonly=1
 
 # Avoid optional services until needed

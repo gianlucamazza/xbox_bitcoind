@@ -1,21 +1,47 @@
 # Tip / pre-Lightning profile for Xbox Series S (UWP / Dev Mode).
-# DO NOT apply during pure IBD unless you intend to enable mempool early.
-# Apply: copy over conf via apply-console-conf (or upload-file) after soft-stop.
-# See docs/pre-lightning.md.
+#
+# WHEN: after mainnet tip is stable (v1-close-check near tip), before CLN work.
+# DO NOT apply during pure IBD unless you intentionally want mempool early.
+#
+# Apply:
+#   ./scripts/apply-console-conf.sh --profile tip --dry-run
+#   ./scripts/apply-console-conf.sh --profile tip
+#   ./scripts/apply-console-conf.sh --profile tip --force   # if progress < 0.99
+#
+# See docs/pre-lightning.md · config/README.md
 
+# --- Pruned validating full node ---
+# Raise (e.g. 2000–5000) only if Dev storage allows more offline buffer (pre-LN).
 prune=550
+
+# Local RPC for UI / LN sibling / tooling (cookie under datadir/.cookie).
+# Keep loopback-only until a deliberate SECURITY review (pre-lightning.md).
 server=1
 rpcallowip=127.0.0.1
 rpcbind=127.0.0.1
+
+# Outbound-only P2P. listen=1 is optional and not required for CLN backend use.
 listen=0
 
+# --- Tip / steady-state knobs ---
+# dbcache: re-sample WS at tip before 1024.
 dbcache=512
 maxconnections=16
+
+# Mempool on (blocksonly omitted). Size for fee estimation / pre-LN observation.
 maxmempool=100
-# blocksonly intentionally omitted — normal mempool at tip / pre-LN
+
+# Optional later (uncomment only if needed and measured):
+# dbcache=1024
+# maxmempool=300
+# maxconnections=24
 
 upnp=0
 natpmp=0
 printtoconsole=0
 
-# Still off: txindex (incompatible with prune), public RPC, listen=1
+# Still off:
+# blocksonly=1       # IBD only — omit at tip
+# txindex=1          # incompatible with prune; CLN does not require it
+# blockfilterindex=1
+# rpcallowip=...     # do not open LAN without threat model

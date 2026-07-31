@@ -86,38 +86,23 @@ Current package defaults: [bitcoin.conf.console](../config/bitcoin.conf.console)
 | **Never (this host)** | `txindex=1` with prune | Incompatible |
 | **Avoid until deliberate** | `listen=1`, public `rpcallowip`, cleartext RPC on LAN | Security / UWP / NAT |
 
-### Tip / pre-LN conf profile (planned file)
+### Tip / pre-LN conf profile (in repo — apply only at tip)
 
-Add when G1 is near (do **not** apply mid-IBD without reason):
-
-`config/bitcoin.conf.tip` (proposed contents):
-
-```conf
-# Same as console, tip-oriented — apply with apply-console-conf after soft-stop
-prune=550          # or higher if Dev storage free (e.g. 2000–5000)
-server=1
-rpcallowip=127.0.0.1
-rpcbind=127.0.0.1
-listen=0
-dbcache=512        # try 1024 only after tip WS sample
-maxconnections=16
-maxmempool=100
-# blocksonly off — omit or comment
-upnp=0
-natpmp=0
-printtoconsole=0
-```
-
-Apply path (existing tooling):
+| File | Profile |
+|------|---------|
+| [config/bitcoin.conf.console](../config/bitcoin.conf.console) | `console` / `ibd` (current IBD) |
+| [config/bitcoin.conf.tip](../config/bitcoin.conf.tip) | `tip` (mempool on) |
+| [config/README.md](../config/README.md) | Profile index |
 
 ```bash
-# When ready (tip): edit tip conf → soft-stop → upload → start
-./scripts/apply-console-conf.sh   # or point script at bitcoin.conf.tip
+# Dry-run anytime (no console change)
+./scripts/apply-console-conf.sh --profile tip --dry-run
+
+# When G1 near tip (script refuses if progress < 0.99 unless --force)
+./scripts/apply-console-conf.sh --profile tip
 ./scripts/health-check.sh
 ./scripts/soft-stop-test.sh
 ```
-
-Optional script later: `apply-console-conf.sh --profile tip`.
 
 ---
 
@@ -273,12 +258,23 @@ When all true: **open sibling LN work**. Until then: only IBD + hygiene.
 
 ## 10. Immediate actions (while IBD runs)
 
-1. Do **not** change conf for LN yet.  
+1. Do **not** apply `--profile tip` yet (mempool conf mid-IBD is optional only with `--force`).  
 2. Do **not** open RPC.  
 3. Keep `health-check` / timer / focused app.  
-4. Optionally draft `config/bitcoin.conf.tip` in-repo as **unused** template (safe).  
+4. Conf templates **ready** in `config/` + `apply-console-conf.sh --profile …`.  
 5. Decision A/B/C can be written early; **implementation waits for tip**.
+
+### Config inventory (sync-independent — done)
+
+| Item | Path |
+|------|------|
+| IBD conf | `config/bitcoin.conf.console` |
+| Tip/pre-LN conf | `config/bitcoin.conf.tip` |
+| Profile docs | `config/README.md` |
+| Apply tool | `scripts/apply-console-conf.sh --profile console\|tip` |
+| Host env example | `config/xbox-env.example` |
+| Core pin | `config/bitcoin-core.pin` |
 
 ---
 
-*Plan version: 2026-07-31 — blocked on IBD (~240k class heights post-wipe); conf IBD active.*
+*Plan version: 2026-07-31 — conf profiles complete; apply tip only after G1; IBD still running.*

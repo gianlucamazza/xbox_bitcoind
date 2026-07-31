@@ -252,10 +252,14 @@ Measured mid-IBD (package `0.1.0.42`, `dbcache=256`): WS ~0.7–1.0 GiB,
 ### Apply conf to a live console
 
 `bitcoin.conf` is **not** overwritten on reinstall if LocalState already has one.
+Profiles: [config/README.md](../config/README.md).
 
 ```bash
-./scripts/apply-console-conf.sh   # soft-stop → upload conf → start-app
-./scripts/node-status.sh          # confirm running + height still advancing
+./scripts/apply-console-conf.sh --dry-run
+./scripts/apply-console-conf.sh                    # IBD profile (console)
+./scripts/apply-console-conf.sh --profile tip      # only near tip (guarded)
+./scripts/health-check.sh
+./scripts/node-status.sh
 ```
 
 ### Safe further tuning
