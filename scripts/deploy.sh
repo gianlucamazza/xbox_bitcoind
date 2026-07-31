@@ -194,6 +194,23 @@ stop_app() {
 	# Device Portal expects base64-encoded package full name.
 	local pkg_b64
 	pkg_b64=$(printf '%s' "${pfn}" | base64 -w0)
+	# Soft-stop first: suspend triggers App::OnSuspending → RPC stop → LevelDB flush.
+	# Hard kill alone loses unflushed block index (Bitcoin write interval is long).
+	curl "${CURL_AUTH[@]}" \
+		-H "X-CSRF-Token:${CSRF_TOKEN}" \
+		-H "Content-Length: 0" \
+		-X POST \
+		-d "" \
+		"${BASE_URL}/api/taskmanager/app/state?package=${pkg_b64}&state=suspend" >/dev/null 2>&1 || true
+	# Allow bitcoind shutdown + flush (NodeStop waits up to ~45s; give 20s here).
+	local i
+	for i in $(seq 1 40); do
+		if ! curl "${CURL_AUTH[@]}" "${BASE_URL}/api/resourcemanager/processes" 2>/dev/null |
+			python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if any('xbox_bitcoind' in (p.get('ImageName') or '') for p in d.get('Processes',[])) else 1)"; then
+			break
+		fi
+		sleep 1
+	done
 	curl "${CURL_AUTH[@]}" \
 		-H "X-CSRF-Token:${CSRF_TOKEN}" \
 		-H "Content-Length: 0" \

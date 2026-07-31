@@ -16,5 +16,7 @@ with that toolchain (same as the MSVC desktop baseline).
 | `0006-uwp-subprocess-stub.patch` | CreateProcess/CreatePipe stubs after `windows.h` |
 | `0007-uwp-netif-no-gateway-route.patch` | No GetBestRoute2 / MIB_IPFORWARD_ROW2 under UWP |
 | `0008-uwp-bitcoin-embed-static-lib.patch` | WindowsStore: `bitcoin_embed` static lib instead of bitcoind.exe |
+| `0009-uwp-leveldb-durable-nommap.patch` | LevelDB: no mmap, mmap fallback, WRITE_THROUGH on UWP |
+| `0010-uwp-faster-db-write-interval.patch` | Flush chainstate/block index every 30–60s on UWP (not 50–70min) |
 
 Do not commit a patched `third_party/bitcoin` tree — only these patch files.

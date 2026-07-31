@@ -1,0 +1,17 @@
+--- a/src/validation.cpp	2026-07-31 10:38:12.216263981 +0200
++++ b/src/validation.cpp	2026-07-31 10:38:12.258276673 +0200
+@@ -93,8 +93,14 @@
+  *  Randomize writing time inside the window to prevent a situation where the
+  *  network over time settles into a few cohorts of synchronized writers.
+ */
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++// UWP/Xbox: AppContainer kills are common; flush chainstate/block index often.
++static constexpr auto DATABASE_WRITE_INTERVAL_MIN{30s};
++static constexpr auto DATABASE_WRITE_INTERVAL_MAX{60s};
++#else
+ static constexpr auto DATABASE_WRITE_INTERVAL_MIN{50min};
+ static constexpr auto DATABASE_WRITE_INTERVAL_MAX{70min};
++#endif
+ /** Maximum age of our tip for us to be considered current for fee estimation */
+ static constexpr std::chrono::hours MAX_FEE_ESTIMATION_TIP_AGE{3};
+ const std::vector<std::string> CHECKLEVEL_DOC {

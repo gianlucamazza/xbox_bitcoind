@@ -1,0 +1,58 @@
+--- a/src/leveldb/util/env_windows.cc	2026-07-31 10:38:12.215470622 +0200
++++ b/src/leveldb/util/env_windows.cc	2026-07-31 10:38:12.235321129 +0200
+@@ -68,6 +68,13 @@
+ 
+ // Can be set by by EnvWindowsTestHelper::SetReadOnlyMMapLimit().
+ int g_mmap_limit = kDefaultMmapLimit;
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++// AppContainer: CreateFileMapping/MapViewOfFile is unreliable; use pread-style I/O.
++struct XbbUwpDisableMmap {
++  XbbUwpDisableMmap() { g_mmap_limit = 0; }
++};
++static XbbUwpDisableMmap g_xbb_uwp_disable_mmap;
++#endif
+ 
+ std::string GetWindowsErrorMessage(DWORD error_code) {
+   std::string message;
+@@ -465,7 +472,9 @@
+       }
+     }
+     mmap_limiter_.Release();
+-    return WindowsError(filename, ::GetLastError());
++    // Fall back to non-mmap reads (required on UWP when mapping is unavailable).
++    *result = new WindowsRandomAccessFile(filename, std::move(handle));
++    return Status::OK();
+   }
+ 
+   Status NewWritableFile(const std::string& filename,
+@@ -473,9 +482,14 @@
+     DWORD desired_access = GENERIC_WRITE;
+     DWORD share_mode = 0;  // Exclusive access.
+     auto wFilename = toUtf16(filename);
++    DWORD attrs = FILE_ATTRIBUTE_NORMAL;
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++    // Prefer durable writes under AppContainer (no delayed write-back on kill).
++    attrs |= FILE_FLAG_WRITE_THROUGH;
++#endif
+     ScopedHandle handle = ::CreateFileW(
+         wFilename.c_str(), desired_access, share_mode,
+-        /*lpSecurityAttributes=*/nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL,
++        /*lpSecurityAttributes=*/nullptr, CREATE_ALWAYS, attrs,
+         /*hTemplateFile=*/nullptr);
+     if (!handle.is_valid()) {
+       *result = nullptr;
+@@ -491,9 +505,13 @@
+     DWORD desired_access = FILE_APPEND_DATA;
+     DWORD share_mode = 0;  // Exclusive access.
+     auto wFilename = toUtf16(filename);
++    DWORD attrs = FILE_ATTRIBUTE_NORMAL;
++#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
++    attrs |= FILE_FLAG_WRITE_THROUGH;
++#endif
+     ScopedHandle handle = ::CreateFileW(
+         wFilename.c_str(), desired_access, share_mode,
+-        /*lpSecurityAttributes=*/nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL,
++        /*lpSecurityAttributes=*/nullptr, OPEN_ALWAYS, attrs,
+         /*hTemplateFile=*/nullptr);
+     if (!handle.is_valid()) {
+       *result = nullptr;

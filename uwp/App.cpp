@@ -6,8 +6,12 @@
 #include "App.h"
 #include "MainPage.h"
 #include "log.h"
+#include "node_host.h"
+
+#include <thread>
 
 using namespace winrt;
+using namespace winrt::Windows::ApplicationModel;
 using namespace winrt::Windows::ApplicationModel::Activation;
 using namespace winrt::Windows::UI::Xaml;
 using namespace winrt::Windows::UI::Xaml::Controls;
@@ -17,6 +21,8 @@ namespace winrt::xbox_bitcoind::implementation {
 App::App() {
     xbb::LogInit();
     xbb::Logf("[app] App ctor");
+    // Clean bitcoind shutdown on suspend/terminate so LevelDB/block index flush to disk.
+    m_suspending_token = this->Suspending({this, &App::OnSuspending});
 }
 
 void App::OnLaunched(LaunchActivatedEventArgs const&) {
@@ -31,6 +37,21 @@ void App::OnLaunched(LaunchActivatedEventArgs const&) {
     if (m_controller) {
         m_controller->StartProbesAsync();
     }
+}
+
+void App::OnSuspending(IInspectable const&, SuspendingEventArgs const& e) {
+    xbb::Logf("[app] OnSuspending — stopping node for durable flush");
+    auto deferral = e.SuspendingOperation().GetDeferral();
+    // Run off UI thread; Complete when NodeStop finishes (RPC stop + join).
+    std::thread([deferral]() {
+        try {
+            xbb::NodeStop();
+        } catch (...) {
+            xbb::Logf("[app] OnSuspending NodeStop threw");
+        }
+        deferral.Complete();
+        xbb::Logf("[app] OnSuspending complete");
+    }).detach();
 }
 
 } // namespace winrt::xbox_bitcoind::implementation

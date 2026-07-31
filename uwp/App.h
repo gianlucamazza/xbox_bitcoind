@@ -16,9 +16,12 @@ namespace winrt::xbox_bitcoind::implementation {
 struct App : AppT<App> {
     App();
     void OnLaunched(winrt::Windows::ApplicationModel::Activation::LaunchActivatedEventArgs const&);
+    void OnSuspending(winrt::Windows::Foundation::IInspectable const&,
+                      winrt::Windows::ApplicationModel::SuspendingEventArgs const&);
 
   private:
     std::shared_ptr<::xbb::MainPageController> m_controller;
+    winrt::event_token m_suspending_token{};
 };
 
 } // namespace winrt::xbox_bitcoind::implementation
