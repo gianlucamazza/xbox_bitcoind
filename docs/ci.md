@@ -166,6 +166,9 @@ CI_SKIP_TESTS=1 ./scripts/build-linux-smoke.sh
 | `git push origin vX.Y.Z` | `release.yml`: build WithCore MSIX → GitHub Release + assets |
 | Actions → **release** → Run workflow | Rebuild/publish for an **existing** tag |
 
+`build-uwp` reusable jobs must allow **tag refs** (`refs/tags/v*`) as well as `main`
+(caller context keeps `event_name=push` on the tag, not `workflow_call`).
+
 Local helper:
 
 ```bash
