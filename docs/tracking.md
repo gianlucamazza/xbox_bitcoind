@@ -73,7 +73,7 @@ Full hygiene guide: [ops.md § Ops hygiene](ops.md#ops-hygiene--best-practices).
 | ID                | Task                                   | Notes                                                                                                               |
 | ----------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | soft-stop-timeout | Clean exit without DELETE              | **Done mid-IBD** (8s, no DELETE, tip 367530→367533) · [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) |
-| release-hygiene   | Monotonic MSIX rev + VCLibs in release | **Done** — cuts shipped as **10017** (v0.1.2) / **10018** (v0.1.3)                                                  |
+| release-hygiene   | Monotonic MSIX rev + VCLibs in release | **Done** — cuts through **0.1.5.10020** (v0.1.5); versions tag-derived since v0.1.5                                                  |
 | package-gc        | Stale revisions                        | **Done** · [#5](https://github.com/gianlucamazza/xbox_bitcoind/issues/5) closed                                     |
 
 ### P2 — Pre-Lightning (after P0)
@@ -97,7 +97,7 @@ Wallet UI · Store · `listen=1` · CLN on-console · USB datadir UX
 
 | Issue                                                         | Title                              | Status                                                                                                                     |
 | ------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close)    | open — ~671k / ~44.5%                                                                                                      |
+| [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close)    | open — ~676k / ~45.3%                                                                                                      |
 | [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) | 24h stability at tip (v1 close)    | open                                                                                                                       |
 | [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) | Soft-stop retest at tip (v1 close) | open                                                                                                                       |
 | [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop → DELETE fallback        | **closed** (2026-07-31) — mid-IBD field PASS; tip retest via [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |

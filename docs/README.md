@@ -14,7 +14,7 @@ Snapshot (see also [ops.md](ops.md) · [tracking.md](tracking.md)):
 | Console package | `GianlucaMazza.xboxbitcoind` **0.1.5.10020** (WithCore, **v0.1.5**, deployed 2026-08-02)     |
 | Screenshot      | [assets/screenshot-console.png](assets/screenshot-console.png) (capture from an earlier package; refresh optional) |
 | Datadir         | `LocalState\bitcoin`                                                                                               |
-| IBD             | Mainnet ~44% — [tracking.md](tracking.md)                                                                           |
+| IBD             | Mainnet ~45% — [tracking.md](tracking.md)                                                                           |
 | Version labels  | **Core pin** vs **app package** — see [ui.md](ui.md) · `generate-version-header.py`                                |
 
 ---
