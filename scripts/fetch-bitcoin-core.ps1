@@ -113,6 +113,13 @@ if (-not (Test-Path (Join-Path $Dest ".git"))) {
             git remote add origin $repo
             if ($LASTEXITCODE -ne 0) { throw "git remote add origin failed" }
         }
+        # A previously patched tree makes checkout fail ("local changes would be
+        # overwritten"): reset tracked files and drop untracked ones (incl. the
+        # patch marker), but keep build dirs — caches live under them.
+        git reset --hard
+        if ($LASTEXITCODE -ne 0) { throw "git reset --hard failed" }
+        git clean -fdx -e build-uwp -e build-linux-smoke
+        if ($LASTEXITCODE -ne 0) { throw "git clean failed" }
     } finally {
         Pop-Location
     }

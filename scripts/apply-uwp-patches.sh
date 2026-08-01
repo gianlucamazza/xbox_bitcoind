@@ -10,17 +10,28 @@ if [[ ! -d "${SRC}/.git" && ! -f "${SRC}/CMakeLists.txt" ]]; then
 	exit 1
 fi
 
-# Idempotent marker
-MARKER="${SRC}/.xbb-uwp-patches-applied"
-if [[ -f "${MARKER}" ]]; then
-	echo "UWP patches already applied ($(cat "${MARKER}"))"
-	exit 0
-fi
-
 shopt -s nullglob
 patches=("${PATCH_DIR}"/*.patch)
 if [[ ${#patches[@]} -eq 0 ]]; then
 	echo "No patches in ${PATCH_DIR}" >&2
+	exit 1
+fi
+
+# Idempotent marker bound to pin commit + patch-set hash: a marker from a
+# different pin or patch set must not skip application (unpatched Core would
+# configure and fail much later with a misleading error).
+PIN_COMMIT="$(grep -E '^COMMIT=' "${ROOT}/config/bitcoin-core.pin" | cut -d= -f2)"
+PATCHSET_HASH="$(cat "${patches[@]}" | sha256sum | cut -d' ' -f1)"
+EXPECT="${PIN_COMMIT}:${PATCHSET_HASH}"
+MARKER="${SRC}/.xbb-uwp-patches-applied"
+if [[ -f "${MARKER}" ]]; then
+	CURRENT="$(cat "${MARKER}")"
+	if [[ "${CURRENT}" == "${EXPECT}" ]]; then
+		echo "UWP patches already applied (${EXPECT})"
+		exit 0
+	fi
+	echo "Stale patch marker (tree patched for ${CURRENT}, want ${EXPECT})." >&2
+	echo "Re-run scripts/fetch-bitcoin-core.sh to reset the tree, then retry." >&2
 	exit 1
 fi
 
@@ -37,5 +48,5 @@ for p in "${patches[@]}"; do
 	fi
 done
 
-echo "uwp-$(date -Iseconds)" >"${MARKER}"
-echo "OK: applied ${#patches[@]} UWP patches"
+echo "${EXPECT}" >"${MARKER}"
+echo "OK: applied ${#patches[@]} UWP patches (${EXPECT})"

@@ -191,9 +191,13 @@ if ($nuget) {
 }
 
 # --- version stamp ---
+# The stamp is build-only: the original manifest is restored in the finally below,
+# so local builds do not leave a tracked file dirty (cut-release.sh needs a clean tree).
 $ManifestPath = Join-Path $UwpDir "AppxManifest.xml"
+$ManifestOriginal = $null
 if ($BuildRevision -gt 0) {
     $manifestText = Get-Content -Raw $ManifestPath
+    $ManifestOriginal = $manifestText
     $rx = [regex]'(?<!\w)Version="(\d+)\.(\d+)\.(\d+)\.\d+"'
     $newText = $rx.Replace($manifestText, {
             param($m)
@@ -203,6 +207,8 @@ if ($BuildRevision -gt 0) {
     $stamped = ([regex]::Match($newText, '(?<!\w)Version="(\d+\.\d+\.\d+\.\d+)"')).Groups[1].Value
     Write-Host "Version stamped: $stamped"
 }
+
+try {
 
 $coreRoot = if ($CoreBuildDir) { $CoreBuildDir } else { Join-Path $RepoRoot "third_party\bitcoin\build-uwp" }
 $CoreProps = Join-Path $coreRoot "xbb-core-libs.props"
@@ -294,4 +300,11 @@ if ($Msix) {
     }
 } else {
     Write-Warning "No .msix found under uwp\AppPackages — check MSBuild Appx output layout."
+}
+
+} finally {
+    if ($ManifestOriginal) {
+        Set-Content -Path $ManifestPath -Value $ManifestOriginal -NoNewline
+        Write-Host "Restored $ManifestPath (version stamp is build-only)"
+    }
 }

@@ -31,6 +31,11 @@ if [[ ! -d "${DEST}/.git" ]]; then
 	fetch_commit "${DEST}"
 else
 	echo "Updating existing clone at ${DEST}"
+	# A previously patched tree makes checkout fail ("local changes would be
+	# overwritten"): reset tracked files and drop untracked ones (incl. the patch
+	# marker), but keep build dirs — CI caches live under them.
+	git -C "${DEST}" reset --hard
+	git -C "${DEST}" clean -fdx -e build-uwp -e build-linux-smoke
 	fetch_commit "${DEST}"
 fi
 

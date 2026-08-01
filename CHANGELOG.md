@@ -15,11 +15,25 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ### Added
 
+- CI `patch-check` job (Linux, runs on PRs too): pinned Core fetch + full UWP patch-set
+  apply — a PR that breaks a patch or bumps the pin can no longer pass green
+- Releases publish `SHA256SUMS` over the attached assets; release notes embed the
+  version's CHANGELOG section and read the Core tag from `config/bitcoin-core.pin`
+
 - `uwp/json_extract.h` — JSON extractors split out of `rpc_client.cpp`, host-testable via
   new `scripts/test-rpc-client.sh` (wired into ci-linux)
 
 ### Changed
 
+- `build-uwp.yml` no longer duplicates the Core+MSIX jobs: it delegates to
+  `build-product-msix.yml` (single source; fixes the VCLibs `.appx` artifact divergence)
+- Patch marker (`.xbb-uwp-patches-applied`) now records pin commit + patch-set hash and
+  refuses stale trees; `fetch-bitcoin-core.{sh,ps1}` reset/clean a previously patched tree
+  before checkout (safe Core pin bumps)
+- `build-uwp.ps1` restores `AppxManifest.xml` after the build (version stamp is
+  build-only; keeps the tree clean for `cut-release.sh`)
+- CI hardening: `permissions: contents: read` on the workflows that lacked it, pin-lag
+  check authenticated + advisory-only, workflows pass `actionlint` clean
 - RPC: cookie cached and re-read once on HTTP 401; redundant `getconnectioncount` call
   dropped (getnetworkinfo already carries connections); PEERS shows `—` (unknown) instead
   of a red 0 when only `getnetworkinfo` fails

@@ -60,7 +60,6 @@ jobs:
       contents: read
       actions: write
     uses: ./.github/workflows/build-product-msix.yml
-    secrets: inherit
     with:
       force_core: true
       build_revision: ${{ needs.prepare.outputs.build_revision }}
@@ -101,9 +100,11 @@ jobs:
             exit 1
           fi
           VER="${TAG#v}"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "version=${VER}" >> "$GITHUB_OUTPUT"
-          echo "sha=$(git rev-list -n1 "${TAG}")" >> "$GITHUB_OUTPUT"
+          {
+            echo "tag=${TAG}"
+            echo "version=${VER}"
+            echo "sha=$(git rev-list -n1 "${TAG}")"
+          } >> "$GITHUB_OUTPUT"
           echo "Resolved tag=${TAG} version=${VER}"
 
       - name: Download MSIX artifact
@@ -141,6 +142,14 @@ jobs:
           else
             echo "::warning::No VCLibs dependency in artifact — console launch may fail without prior VCLibs install"
           fi
+          # Checksums over the flattened assets (what users actually download)
+          (
+            cd dist/release
+            mapfile -t files < <(find . -maxdepth 1 -type f -printf '%f\n' | sort)
+            sha256sum "${files[@]}" > SHA256SUMS
+          )
+          cat dist/release/SHA256SUMS
+          echo "sums=dist/release/SHA256SUMS" >> "$GITHUB_OUTPUT"
           ls -laR dist/release/
 
       - name: Create or update GitHub Release
@@ -152,19 +161,29 @@ jobs:
           MSIX: ${{ steps.assets.outputs.msix }}
           CER: ${{ steps.assets.outputs.cer }}
           VCLIB: ${{ steps.assets.outputs.vclib }}
+          SUMS: ${{ steps.assets.outputs.sums }}
           PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
         run: |
           set -euo pipefail
           TITLE="v${VER} — xbox_bitcoind (Series S Dev Mode)"
+          CORE_TAG="$(grep -E '^TAG=' config/bitcoin-core.pin | cut -d= -f2)"
+          # Per-version section from CHANGELOG.md (empty → generic note only)
+          CHANGELOG_SECTION="$(awk -v ver="${VER}" '
+            $0 ~ "^## \\[" ver "\\]" {flag=1; next}
+            /^## \[/ {flag=0}
+            flag' CHANGELOG.md || true)"
           NOTES="$(cat <<EOF
           ## xbox_bitcoind ${TAG}
 
           Automated release from commit \`${SHA:0:7}\`.
 
+          ${CHANGELOG_SECTION}
+
           ### Assets
           - \`$(basename "${MSIX}")\` — UWP WithCore package (sideload)
           - \`$(basename "${CER:-xbox_bitcoind-dev.cer}")\` — dev signing certificate (install once)
           - \`$(basename "${VCLIB:-Microsoft.VCLibs.x64.14.00.appx}")\` — VCLibs dependency (required for launch)
+          - \`SHA256SUMS\` — checksums of the assets above (\`sha256sum -c SHA256SUMS\`)
 
           ### Install
           \`\`\`bash
@@ -180,7 +199,7 @@ jobs:
           ### Notes
           - Dev Mode only (not Store / retail)
           - **Do not uninstall** an older package just to downgrade revision — LocalState/datadir is wiped
-          - Package revision (0.1.0.N) is not Bitcoin Core version (v31.1)
+          - Package revision (0.1.0.N) is not Bitcoin Core version (${CORE_TAG})
           - Bitcoin Core pin: see \`config/bitcoin-core.pin\`
           - Docs: [README](https://github.com/${{ github.repository }}#readme) · [ops](https://github.com/${{ github.repository }}/blob/${TAG}/docs/ops.md)
 
@@ -195,6 +214,9 @@ jobs:
           fi
           if [[ -n "${VCLIB:-}" && -f "${VCLIB}" ]]; then
             FILES+=("${VCLIB}")
+          fi
+          if [[ -n "${SUMS:-}" && -f "${SUMS}" ]]; then
+            FILES+=("${SUMS}")
           fi
 
           PRE_ARGS=()

@@ -86,6 +86,8 @@ jobs:
         run: ./scripts/test-rpc-client.sh
 
       - name: Validate bitcoin-core.pin + generated version header
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           test -f config/bitcoin-core.pin
@@ -99,9 +101,13 @@ jobs:
           grep -F "XBB_CORE_COMMIT \"$COMMIT\"" uwp/xbb_version.generated.h
           # Fail if generated header drifted from pin without regenerate/commit.
           git diff --exit-code -- uwp/xbb_version.generated.h
-          LATEST=$(curl -fsSL https://api.github.com/repos/bitcoin/bitcoin/releases/latest | jq -r .tag_name)
-          echo "pin=$PIN latest_release=$LATEST"
-          if [[ "$PIN" != "$LATEST" ]]; then
+          # Pin-lag check is advisory (::warning) — never fail lint on API rate limits.
+          LATEST="$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            https://api.github.com/repos/bitcoin/bitcoin/releases/latest | jq -r .tag_name || true)"
+          echo "pin=$PIN latest_release=${LATEST:-unknown}"
+          if [[ -z "$LATEST" || "$LATEST" == "null" ]]; then
+            echo "::warning::Could not query latest Bitcoin Core release — skipping pin-lag check"
+          elif [[ "$PIN" != "$LATEST" ]]; then
             echo "::warning::Bitcoin Core pin $PIN is behind latest release $LATEST — bump config/bitcoin-core.pin when ready"
           fi
 
