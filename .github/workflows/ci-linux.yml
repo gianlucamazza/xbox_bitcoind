@@ -16,7 +16,8 @@ on:
       - "uwp/xbb_version.generated.h"
       - "config/bitcoin.conf.console"
       - "config/bitcoin-core.pin"
-      - ".github/workflows/ci-linux.yml"
+      - "PSScriptAnalyzerSettings.psd1"
+      - ".github/workflows/**"
   pull_request:
     paths:
       - "scripts/**"
@@ -27,7 +28,8 @@ on:
       - "uwp/xbb_version.generated.h"
       - "config/bitcoin.conf.console"
       - "config/bitcoin-core.pin"
-      - ".github/workflows/ci-linux.yml"
+      - "PSScriptAnalyzerSettings.psd1"
+      - ".github/workflows/**"
   workflow_dispatch:
     inputs:
       run_tests:
@@ -51,7 +53,7 @@ jobs:
       smoke: ${{ steps.set.outputs.smoke }}
     steps:
       - uses: actions/checkout@v7
-      - uses: dorny/paths-filter@v4
+      - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4
         id: filter
         if: github.event_name != 'workflow_dispatch'
         with:
@@ -83,7 +85,23 @@ jobs:
           shellcheck --version
 
       - name: shellcheck
-        run: shellcheck -x -S warning scripts/*.sh
+        run: shellcheck -x -S style scripts/*.sh
+
+      - name: actionlint (workflow lint)
+        run: |
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12 "$RUNNER_TEMP"
+          "$RUNNER_TEMP/actionlint" -color
+
+      - name: PSScriptAnalyzer (PowerShell lint)
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          Invoke-ScriptAnalyzer -Path scripts -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit
+
+      - name: ruff (Python lint)
+        run: |
+          pipx install ruff >/dev/null 2>&1 || pip install --user ruff
+          ruff check scripts/
 
       - name: Pure UI layout unit tests
         run: ./scripts/test-ui-layout.sh

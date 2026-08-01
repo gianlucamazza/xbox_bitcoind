@@ -7,6 +7,7 @@
 # Usage:
 #   ./scripts/cut-release.sh 0.2.0
 #   ./scripts/cut-release.sh 0.2.0 --dry-run
+#   ./scripts/cut-release.sh 0.2.0 --force     # skip the CHANGELOG section gate
 #   ./scripts/cut-release.sh 0.2.0-rc.1
 #
 # Prerequisites: clean main (or current branch), synced with origin.
@@ -17,10 +18,12 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT}"
 
 DRY=0
+FORCE=0
 VERSION=""
 for arg in "$@"; do
 	case "$arg" in
 	--dry-run) DRY=1 ;;
+	--force) FORCE=1 ;;
 	-h | --help)
 		sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
 		exit 0
@@ -98,11 +101,15 @@ if [[ "${DRY}" -eq 1 ]]; then
 	exit 0
 fi
 
-# Remind to move CHANGELOG Unreleased → version section before tagging.
-if [[ -f CHANGELOG.md ]] && grep -q '## \[Unreleased\]' CHANGELOG.md; then
-	if ! grep -q "## \[${VERSION}\]" CHANGELOG.md; then
-		echo "Note: CHANGELOG.md has no '## [${VERSION}]' section yet."
-		echo "      Prefer documenting the release in CHANGELOG before tagging."
+# CHANGELOG gate: the release notes embed the '## [X.Y.Z]' section — a tag
+# without it ships an undocumented release. Blocking; override with --force.
+if [[ -f CHANGELOG.md ]] && ! grep -q "## \[${VERSION}\]" CHANGELOG.md; then
+	if [[ "${FORCE}" -eq 1 ]]; then
+		echo "Warning: CHANGELOG.md has no '## [${VERSION}]' section (--force given, continuing)." >&2
+	else
+		echo "Error: CHANGELOG.md has no '## [${VERSION}]' section." >&2
+		echo "  Move the Unreleased notes under '## [${VERSION}]' first, or pass --force." >&2
+		exit 1
 	fi
 fi
 

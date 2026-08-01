@@ -57,6 +57,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+      - name: patches README names the current pin
+        run: |
+          PIN=$(grep -E '^TAG=' config/bitcoin-core.pin | cut -d= -f2)
+          grep -Fq "$PIN" patches/uwp/README.md || {
+            echo "patches/uwp/README.md does not mention pin $PIN — update the header" >&2
+            exit 1
+          }
       - name: Fetch pinned Bitcoin Core
         run: ./scripts/fetch-bitcoin-core.sh
       - name: Apply UWP patch set

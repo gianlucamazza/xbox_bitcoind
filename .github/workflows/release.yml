@@ -39,10 +39,15 @@ jobs:
     timeout-minutes: 5
     outputs:
       build_revision: ${{ steps.rev.outputs.rev }}
+      base_version: ${{ steps.rev.outputs.base_version }}
     steps:
       - id: rev
         # UWP revision is uint16 (0–65535). Offset so release packages sort above
         # day-to-day build-uwp run_numbers (e.g. 75) and never "upgrade" to a lower rev.
+        # MSIX MAJOR.MINOR.PATCH is derived from the tag so the installed package
+        # version maps back to the release (vX.Y.Z → X.Y.Z.rev).
+        env:
+          RAW_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
           rev=$((10000 + ${{ github.run_number }}))
@@ -50,8 +55,17 @@ jobs:
             echo "build_revision ${rev} exceeds uint16" >&2
             exit 1
           fi
-          echo "rev=${rev}" >> "$GITHUB_OUTPUT"
-          echo "build_revision=${rev} (run_number=${{ github.run_number }})"
+          TAG="${RAW_TAG#refs/tags/}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-].*)?$ ]]; then
+            echo "Tag must look like v0.1.0 (got: ${TAG})" >&2
+            exit 1
+          fi
+          BASE="$(echo "${TAG#v}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')"
+          {
+            echo "rev=${rev}"
+            echo "base_version=${BASE}"
+          } >> "$GITHUB_OUTPUT"
+          echo "build_revision=${rev} base_version=${BASE} (run_number=${{ github.run_number }})"
 
   # Dedicated product pipeline (no PR gates / no path filters).
   build:
@@ -63,6 +77,7 @@ jobs:
     with:
       force_core: true
       build_revision: ${{ needs.prepare.outputs.build_revision }}
+      base_version: ${{ needs.prepare.outputs.base_version }}
 
   publish:
     needs: [build]
@@ -70,6 +85,8 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write
+      id-token: write     # attest-build-provenance
+      attestations: write # attest-build-provenance
     steps:
       - uses: actions/checkout@v7
         with:
@@ -151,6 +168,13 @@ jobs:
           cat dist/release/SHA256SUMS
           echo "sums=dist/release/SHA256SUMS" >> "$GITHUB_OUTPUT"
           ls -laR dist/release/
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: |
+            ${{ steps.assets.outputs.msix }}
+            dist/release/SHA256SUMS
 
       - name: Create or update GitHub Release
         env:

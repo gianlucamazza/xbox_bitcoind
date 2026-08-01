@@ -83,6 +83,15 @@ xbox_curl_config() {
 	_p="${XBOX_PASS//\\/\\\\}"
 	_p="${_p//\"/\\\"}"
 	printf 'user = "%s:%s"\n' "${_u}" "${_p}" >"${_cfg}"
+	# Optional TLS pin for the self-signed Device Portal cert. Scripts still pass
+	# -k (chain is untrusted by design) but curl honors the pin alongside it, so
+	# a LAN MITM can no longer swap the endpoint. Get the value with:
+	#   openssl s_client -connect $XBOX_IP:$XBOX_PORT </dev/null 2>/dev/null \
+	#     | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER \
+	#     | openssl dgst -sha256 -binary | base64
+	if [[ -n "${XBOX_PORTAL_PUBKEY:-}" ]]; then
+		printf 'pinnedpubkey = "sha256//%s"\n' "${XBOX_PORTAL_PUBKEY#sha256//}" >>"${_cfg}"
+	fi
 	printf '%s\n' "${_cfg}"
 }
 

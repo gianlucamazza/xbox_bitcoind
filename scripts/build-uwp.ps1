@@ -32,6 +32,9 @@
   .\scripts\build-uwp.ps1 -CoreOnly
   .\scripts\build-uwp.ps1 -WithCore -SkipCoreBuild
 #>
+# BaseVersion is consumed inside the version-stamp regex scriptblock (closure),
+# which PSScriptAnalyzer's unused-parameter scan cannot see.
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'BaseVersion')]
 param(
     [ValidateSet("Release", "Debug")]
     [string] $Configuration = "Release",
@@ -44,7 +47,11 @@ param(
     [switch] $CoreOnly = $false,
     [switch] $SkipCoreBuild = $false,
     [switch] $ForceCore = $false,
-    [string] $CoreBuildDir = ""
+    [string] $CoreBuildDir = "",
+    # Optional MAJOR.MINOR.PATCH for the MSIX identity (release.yml derives it from
+    # the git tag so the installed package version maps back to the release).
+    [ValidatePattern('^$|^\d+\.\d+\.\d+$')]
+    [string] $BaseVersion = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -110,8 +117,8 @@ if (-not $cert) {
         -FriendlyName "xbox_bitcoind test cert" `
         -CertStoreLocation "Cert:\CurrentUser\My" `
         -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
-    $pwd = ConvertTo-SecureString -String $CertPwd -Force -AsPlainText
-    Export-PfxCertificate -Cert "Cert:\CurrentUser\My\$($cert.Thumbprint)" -FilePath $PfxPath -Password $pwd | Out-Null
+    $pfxPwd = ConvertTo-SecureString -String $CertPwd -Force -AsPlainText
+    Export-PfxCertificate -Cert "Cert:\CurrentUser\My\$($cert.Thumbprint)" -FilePath $PfxPath -Password $pfxPwd | Out-Null
     Export-Certificate -Cert "Cert:\CurrentUser\My\$($cert.Thumbprint)" -FilePath $CerPath | Out-Null
 }
 
@@ -201,7 +208,11 @@ if ($BuildRevision -gt 0) {
     $rx = [regex]'(?<!\w)Version="(\d+)\.(\d+)\.(\d+)\.\d+"'
     $newText = $rx.Replace($manifestText, {
             param($m)
-            'Version="{0}.{1}.{2}.{3}"' -f $m.Groups[1].Value, $m.Groups[2].Value, $m.Groups[3].Value, $BuildRevision
+            if ($BaseVersion) {
+                'Version="{0}.{1}"' -f $BaseVersion, $BuildRevision
+            } else {
+                'Version="{0}.{1}.{2}.{3}"' -f $m.Groups[1].Value, $m.Groups[2].Value, $m.Groups[3].Value, $BuildRevision
+            }
         }, 1)
     Set-Content -Path $ManifestPath -Value $newText -NoNewline
     $stamped = ([regex]::Match($newText, '(?<!\w)Version="(\d+\.\d+\.\d+\.\d+)"')).Groups[1].Value

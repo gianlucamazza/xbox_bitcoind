@@ -28,7 +28,7 @@ function Read-Pin {
     return $map
 }
 
-function Fetch-PinnedCommit {
+function Sync-PinnedCommit {
     param(
         [Parameter(Mandatory = $true)][string] $Dir,
         [Parameter(Mandatory = $true)][string] $Commit
@@ -86,7 +86,7 @@ if (-not (Test-Path (Join-Path $Dest ".git"))) {
         if ($LASTEXITCODE -ne 0) { throw "git init failed" }
         git -C $tmp remote add origin $repo
         if ($LASTEXITCODE -ne 0) { throw "git remote add failed" }
-        Fetch-PinnedCommit -Dir $tmp -Commit $commit
+        Sync-PinnedCommit -Dir $tmp -Commit $commit
         Get-ChildItem $tmp -Force | ForEach-Object {
             $target = Join-Path $Dest $_.Name
             if (-not (Test-Path $target)) {
@@ -101,7 +101,7 @@ if (-not (Test-Path (Join-Path $Dest ".git"))) {
         if ($LASTEXITCODE -ne 0) { throw "git init failed" }
         git -C $Dest remote add origin $repo
         if ($LASTEXITCODE -ne 0) { throw "git remote add failed" }
-        Fetch-PinnedCommit -Dir $Dest -Commit $commit
+        Sync-PinnedCommit -Dir $Dest -Commit $commit
     }
 } else {
     Write-Host "Updating existing clone at $Dest"
@@ -123,7 +123,7 @@ if (-not (Test-Path (Join-Path $Dest ".git"))) {
     } finally {
         Pop-Location
     }
-    Fetch-PinnedCommit -Dir $Dest -Commit $commit
+    Sync-PinnedCommit -Dir $Dest -Commit $commit
 }
 
 Push-Location $Dest

@@ -57,8 +57,9 @@ AppContainer sandbox is the effective isolation boundary on console.
 - The ops scripts pass the Device Portal credential to `curl` via a private temp
   config file (`-K`), not argv — if you script the portal yourself, do the same:
   `curl -u user:pass` exposes the password in `/proc/*/cmdline` to any local user
-- Device Portal uses a self-signed certificate, so scripts run `curl -k`; treat the
-  LAN as trusted or tunnel the portal over SSH (see `docs/device-portal.md`)
+- Device Portal uses a self-signed certificate, so scripts run `curl -k`; set
+  `XBOX_PORTAL_PUBKEY` in `xbox-env` to pin the portal key (`--pinnedpubkey`, honored
+  even with `-k`), or tunnel the portal over SSH (see `docs/device-portal.md`)
 - Prefer `listen=0` and loopback RPC (project defaults)
 - Use soft stop (`deploy.sh stop-app`); avoid shipping production keys on Dev Mode
 - Treat the console as a trusted LAN device

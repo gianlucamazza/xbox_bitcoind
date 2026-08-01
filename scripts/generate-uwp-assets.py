@@ -51,7 +51,7 @@ def load_core_icon() -> Image.Image:
     print(
         "error: Bitcoin Core icon not found. Fetch pin first:\n"
         "  ./scripts/fetch-bitcoin-core.sh\n"
-        f"looked in:\n  " + "\n  ".join(str(p.relative_to(ROOT)) for p in CORE_CANDIDATES),
+        "looked in:\n  " + "\n  ".join(str(p.relative_to(ROOT)) for p in CORE_CANDIDATES),
         file=sys.stderr,
     )
     sys.exit(1)

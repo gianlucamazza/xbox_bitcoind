@@ -1,5 +1,6 @@
---- a/src/leveldb/util/env_windows.cc	2026-07-31 10:38:12.215470622 +0200
-+++ b/src/leveldb/util/env_windows.cc	2026-07-31 10:38:12.235321129 +0200
+diff --git a/src/leveldb/util/env_windows.cc b/src/leveldb/util/env_windows.cc
+--- a/src/leveldb/util/env_windows.cc
++++ b/src/leveldb/util/env_windows.cc
 @@ -68,6 +68,13 @@
  
  // Can be set by by EnvWindowsTestHelper::SetReadOnlyMMapLimit().

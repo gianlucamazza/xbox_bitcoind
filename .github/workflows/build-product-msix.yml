@@ -15,6 +15,10 @@ on:
         description: "MSIX version 4th component (0 → caller run_number)"
         type: string
         default: "0"
+      base_version:
+        description: "MSIX MAJOR.MINOR.PATCH override (empty → manifest base)"
+        type: string
+        default: ""
   workflow_dispatch:
     inputs:
       force_core:
@@ -25,6 +29,10 @@ on:
         description: "MSIX version 4th component (0 → this run_number)"
         type: string
         default: "0"
+      base_version:
+        description: "MSIX MAJOR.MINOR.PATCH override (empty → manifest base)"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -191,7 +199,14 @@ jobs:
       - name: Package MSIX (SkipCoreBuild)
         shell: pwsh
         run: |
-          .\scripts\build-uwp.ps1 -Configuration Release -BuildRevision ${{ steps.rev.outputs.build_revision }} -WithCore -SkipCoreBuild
+          $buildArgs = @{
+            Configuration = "Release"
+            BuildRevision = ${{ steps.rev.outputs.build_revision }}
+            WithCore = $true
+            SkipCoreBuild = $true
+          }
+          if ("${{ inputs.base_version }}") { $buildArgs["BaseVersion"] = "${{ inputs.base_version }}" }
+          .\scripts\build-uwp.ps1 @buildArgs
 
       - uses: actions/upload-artifact@v7
         with:

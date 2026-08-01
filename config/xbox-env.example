@@ -20,6 +20,10 @@ export XBOX_PORT=11443
 export XBOX_USER=Xbox
 export XBOX_PASS=change-me
 
+# Optional: pin the Device Portal self-signed cert public key (base64 SHA-256).
+# See scripts/env.sh xbox_curl_config for the openssl one-liner to compute it.
+# export XBOX_PORTAL_PUBKEY=...
+
 # Optional (usually leave unset; export in shell when needed):
 # export XBOX_IP_OVERRIDE=127.0.0.1
 # export XBOX_PORT_OVERRIDE=11443

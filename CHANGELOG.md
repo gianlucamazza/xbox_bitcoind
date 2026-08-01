@@ -13,8 +13,23 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ## [Unreleased]
 
+### Added
+
+- CI lint coverage: `actionlint` (workflows), `PSScriptAnalyzer` (all `.ps1`, settings in
+  `PSScriptAnalyzerSettings.psd1`), `ruff` (Python), `shellcheck` raised to `-S style`
+- Release provenance attestation (`actions/attest-build-provenance`) on the MSIX +
+  `SHA256SUMS`; NuGet (`uwp/packages.config`) added to Dependabot
+
 ### Changed
 
+- **MSIX version now derives from the git tag**: `vX.Y.Z` → package `X.Y.Z.rev`
+  (was: base fixed at `0.1.0`, release not recoverable from the installed version)
+- `cut-release.sh`: missing `## [X.Y.Z]` CHANGELOG section now blocks the tag
+  (`--force` to override)
+- Patches 0009/0010 converted to `git diff` format (no local timestamps);
+  `patch-check` also asserts `patches/uwp/README.md` names the current pin
+- `dorny/paths-filter` pinned by commit SHA; optional Device Portal TLS key pinning
+  via `XBOX_PORTAL_PUBKEY` (honored alongside `-k`)
 - Probes: heavy checks (16 MiB write probe, outbound TCP to a third-party host) run once
   and are cached in `probe-results.txt` — no more flash wear / network connect on every
   launch; probe chunk files are always deleted afterwards; datadir seeding still runs at
