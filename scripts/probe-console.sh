@@ -8,7 +8,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/env.sh"
 
 BASE_URL="https://${XBOX_IP}:${XBOX_PORT}"
-CURL_AUTH=(--basic -u "${XBOX_USER}:${XBOX_PASS}" -k -sS --connect-timeout 5 --max-time 20)
+CURL_CFG="$(xbox_curl_config)"
+trap 'rm -f "${CURL_CFG}"' EXIT
+CURL_AUTH=(--basic -K "${CURL_CFG}" -k -sS --connect-timeout 5 --max-time 20)
 
 echo "=== xbox_bitcoind console probe ==="
 echo "env:     ${XBOX_ENV_SOURCE}"

@@ -70,6 +70,22 @@ export XBOX_PORT="${XBOX_PORT:-11443}"
 export XBOX_ENV_SOURCE="${_xbox_env_found}"
 unset _xbox_ip_override _xbox_port_override
 
+# Curl config file carrying the Device Portal credential, so the password never
+# lands in argv (/proc/*/cmdline is world-readable for the whole request).
+# Prints the file path; the caller owns cleanup: trap 'rm -f "${CURL_CFG}"' EXIT.
+xbox_curl_config() {
+	local _cfg _u _p
+	_cfg="$(mktemp)"
+	chmod 600 "${_cfg}"
+	# curl config quoting: backslashes and double quotes must be escaped.
+	_u="${XBOX_USER//\\/\\\\}"
+	_u="${_u//\"/\\\"}"
+	_p="${XBOX_PASS//\\/\\\\}"
+	_p="${_p//\"/\\\"}"
+	printf 'user = "%s:%s"\n' "${_u}" "${_p}" >"${_cfg}"
+	printf '%s\n' "${_cfg}"
+}
+
 # Package identity for this project (WDP helpers).
 # AppX Identity Name: only [-.A-Za-z0-9] (no underscore)
 export XBOX_BITCOIND_APP_ID="${XBOX_BITCOIND_APP_ID:-GianlucaMazza.xboxbitcoind}"

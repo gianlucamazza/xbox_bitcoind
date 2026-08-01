@@ -12,10 +12,10 @@
 # Loaded by scripts/env.sh (also sets XBOX_BITCOIND_* package identity).
 
 # LAN IP of the Series S (Device Portal).
-# Off-LAN via Odroid (standard OpenSSH):
-#   ssh -N -L 127.0.0.1:11443:192.168.1.44:11443 odroid-ts
+# Off-LAN via a jump host (standard OpenSSH):
+#   ssh -N -L 127.0.0.1:11443:<console-ip>:11443 <jump-host>
 #   export XBOX_IP_OVERRIDE=127.0.0.1
-export XBOX_IP=192.168.1.44
+export XBOX_IP=192.168.1.x
 export XBOX_PORT=11443
 export XBOX_USER=Xbox
 export XBOX_PASS=change-me

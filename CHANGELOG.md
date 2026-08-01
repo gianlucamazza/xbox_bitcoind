@@ -23,6 +23,15 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 - `uwp/json_extract.h` — JSON extractors split out of `rpc_client.cpp`, host-testable via
   new `scripts/test-rpc-client.sh` (wired into ci-linux)
 
+### Security
+
+- Device Portal password no longer passed on the `curl` command line (visible in
+  `/proc/*/cmdline`): ops scripts use a private temp config via `curl -K`
+  (`xbox_curl_config` helper in `scripts/env.sh`)
+- `deploy.sh` uninstall no longer writes to a fixed world-writable `/tmp` path
+- `SECURITY.md` documents the cookie-auth RPC model and the argv-exposure pitfall;
+  `config/xbox-env.example` ships placeholders instead of a real LAN IP
+
 ### Changed
 
 - `build-uwp.yml` no longer duplicates the Core+MSIX jobs: it delegates to

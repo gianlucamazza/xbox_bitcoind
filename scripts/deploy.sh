@@ -38,7 +38,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/env.sh"
 
 BASE_URL="https://${XBOX_IP}:${XBOX_PORT}"
-CURL_AUTH=(--basic -u "${XBOX_USER}:${XBOX_PASS}" -k -sS)
+CURL_CFG="$(xbox_curl_config)"
+trap 'rm -f "${CURL_CFG}"' EXIT
+CURL_AUTH=(--basic -K "${CURL_CFG}" -k -sS)
 APP_ID="${XBOX_BITCOIND_APP_ID}"
 APP_ENTRY="${XBOX_BITCOIND_APP_ENTRY}"
 LOG_NAME="${XBOX_BITCOIND_LOG}"
@@ -301,13 +303,13 @@ stop_app() {
 	local max_wait="${XBB_SOFT_STOP_MAX_WAIT:-180}"
 	local min_grace="${XBB_SOFT_STOP_MIN_GRACE:-8}"
 	local require_exit="${XBB_SOFT_STOP_REQUIRE_EXIT:-0}"
-	if ! [[ "${max_wait}" =~ ^[0-9]+$ ]] || (( max_wait < 30 )); then
+	if ! [[ "${max_wait}" =~ ^[0-9]+$ ]] || ((max_wait < 30)); then
 		max_wait=180
 	fi
-	if ! [[ "${min_grace}" =~ ^[0-9]+$ ]] || (( min_grace < 0 )); then
+	if ! [[ "${min_grace}" =~ ^[0-9]+$ ]] || ((min_grace < 0)); then
 		min_grace=8
 	fi
-	if (( min_grace > max_wait )); then
+	if ((min_grace > max_wait)); then
 		min_grace=$max_wait
 	fi
 	echo "Soft-stop ${pfn} (suspend → wait up to ${max_wait}s; grace ${min_grace}s; require_exit=${require_exit})…"
@@ -319,7 +321,7 @@ stop_app() {
 	local log_clean=0
 	local active=1
 	local listed=1
-	while (( waited < max_wait )); do
+	while ((waited < max_wait)); do
 		if process_actively_running; then
 			active=1
 		else
@@ -330,34 +332,34 @@ stop_app() {
 		else
 			listed=0
 		fi
-		if (( waited > 0 && waited % log_check_every == 0 )); then
+		if ((waited > 0 && waited % log_check_every == 0)); then
 			if soft_stop_log_clean "${pfn}"; then
 				log_clean=1
 			fi
 		fi
 
 		# Strong: process fully gone.
-		if (( listed == 0 )); then
+		if ((listed == 0)); then
 			echo "Clean soft stop after ${waited}s (process gone)."
 			echo "Stopped ${pfn}."
 			return 0
 		fi
 		# Strong: durable stop markers + not actively running (ignore old log alone).
-		if (( log_clean == 1 && active == 0 )); then
+		if ((log_clean == 1 && active == 0)); then
 			echo "Clean soft stop after ${waited}s (log markers + not actively running)."
 			echo "Stopped ${pfn}."
 			return 0
 		fi
 		# Weak: !IsRunning after grace — residual suspended shell is OK (do not DELETE).
 		# Grace avoids racing OS IsRunning=false before OnSuspending finishes flush.
-		if (( active == 0 && require_exit == 0 && waited >= min_grace )); then
+		if ((active == 0 && require_exit == 0 && waited >= min_grace)); then
 			echo "Clean soft stop after ${waited}s (not actively running; residual shell OK, no DELETE)."
 			echo "Stopped ${pfn}."
 			return 0
 		fi
 
-		if (( waited > 0 && waited % re_suspend_every == 0 )); then
-			if (( active == 1 )); then
+		if ((waited > 0 && waited % re_suspend_every == 0)); then
+			if ((active == 1)); then
 				echo "Still active at ${waited}s — re-posting suspend…"
 				suspend_package "${pkg_b64}"
 			else
@@ -373,7 +375,7 @@ stop_app() {
 		log_clean=1
 	fi
 	if ! process_actively_running; then
-		if (( log_clean == 1 )); then
+		if ((log_clean == 1)); then
 			echo "Clean soft stop after ${max_wait}s (log markers + not active at deadline; no DELETE)."
 		else
 			echo "Clean soft stop after ${max_wait}s (not actively running at deadline; no DELETE)."
@@ -428,19 +430,22 @@ uninstall_package() {
 	# WDP: DELETE package by full name (URL-encoded).
 	local enc
 	enc=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "${pfn}")
-	local http
+	local http body
+	body="$(mktemp)"
 	http=$(curl "${CURL_AUTH[@]}" \
 		-H "X-CSRF-Token:${CSRF_TOKEN}" \
 		-H "Content-Length: 0" \
 		-X DELETE \
 		-d "" \
-		-o /tmp/xbb-uninstall-body.txt \
+		-o "${body}" \
 		-w "%{http_code}" \
 		"${BASE_URL}/api/app/packagemanager/package?package=${enc}" 2>/dev/null || echo "000")
 	if [[ "${http}" != "200" && "${http}" != "204" ]]; then
-		echo "Error: uninstall ${pfn} HTTP ${http}: $(cat /tmp/xbb-uninstall-body.txt 2>/dev/null || true)" >&2
+		echo "Error: uninstall ${pfn} HTTP ${http}: $(cat "${body}" 2>/dev/null || true)" >&2
+		rm -f "${body}"
 		return 1
 	fi
+	rm -f "${body}"
 	echo "Uninstalled ${pfn} (HTTP ${http})."
 }
 
@@ -463,7 +468,7 @@ package_gc() {
 			;;
 		esac
 	done
-	if ! [[ "${keep}" =~ ^[0-9]+$ ]] || (( keep < 1 )); then
+	if ! [[ "${keep}" =~ ^[0-9]+$ ]] || ((keep < 1)); then
 		echo "Error: --keep must be integer >= 1" >&2
 		return 1
 	fi
@@ -475,18 +480,18 @@ package_gc() {
 	echo "Installed (${#pkgs[@]}), newest first:"
 	local i=0
 	for p in "${pkgs[@]}"; do
-		if (( i < keep )); then
+		if ((i < keep)); then
 			echo "  KEEP  ${p}"
 		else
 			echo "  DROP  ${p}"
 		fi
 		i=$((i + 1))
 	done
-	if (( ${#pkgs[@]} <= keep )); then
+	if ((${#pkgs[@]} <= keep)); then
 		echo "Nothing to remove (keep=${keep})."
 		return 0
 	fi
-	if (( yes != 1 )); then
+	if ((yes != 1)); then
 		echo "Re-run with --yes to uninstall DROP entries."
 		return 0
 	fi
@@ -497,7 +502,7 @@ package_gc() {
 	fi
 	i=0
 	for p in "${pkgs[@]}"; do
-		if (( i >= keep )); then
+		if ((i >= keep)); then
 			uninstall_package "${p}" || true
 		fi
 		i=$((i + 1))

@@ -40,7 +40,8 @@ done
 
 # Collect checks as JSON lines then summarize in Python.
 TMP="$(mktemp)"
-trap 'rm -f "${TMP}"' EXIT
+CURL_CFG="$(xbox_curl_config)"
+trap 'rm -f "${TMP}" "${CURL_CFG}"' EXIT
 
 add() {
 	# add level name detail  (level: ok|warn|crit)
@@ -49,7 +50,7 @@ add() {
 }
 
 # --- portal ---
-if ! curl --basic -u "${XBOX_USER}:${XBOX_PASS}" -k -sS --connect-timeout 5 --max-time 15 \
+if ! curl --basic -K "${CURL_CFG}" -k -sS --connect-timeout 5 --max-time 15 \
 	"https://${XBOX_IP}:${XBOX_PORT}/api/os/info" >/dev/null 2>&1; then
 	add crit portal "unreachable ${XBOX_IP}:${XBOX_PORT}"
 else

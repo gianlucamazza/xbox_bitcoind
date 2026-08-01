@@ -14,7 +14,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/env.sh"
 
 BASE_URL="https://${XBOX_IP}:${XBOX_PORT}"
-CURL_AUTH=(--basic -u "${XBOX_USER}:${XBOX_PASS}" -k -sS --connect-timeout 8 --max-time 120)
+CURL_CFG="$(xbox_curl_config)"
+trap 'rm -f "${CURL_CFG}"' EXIT
+CURL_AUTH=(--basic -K "${CURL_CFG}" -k -sS --connect-timeout 8 --max-time 120)
 APP_ID="${XBOX_BITCOIND_APP_ID}"
 
 JSON=0
@@ -23,7 +25,10 @@ INTERVAL=3600
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
-	--json) JSON=1; shift ;;
+	--json)
+		JSON=1
+		shift
+		;;
 	--loop)
 		LOOP=1
 		INTERVAL="${2:-3600}"
