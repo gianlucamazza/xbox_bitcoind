@@ -19,6 +19,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
   `PSScriptAnalyzerSettings.psd1`), `ruff` (Python), `shellcheck` raised to `-S style`
 - Release provenance attestation (`actions/attest-build-provenance`) on the MSIX +
   `SHA256SUMS`; NuGet (`uwp/packages.config`) added to Dependabot
+- Repo hygiene: PR template (CONTRIBUTING checklist), `CODE_OF_CONDUCT.md`,
+  `.editorconfig`, `.pre-commit-config.yaml` (mirrors the ci-linux lint wall)
 
 ### Changed
 

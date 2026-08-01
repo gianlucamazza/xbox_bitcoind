@@ -1,0 +1,28 @@
+# EditorConfig (https://editorconfig.org) — matches existing conventions:
+# shell uses tabs, C++/PowerShell/Python 4 spaces, YAML/JSON/MD 2 spaces.
+# EOL policy lives in .gitattributes (LF forced for sh/ps1/patch).
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.sh]
+indent_style = tab
+
+[*.{cpp,h,ps1,py}]
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml,json,md}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+# Markdown: two trailing spaces are a hard line break
+trim_trailing_whitespace = false
+
+[*.{vcxproj,sln,xml,appxmanifest}]
+indent_style = space
+indent_size = 2

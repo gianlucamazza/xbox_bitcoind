@@ -1,0 +1,27 @@
+# Local hooks only (no network deps): mirrors the ci-linux lint wall.
+# Install: pipx install pre-commit && pre-commit install
+repos:
+  - repo: local
+    hooks:
+      - id: shellcheck
+        name: shellcheck -x -S style
+        language: system
+        entry: shellcheck -x -S style
+        files: ^scripts/.*\.sh$
+      - id: ruff
+        name: ruff check
+        language: system
+        entry: ruff check
+        files: \.py$
+      - id: actionlint
+        name: actionlint
+        language: system
+        entry: actionlint
+        files: ^\.github/workflows/.*\.ya?ml$
+        pass_filenames: false
+      - id: conf-sync
+        name: embedded conf fallback sync
+        language: system
+        entry: ./scripts/check-conf-sync.sh
+        files: ^(config/bitcoin\.conf\.console|uwp/node_host\.cpp)$
+        pass_filenames: false

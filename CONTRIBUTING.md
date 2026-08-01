@@ -53,4 +53,5 @@ When an ops gate moves, update [docs/tracking.md](docs/tracking.md) in the same 
 
 ## Code of conduct
 
-Be respectful. This is an unsupported hobby/dev-mode project; treat console and network use responsibly.
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — short version: be respectful; treat
+console and network use responsibly.
