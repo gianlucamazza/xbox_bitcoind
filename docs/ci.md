@@ -5,13 +5,13 @@ deploy to the Xbox (use `scripts/deploy.sh` locally).
 
 ## Workflows (separated, no intentional overlap)
 
-| Workflow                                                                | Runner(s)                                           | What it proves                                                                                                               | What it does **not** do |
-| ----------------------------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| [`ci-linux.yml`](../.github/workflows/ci-linux.yml)                     | `ubuntu-24.04`                                      | shellcheck, UI layout + JSON extractor tests, conf-fallback sync, pin + `xbb_version.generated.h` sync, optional Linux smoke | MSVC, UWP, Xbox         |
-| [`ci-msvc-baseline.yml`](../.github/workflows/ci-msvc-baseline.yml)     | `windows-2025-vs2026`                               | Desktop MSVC pin (unpatched)                                                                                                 | UWP / MSIX              |
-| [`build-uwp.yml`](../.github/workflows/build-uwp.yml)                   | patch-check `ubuntu-24.04`; scaffold `windows-2022` | Patch set applies on the pin (PRs too), scaffold MSIX; delegates product to `build-product-msix`                             | Desktop MSVC            |
-| [`build-product-msix.yml`](../.github/workflows/build-product-msix.yml) | `windows-2025-vs2026`                               | Core UWP libs + WithCore MSIX (single source; called by `build-uwp` and `release`)                                           | PR gates                |
-| [`release.yml`](../.github/workflows/release.yml)                       | calls `build-product-msix` + `ubuntu-24.04` publish | Tag `v*` → MSIX + `SHA256SUMS` + GitHub Release                                                                              | Xbox deploy             |
+| Workflow                                                                | Runner(s)                                           | What it proves                                                                                                                                                                          | What it does **not** do |
+| ----------------------------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| [`ci-linux.yml`](../.github/workflows/ci-linux.yml)                     | `ubuntu-24.04`                                      | lint wall (shellcheck `-S style`, actionlint, PSScriptAnalyzer, ruff), UI layout + JSON extractor tests, conf-fallback sync, pin + `xbb_version.generated.h` sync, optional Linux smoke | MSVC, UWP, Xbox         |
+| [`ci-msvc-baseline.yml`](../.github/workflows/ci-msvc-baseline.yml)     | `windows-2025-vs2026`                               | Desktop MSVC pin (unpatched)                                                                                                                                                            | UWP / MSIX              |
+| [`build-uwp.yml`](../.github/workflows/build-uwp.yml)                   | patch-check `ubuntu-24.04`; scaffold `windows-2022` | Patch set applies on the pin (PRs too), scaffold MSIX; delegates product to `build-product-msix`                                                                                        | Desktop MSVC            |
+| [`build-product-msix.yml`](../.github/workflows/build-product-msix.yml) | `windows-2025-vs2026`                               | Core UWP libs + WithCore MSIX (single source; called by `build-uwp` and `release`)                                                                                                      | PR gates                |
+| [`release.yml`](../.github/workflows/release.yml)                       | calls `build-product-msix` + `ubuntu-24.04` publish | Tag `v*` → MSIX + `SHA256SUMS` + GitHub Release                                                                                                                                         | Xbox deploy             |
 
 **Desktop MSVC ≠ UWP Core:** same pin, different targets (`x64-windows` vs
 WindowsStore `x64-uwp` + patches). They only co-fire on pin / shared fetch changes.
@@ -50,18 +50,18 @@ when the pin/patches cache is warm → package stage dominates wall time.
 
 | Workflow           | Starts when                                                                                                    |
 | ------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `ci-linux`         | `scripts/**`, pin, `config/bitcoin.conf.console`, tested `uwp/` headers + conf-fallback sources, workflow file |
+| `ci-linux`         | `scripts/**`, pin, `config/bitcoin.conf.console`, tested `uwp/` headers + conf-fallback sources, version-SSOT docs (README, CHANGELOG, tracking/console/plan snapshots), workflow file |
 | `ci-msvc-baseline` | pin, MSVC fetch/build scripts, workflow file                                                                   |
 | `build-uwp`        | `uwp/**`, pin, `patches/**`, UWP build/fetch/apply scripts, both product workflow files                        |
 
-**No CI:** `docs/**`, `README.md`, `LICENSE`, `config/xbox-env.example`.
+**No CI:** most `docs/**`, `LICENSE`, `config/xbox-env.example` — except the version-SSOT docs above, which run the (fast) lint job.
 
 ### Within `ci-linux`
 
-| Job     | When                                                     |
-| ------- | -------------------------------------------------------- |
-| `lint`  | every workflow start                                     |
-| `smoke` | pin / fetch / build-linux-smoke / workflow (or dispatch) |
+| Job     | When                                                                                                                                                                                    |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lint`  | every workflow start — shellcheck `-S style`, actionlint (pinned), PSScriptAnalyzer (`PSScriptAnalyzerSettings.psd1`), ruff (`.ruff.toml`), host-side unit tests, conf-sync, pin checks |
+| `smoke` | pin / fetch / build-linux-smoke / workflow (or dispatch)                                                                                                                                |
 
 Smoke uses **Ninja + ccache** when available; caches build dir + `.ccache-linux-smoke`.
 
@@ -71,20 +71,22 @@ Caches full `build-msvc-baseline` tree + vcpkg archives; `cmake --build --parall
 
 ## Action versions (latest majors as of 2026-07-31)
 
-| Action                      | Pin  | Latest tag |
-| --------------------------- | ---- | ---------- |
-| `actions/checkout`          | `v7` | `v7.0.1`   |
-| `actions/upload-artifact`   | `v7` | `v7.0.1`   |
-| `actions/download-artifact` | `v8` | `v8.0.1`   |
-| `actions/cache`             | `v6` | `v6.1.0`   |
-| `actions/cache/restore`     | `v6` | (same)     |
-| `actions/cache/save`        | `v6` | (same)     |
-| `dorny/paths-filter`        | `v4` | `v4.0.2`   |
-| `microsoft/setup-msbuild`   | `v3` | `v3.0.0`   |
-| `nuget/setup-nuget`         | `v4` | `v4.0`     |
+| Action                            | Pin                 | Latest tag               |
+| --------------------------------- | ------------------- | ------------------------ |
+| `actions/checkout`                | `v7`                | `v7.0.1`                 |
+| `actions/upload-artifact`         | `v7`                | `v7.0.1`                 |
+| `actions/download-artifact`       | `v8`                | `v8.0.1`                 |
+| `actions/cache`                   | `v6`                | `v6.1.0`                 |
+| `actions/cache/restore`           | `v6`                | (same)                   |
+| `actions/cache/save`              | `v6`                | (same)                   |
+| `dorny/paths-filter`              | commit SHA (`# v4`) | third-party → SHA-pinned |
+| `microsoft/setup-msbuild`         | `v3`                | `v3.0.0`                 |
+| `nuget/setup-nuget`               | `v4`                | `v4.0`                   |
+| `actions/attest-build-provenance` | `v3`                | release provenance       |
 
-Dependabot (`.github/dependabot.yml`) opens weekly PRs for further bumps.
-Floating major tags (`@v7`) track the latest compatible patch automatically.
+Dependabot (`.github/dependabot.yml`) opens weekly PRs for further bumps
+(github-actions and `uwp/` NuGet). Floating major tags (`@v7`) track the latest
+compatible patch automatically; the one non-vendor action stays SHA-pinned.
 
 ## Triggers
 
@@ -177,10 +179,17 @@ Local helper:
 ```bash
 ./scripts/cut-release.sh 0.2.0           # tag + push → CI release
 ./scripts/cut-release.sh 0.2.0 --dry-run
+./scripts/cut-release.sh 0.2.0 --force   # skip the blocking CHANGELOG gate
 ```
 
-Requirements: clean tree; tag must not already exist. Package revision uses
-`GITHUB_RUN_NUMBER` (manifest base stays `0.1.0.0` unless you bump AppxManifest).
+Requirements: clean tree; tag must not already exist; `CHANGELOG.md` must have a
+`## [X.Y.Z]` section (release notes embed it). **MSIX version derives from the
+tag**: `vX.Y.Z` → package `X.Y.Z.(10000+run_number)`, so the installed version
+maps back to the release. Dev builds from `build-uwp.yml` keep the manifest base.
+
+Release assets ship `SHA256SUMS` and a build **provenance attestation**
+(`actions/attest-build-provenance` on the MSIX + checksums; verify with
+`gh attestation verify <file> -R gianlucamazza/xbox_bitcoind`).
 
 Manual first release was `v0.1.0`; later tags should use this path only.
 
@@ -192,12 +201,12 @@ Full procedure (single source): **[upgrade.md](upgrade.md)**. CI angle:
 
 ### Version labels (Core vs app)
 
-| Label                  | Source                                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------------------ |
-| Bitcoin Core **v31.1** | `config/bitcoin-core.pin` → `scripts/generate-version-header.py` → `uwp/xbb_version.generated.h` |
-| App **0.1.0.N**        | MSIX identity; CI stamps revision with `GITHUB_RUN_NUMBER`                                       |
+| Label                  | Source                                                                                                                        |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Bitcoin Core **v31.1** | `config/bitcoin-core.pin` → `scripts/generate-version-header.py` → `uwp/xbb_version.generated.h`                              |
+| App **X.Y.Z.N**        | MSIX identity; releases stamp `X.Y.Z` from the tag + `N = 10000+run_number`; dev builds keep the manifest base + `run_number` |
 
-UI subtitle format: `Bitcoin Core v31.1 · app 0.1.0.N` ([ui.md](ui.md)).
+UI subtitle format: `Bitcoin Core v31.1 · app X.Y.Z.N` ([ui.md](ui.md)).
 
 ## Badges
 

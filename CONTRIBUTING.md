@@ -17,6 +17,12 @@ Thanks for interest in **xbox_bitcoind**. This project targets Xbox **Developer 
 
 Script index: [scripts/README.md](scripts/README.md).
 
+Optional but recommended — run the same lint wall as CI before pushing:
+
+```bash
+pipx install pre-commit && pre-commit install   # shellcheck, ruff, actionlint, conf-sync
+```
+
 ## Pull requests
 
 - Keep changes focused; prefer small PRs.

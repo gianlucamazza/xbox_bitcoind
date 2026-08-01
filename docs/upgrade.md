@@ -36,17 +36,20 @@ This section replaces the partial lists that used to live in
 Order matters: the datadir survives an in-place **update**, but an **uninstall
 wipes `LocalState`** (chainstate + blocks → full re-IBD).
 
-1. Soft-stop the node: `./scripts/deploy.sh stop-app` (wait for clean exit — see
+1. Download the release assets and verify them:
+   `gh release download vX.Y.Z && sha256sum -c SHA256SUMS`
+   (optionally `gh attestation verify <msix> -R gianlucamazza/xbox_bitcoind`).
+2. Soft-stop the node: `./scripts/deploy.sh stop-app` (wait for clean exit — see
    [persistence.md](persistence.md)).
-2. Install the new package **without uninstalling**:
+3. Install the new package **without uninstalling**:
    `./scripts/deploy.sh path/to/xbox_bitcoind_*.msix`
    (keep `Dependencies/x64/` next to the `.msix` for VCLibs on first install).
-3. Dev Home → package → **App type → Game** (re-check after every reinstall;
+4. Dev Home → package → **App type → Game** (re-check after every reinstall;
    an update usually preserves it, a remove+add does not).
-4. Start and verify tip conservation:
+5. Start and verify tip conservation:
    `./scripts/deploy.sh start-app && ./scripts/node-status.sh` — height must resume
    at or above the pre-stop tip (no `nBestHeight=0` in the log tail).
-5. Never uninstall to "downgrade" a revision — revisions only move forward
+6. Never uninstall to "downgrade" a revision — revisions only move forward
    (releases use `10000 + run_number` precisely so they sort above dev builds).
 
 Verification for either path: `./scripts/health-check.sh` (exit 0), then

@@ -17,7 +17,9 @@ Same **Xbox Series S** as [`xllama`](https://github.com/gianlucamazza/xllama) (D
 
 **Last full ops check:** 2026-08-02 — deploy **v0.1.4** MSIX **`0.1.0.10019`**: tip conserved across upgrade (`nBestHeight=671223`, IBD ~44.5%), soft-stop-test PASS on the new package, health green. Re-check **App type → Game** in Dev Home after this install. The mid-IBD soft-stop field PASS (8s clean, no DELETE) was on package **0.1.0.75** — see [persistence.md](persistence.md). App type → Game already confirmed after this install (2026-08-01).
 
-**Version labels:** Bitcoin Core pin is **v31.1**; `0.1.0.10019` is the **MSIX app** revision only.
+**Version labels:** Bitcoin Core pin is **v31.1**; `0.1.0.10019` is the **MSIX app**
+version only. From v0.1.5 on, releases stamp `X.Y.Z` from the git tag
+(`vX.Y.Z` → package `X.Y.Z.1nnnn`), so the installed version maps back to the release.
 
 Live tracking [tracking.md](tracking.md). Day-to-day: [ops.md](ops.md).
 

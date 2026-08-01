@@ -19,6 +19,12 @@ repos:
         entry: actionlint
         files: ^\.github/workflows/.*\.ya?ml$
         pass_filenames: false
+      - id: doc-versions
+        name: doc versions SSOT
+        language: system
+        entry: ./scripts/check-doc-versions.sh
+        files: ^(README\.md|CHANGELOG\.md|docs/(tracking|README|console|plan-core-uwp)\.md)$
+        pass_filenames: false
       - id: conf-sync
         name: embedded conf fallback sync
         language: system

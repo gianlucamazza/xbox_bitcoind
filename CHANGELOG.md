@@ -6,10 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project aims to follow [Semantic Versioning](https://semver.org/) for
 **git tags / GitHub Releases** (`vMAJOR.MINOR.PATCH`).
 
-> **Note:** The UWP package identity version (`Major.Minor.Build.Revision`) may use
-> CI `run_number` as the fourth component (e.g. `0.1.0.42`). That revision is
-> **not** the same as the git tag. Bitcoin Core pin (**v31.1**) is also separate
-> from the app package revision.
+> **Note:** Release MSIX versions derive from the git tag: `vX.Y.Z` → package
+> `X.Y.Z.(10000+run)`. Day-to-day dev builds keep the manifest base with CI
+> `run_number` as the fourth component. Bitcoin Core pin (**v31.1**) is separate
+> from the app package version. (Releases ≤ v0.1.4 used a fixed `0.1.0` base.)
 
 ## [Unreleased]
 
@@ -21,6 +21,9 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
   `SHA256SUMS`; NuGet (`uwp/packages.config`) added to Dependabot
 - Repo hygiene: PR template (CONTRIBUTING checklist), `CODE_OF_CONDUCT.md`,
   `.editorconfig`, `.pre-commit-config.yaml` (mirrors the ci-linux lint wall)
+- `scripts/check-doc-versions.sh` (ci-linux + pre-commit): version SSOT enforced —
+  console rev from `docs/tracking.md`, latest release from the CHANGELOG; README and
+  doc snapshots must agree (the drift class the v0.1.4 review reconciled by hand)
 
 ### Changed
 

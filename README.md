@@ -26,14 +26,14 @@ _Live capture, Series S Dev Mode — mid-IBD dashboard (Core **v31.1** · app pa
 - Controller-first **10-foot dashboard**: primary/secondary metrics, dual progress bars,
   session sparkline, rough **ETA**, tip age (`mediantime`), live log tail
 - Status pills: `HEADERS` / `SYNCING` / `SYNCED` / `STALE` (ops consensus, not BIP9 signaling)
-- Clear versioning: **Core pin** vs **app MSIX** (e.g. `Bitcoin Core v31.1 · app 0.1.0.10017`)
+- Clear versioning: **Core pin** vs **app MSIX**; release packages stamp `X.Y.Z` from the tag (e.g. `Bitcoin Core v31.1 · app 0.1.0.10019`)
 - **Soft-stop** on Home suspend + **auto-restart** on resume (continue IBD)
 - Path-filtered CI + automated **GitHub Releases** on `v*` tags
 
 |                  |                                                                                                            |
 | ---------------- | ---------------------------------------------------------------------------------------------------------- |
 | Package identity | `GianlucaMazza.xboxbitcoind` · App Id `App` · type **Game**                                                |
-| Latest release   | **[v0.1.4](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.4)** (MSIX e.g. `0.1.0.10019`) |
+| Latest release   | **[v0.1.4](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.4)** (MSIX `0.1.0.10019` · `SHA256SUMS` + provenance attached) |
 | Live console     | `./scripts/node-status.sh` · [docs/tracking.md](docs/tracking.md)                                          |
 | Datadir          | `LocalState\bitcoin`                                                                                       |
 | Core pin         | [config/bitcoin-core.pin](config/bitcoin-core.pin) (**v31.1**)                                             |

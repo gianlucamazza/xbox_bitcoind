@@ -32,6 +32,7 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 | `test-ui-layout.sh` | Pure layout unit tests (no Xbox; used by ci-linux) |
 | `test-rpc-client.sh` | Pure JSON extractor unit tests (no Xbox; used by ci-linux) |
 | `check-conf-sync.sh` | Embedded conf fallback ≡ config/bitcoin.conf.console (ci-linux) |
+| `check-doc-versions.sh` | Doc version SSOT: tracking.md rev + CHANGELOG release vs README/docs (ci-linux) |
 | `generate-uwp-assets.py` | Rebuild splash/tiles from Core `share/pixmaps` icons |
 | `generate-version-header.py` | `config/bitcoin-core.pin` → `uwp/xbb_version.generated.h` (UI Core version) |
 

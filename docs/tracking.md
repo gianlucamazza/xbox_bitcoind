@@ -20,7 +20,7 @@ Update this file when gates move; use Issues for discussion and assignment.
 | Engineering v1    | **Complete**                                                                                                                                                                                                                |
 | Architecture + UI | **Complete** (lifecycle SSOT, tip age, HEADERS/STALE) — [plan-core-uwp.md](plan-core-uwp.md) · [ui.md](ui.md)                                                                                                               |
 | Git tag / Release | **[v0.1.3](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.3)** · MSIX `0.1.0.10018` (docs/benchmarks; product = v0.1.2 lineage)                                                                           |
-| Console package   | **0.1.0.10019** (v0.1.4) — deployed 2026-08-02, tip conserved (671223), soft-stop PASS; re-check App type → Game                                                                                                                                     |
+| Console package   | **0.1.0.10019** (v0.1.4) — deployed 2026-08-02, tip conserved (671223), soft-stop PASS; re-check App type → Game                                                                                                            |
 | Game class        | **Done** — App type → Game confirmed (2026-08-01, user) · `DefaultUWPContentTypeToGame=true`                                                                                                                                |
 | Pin               | Bitcoin Core **v31.1**                                                                                                                                                                                                      |
 | UI on console     | **Live** Core **v31.1 · app 0.1.0.10019** — tip age, dual bars, spark, ETA (screenshot is a 0.1.0.75 capture)                                                                                                               |
@@ -97,7 +97,7 @@ Wallet UI · Store · `listen=1` · CLN on-console · USB datadir UX
 
 | Issue                                                         | Title                              | Status                                                                                                                     |
 | ------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close)    | open — ~671k / ~44.5%                                                                                                       |
+| [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close)    | open — ~671k / ~44.5%                                                                                                      |
 | [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) | 24h stability at tip (v1 close)    | open                                                                                                                       |
 | [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) | Soft-stop retest at tip (v1 close) | open                                                                                                                       |
 | [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop → DELETE fallback        | **closed** (2026-07-31) — mid-IBD field PASS; tip retest via [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
@@ -111,13 +111,14 @@ gh issue list --label v1-close
 
 ## Doc map (who edits what)
 
-| Change type               | Update                                |
-| ------------------------- | ------------------------------------- |
-| New feature / fix shipped | CHANGELOG Unreleased + relevant guide |
-| Ops gate progress         | **this file** + roadmap ops table     |
-| Console package rev       | console.md + this snapshot            |
-| UI / screenshot           | ui.md + assets                        |
-| CI / release              | ci.md                                 |
+| Change type               | Update                                                                                                                     |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| New feature / fix shipped | CHANGELOG Unreleased + relevant guide                                                                                      |
+| Ops gate progress         | **this file** + roadmap ops table                                                                                          |
+| Console package rev       | **this snapshot is the SSOT** → README, docs/README, console.md, plan-core-uwp.md must match (CI: `check-doc-versions.sh`) |
+| Latest release            | CHANGELOG section + link ref (SSOT) → README release row (CI-checked)                                                      |
+| UI / screenshot           | ui.md + assets                                                                                                             |
+| CI / release              | ci.md                                                                                                                      |
 
 ---
 

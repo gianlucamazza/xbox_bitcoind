@@ -98,5 +98,8 @@ Historical feasibility only — not day-to-day ops.
 ## Conventions
 
 - Prefer updating an existing doc over adding a new top-level file.
+- Version SSOT: console package rev lives in [tracking.md](tracking.md), latest release
+  in the [CHANGELOG](../CHANGELOG.md); `scripts/check-doc-versions.sh` (CI) keeps the
+  other docs in agreement — update the SSOT first, then the mirrors.
 - `docs/**` and README-only commits do **not** start CI ([ci.md](ci.md)).
 - Keep operational “how to” in `ops.md`; keep architecture/checklist in `plan-core-uwp.md`.

@@ -18,6 +18,12 @@ on:
       - "config/bitcoin-core.pin"
       - "PSScriptAnalyzerSettings.psd1"
       - ".ruff.toml"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "docs/tracking.md"
+      - "docs/README.md"
+      - "docs/console.md"
+      - "docs/plan-core-uwp.md"
       - ".github/workflows/**"
   pull_request:
     paths:
@@ -31,6 +37,12 @@ on:
       - "config/bitcoin-core.pin"
       - "PSScriptAnalyzerSettings.psd1"
       - ".ruff.toml"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "docs/tracking.md"
+      - "docs/README.md"
+      - "docs/console.md"
+      - "docs/plan-core-uwp.md"
       - ".github/workflows/**"
   workflow_dispatch:
     inputs:
@@ -113,6 +125,9 @@ jobs:
 
       - name: Embedded conf fallback sync check
         run: ./scripts/check-conf-sync.sh
+
+      - name: Doc versions SSOT check
+        run: ./scripts/check-doc-versions.sh
 
       - name: Validate bitcoin-core.pin + generated version header
         env:
