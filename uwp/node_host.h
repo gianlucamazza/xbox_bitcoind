@@ -20,7 +20,7 @@ struct NodeStatus {
     int last_exit = 0;
     int blocks = 0;
     int headers = 0;
-    int connections = 0;
+    int connections = 0; // -1 = unknown (chain RPC ok but getnetworkinfo failed)
     int mempool_tx = 0;
     double verification_progress = 0.0; // 0..1
     bool initial_block_download = false;

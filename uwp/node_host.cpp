@@ -169,8 +169,10 @@ NodeStatus NodeStatusLive() {
     if (!s.running) {
         return s;
     }
-    if (auto chain = RpcGetBlockchainInfo(s.datadir)) {
+    RpcError err = RpcError::None;
+    if (auto chain = RpcGetBlockchainInfo(s.datadir, &err)) {
         s.rpc_ready = true;
+        s.connections = -1; // unknown until getnetworkinfo answers
         s.chain = chain->chain;
         s.blocks = chain->blocks;
         s.headers = chain->headers;
@@ -192,7 +194,17 @@ NodeStatus NodeStatusLive() {
         }
     } else {
         s.rpc_ready = false;
-        s.message = "starting (RPC not ready)";
+        switch (err) {
+        case RpcError::AuthFailed:
+            s.message = "RPC auth failed (stale cookie?)";
+            break;
+        case RpcError::WarmingUp:
+            s.message = "starting (RPC warming up)";
+            break;
+        default:
+            s.message = "starting (RPC not ready)";
+            break;
+        }
     }
     if (auto net = RpcGetNetworkInfo(s.datadir)) {
         s.connections = net->connections;

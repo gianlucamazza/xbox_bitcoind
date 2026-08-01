@@ -13,7 +13,24 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ## [Unreleased]
 
+### Added
+
+- `uwp/json_extract.h` — JSON extractors split out of `rpc_client.cpp`, host-testable via
+  new `scripts/test-rpc-client.sh` (wired into ci-linux)
+
+### Changed
+
+- RPC: cookie cached and re-read once on HTTP 401; redundant `getconnectioncount` call
+  dropped (getnetworkinfo already carries connections); PEERS shows `—` (unknown) instead
+  of a red 0 when only `getnetworkinfo` fails
+
 ### Fixed
+
+- Node `warnings` were never shown: Core v31.1 returns an array, the extractor only
+  accepted a string; both forms are now parsed (joined for display)
+- RPC error states distinguished in the status message: auth failure (`stale cookie?`) and
+  warm-up (HTTP 503) no longer render as generic "RPC not ready"
+- JSON result-object scan no longer miscounts braces inside string values
 
 - UWP host concurrency: `NodeStart`/`NodeStop` serialized by a lifecycle mutex (concurrent
   `std::thread` join/detach was UB); resume now waits out an in-flight suspend soft-stop

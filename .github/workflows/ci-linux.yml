@@ -10,6 +10,7 @@ on:
     paths:
       - "scripts/**"
       - "uwp/ui_layout.h"
+      - "uwp/json_extract.h"
       - "uwp/xbb_version.generated.h"
       - "config/bitcoin-core.pin"
       - ".github/workflows/ci-linux.yml"
@@ -17,6 +18,7 @@ on:
     paths:
       - "scripts/**"
       - "uwp/ui_layout.h"
+      - "uwp/json_extract.h"
       - "uwp/xbb_version.generated.h"
       - "config/bitcoin-core.pin"
       - ".github/workflows/ci-linux.yml"
@@ -79,6 +81,9 @@ jobs:
 
       - name: Pure UI layout unit tests
         run: ./scripts/test-ui-layout.sh
+
+      - name: Pure JSON extractor unit tests
+        run: ./scripts/test-rpc-client.sh
 
       - name: Validate bitcoin-core.pin + generated version header
         run: |

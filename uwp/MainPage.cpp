@@ -1070,13 +1070,18 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         const int behind = (st.headers > st.blocks) ? (st.headers - st.blocks) : 0;
         const bool syncing = st.initial_block_download || st.verification_progress < 0.999;
         const Color prog_c = syncing ? kOrange : kGreen;
-        const Color peers_c = (st.connections <= 0 && st.running) ? kRed
+        const Color peers_c = (st.connections == 0 && st.running) ? kRed
                                : (st.connections < 3 ? kYellow : kGreen);
         const Color behind_c = behind > 1000 ? kOrange : (behind > 0 ? kYellow : kGreen);
 
         SetMetric(m_val_height, FormatInt(st.blocks), kWhite);
         SetMetric(m_val_progress, FormatPct(st.verification_progress), prog_c);
-        SetMetric(m_val_peers, FormatInt(st.connections), peers_c);
+        if (st.connections < 0) {
+            // getnetworkinfo failed this tick — unknown, not zero.
+            SetMetric(m_val_peers, L"—", kMuted);
+        } else {
+            SetMetric(m_val_peers, FormatInt(st.connections), peers_c);
+        }
         SetMetric(m_val_behind, behind > 0 ? FormatInt(behind) : L"0", behind_c);
 
         m_cache_headers = st.headers;

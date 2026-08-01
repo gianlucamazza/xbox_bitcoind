@@ -5,6 +5,7 @@
 
 #include "rpc_client.h"
 
+#include "json_extract.h"
 #include "log.h"
 
 #include <winrt/Windows.Foundation.h>
@@ -15,6 +16,7 @@
 
 #include <cctype>
 #include <fstream>
+#include <mutex>
 #include <sstream>
 
 namespace xbb {
@@ -30,7 +32,7 @@ using winrt::Windows::Web::Http::HttpStatusCode;
 using winrt::Windows::Web::Http::HttpStringContent;
 using winrt::Windows::Web::Http::Headers::HttpCredentialsHeaderValue;
 
-std::optional<std::string> ReadCookie(const std::string& datadir) {
+std::optional<std::string> ReadCookieFile(const std::string& datadir) {
     const std::string path = datadir + "\\.cookie";
     std::ifstream in(path, std::ios::binary);
     if (!in) {
@@ -50,210 +52,104 @@ std::optional<std::string> ReadCookie(const std::string& datadir) {
     return line;
 }
 
+// Cookie cache: bitcoind regenerates .cookie per run, so re-reading it on every RPC
+// (5 calls / 2s tick) is wasted I/O. Invalidated on HTTP 401.
+std::mutex g_cookie_mu;
+std::string g_cookie_cached;
+
+std::optional<std::string> CachedCookie(const std::string& datadir) {
+    std::lock_guard lock(g_cookie_mu);
+    if (!g_cookie_cached.empty()) {
+        return g_cookie_cached;
+    }
+    if (auto c = ReadCookieFile(datadir)) {
+        g_cookie_cached = *c;
+        return g_cookie_cached;
+    }
+    return std::nullopt;
+}
+
+void InvalidateCookie() {
+    std::lock_guard lock(g_cookie_mu);
+    g_cookie_cached.clear();
+}
+
 std::string Base64(const std::string& s) {
     auto buf = CryptographicBuffer::ConvertStringToBinary(
         winrt::to_hstring(s), BinaryStringEncoding::Utf8);
     return winrt::to_string(CryptographicBuffer::EncodeToBase64String(buf));
 }
 
-// Minimal extractors for flat JSON result objects (not a full parser).
-std::optional<std::string> JsonStringField(const std::string& json, const char* key) {
-    const std::string pat = std::string("\"") + key + "\"";
-    auto pos = json.find(pat);
-    if (pos == std::string::npos) {
-        return std::nullopt;
-    }
-    pos = json.find(':', pos + pat.size());
-    if (pos == std::string::npos) {
-        return std::nullopt;
-    }
-    ++pos;
-    while (pos < json.size() && std::isspace(static_cast<unsigned char>(json[pos]))) {
-        ++pos;
-    }
-    if (pos >= json.size() || json[pos] != '"') {
-        return std::nullopt;
-    }
-    ++pos;
-    std::string out;
-    while (pos < json.size() && json[pos] != '"') {
-        if (json[pos] == '\\' && pos + 1 < json.size()) {
-            out.push_back(json[pos + 1]);
-            pos += 2;
-            continue;
-        }
-        out.push_back(json[pos++]);
-    }
-    return out;
-}
-
-std::optional<int64_t> JsonIntField(const std::string& json, const char* key) {
-    const std::string pat = std::string("\"") + key + "\"";
-    auto pos = json.find(pat);
-    if (pos == std::string::npos) {
-        return std::nullopt;
-    }
-    pos = json.find(':', pos + pat.size());
-    if (pos == std::string::npos) {
-        return std::nullopt;
-    }
-    ++pos;
-    while (pos < json.size() && std::isspace(static_cast<unsigned char>(json[pos]))) {
-        ++pos;
-    }
-    size_t end = pos;
-    if (end < json.size() && (json[end] == '-' || json[end] == '+')) {
-        ++end;
-    }
-    while (end < json.size() && std::isdigit(static_cast<unsigned char>(json[end]))) {
-        ++end;
-    }
-    if (end == pos) {
-        return std::nullopt;
-    }
-    try {
-        return std::stoll(json.substr(pos, end - pos));
-    } catch (...) {
-        return std::nullopt;
-    }
-}
-
-std::optional<double> JsonDoubleField(const std::string& json, const char* key) {
-    const std::string pat = std::string("\"") + key + "\"";
-    auto pos = json.find(pat);
-    if (pos == std::string::npos) {
-        return std::nullopt;
-    }
-    pos = json.find(':', pos + pat.size());
-    if (pos == std::string::npos) {
-        return std::nullopt;
-    }
-    ++pos;
-    while (pos < json.size() && std::isspace(static_cast<unsigned char>(json[pos]))) {
-        ++pos;
-    }
-    size_t end = pos;
-    while (end < json.size() &&
-           (std::isdigit(static_cast<unsigned char>(json[end])) || json[end] == '.' ||
-            json[end] == 'e' || json[end] == 'E' || json[end] == '+' || json[end] == '-')) {
-        ++end;
-    }
-    if (end == pos) {
-        return std::nullopt;
-    }
-    try {
-        return std::stod(json.substr(pos, end - pos));
-    } catch (...) {
-        return std::nullopt;
-    }
-}
-
-std::optional<bool> JsonBoolField(const std::string& json, const char* key) {
-    const std::string pat = std::string("\"") + key + "\"";
-    auto pos = json.find(pat);
-    if (pos == std::string::npos) {
-        return std::nullopt;
-    }
-    pos = json.find(':', pos + pat.size());
-    if (pos == std::string::npos) {
-        return std::nullopt;
-    }
-    ++pos;
-    while (pos < json.size() && std::isspace(static_cast<unsigned char>(json[pos]))) {
-        ++pos;
-    }
-    if (json.compare(pos, 4, "true") == 0) {
-        return true;
-    }
-    if (json.compare(pos, 5, "false") == 0) {
-        return false;
-    }
-    return std::nullopt;
-}
-
-// Extract "result" object substring (from first { after "result" to matching }).
-std::optional<std::string> JsonResultObject(const std::string& body) {
-    auto pos = body.find("\"result\"");
-    if (pos == std::string::npos) {
-        return std::nullopt;
-    }
-    pos = body.find(':', pos);
-    if (pos == std::string::npos) {
-        return std::nullopt;
-    }
-    ++pos;
-    while (pos < body.size() && std::isspace(static_cast<unsigned char>(body[pos]))) {
-        ++pos;
-    }
-    if (pos >= body.size()) {
-        return std::nullopt;
-    }
-    if (body[pos] == 'n' && body.compare(pos, 4, "null") == 0) {
-        return std::string("null");
-    }
-    if (body[pos] != '{') {
-        // Scalar result — return rest until , or }
-        size_t end = pos;
-        while (end < body.size() && body[end] != ',' && body[end] != '}') {
-            ++end;
-        }
-        return body.substr(pos, end - pos);
-    }
-    int depth = 0;
-    size_t start = pos;
-    for (; pos < body.size(); ++pos) {
-        if (body[pos] == '{') {
-            ++depth;
-        } else if (body[pos] == '}') {
-            --depth;
-            if (depth == 0) {
-                return body.substr(start, pos - start + 1);
-            }
-        }
-    }
-    return std::nullopt;
-}
+// JSON field extractors live in json_extract.h (host-testable).
 
 } // namespace
 
 std::optional<std::string> RpcCall(const std::string& datadir_utf8, const std::string& method,
-                                   const std::string& params_json) {
-    auto cookie = ReadCookie(datadir_utf8);
-    if (!cookie) {
-        return std::nullopt;
-    }
+                                   const std::string& params_json, RpcError* err) {
+    auto set_err = [err](RpcError e) {
+        if (err) {
+            *err = e;
+        }
+    };
+    set_err(RpcError::None);
 
-    try {
-        HttpClient client;
-        auto auth = Base64(*cookie);
-        client.DefaultRequestHeaders().Authorization(
-            HttpCredentialsHeaderValue(L"Basic", winrt::to_hstring(auth)));
+    std::ostringstream body;
+    body << "{\"jsonrpc\":\"1.0\",\"id\":\"xbb\",\"method\":\"" << method << "\",\"params\":"
+         << params_json << "}";
 
-        std::ostringstream body;
-        body << "{\"jsonrpc\":\"1.0\",\"id\":\"xbb\",\"method\":\"" << method << "\",\"params\":"
-             << params_json << "}";
-
-        HttpStringContent content(winrt::to_hstring(body.str()), UnicodeEncoding::Utf8,
-                                  L"application/json");
-        Uri uri(L"http://127.0.0.1:8332/");
-        HttpResponseMessage resp = client.PostAsync(uri, content).get();
-        if (resp.StatusCode() != HttpStatusCode::Ok) {
+    // One retry on 401: the cached cookie may belong to a previous bitcoind run.
+    for (int attempt = 0; attempt < 2; ++attempt) {
+        auto cookie = CachedCookie(datadir_utf8);
+        if (!cookie) {
+            set_err(RpcError::NoCookie);
             return std::nullopt;
         }
-        auto hstr = resp.Content().ReadAsStringAsync().get();
-        return winrt::to_string(hstr);
-    } catch (winrt::hresult_error const& e) {
-        Logf("[rpc] call %s failed: 0x%08X", method.c_str(),
-             static_cast<unsigned>(e.code().value));
-        return std::nullopt;
-    } catch (...) {
-        Logf("[rpc] call %s failed: unknown", method.c_str());
-        return std::nullopt;
+        try {
+            HttpClient client;
+            auto auth = Base64(*cookie);
+            client.DefaultRequestHeaders().Authorization(
+                HttpCredentialsHeaderValue(L"Basic", winrt::to_hstring(auth)));
+
+            HttpStringContent content(winrt::to_hstring(body.str()), UnicodeEncoding::Utf8,
+                                      L"application/json");
+            Uri uri(L"http://127.0.0.1:8332/");
+            HttpResponseMessage resp = client.PostAsync(uri, content).get();
+            const auto status = resp.StatusCode();
+            if (status == HttpStatusCode::Unauthorized) {
+                InvalidateCookie();
+                if (attempt == 0) {
+                    continue;
+                }
+                set_err(RpcError::AuthFailed);
+                return std::nullopt;
+            }
+            if (status == HttpStatusCode::ServiceUnavailable) {
+                set_err(RpcError::WarmingUp);
+                return std::nullopt;
+            }
+            if (status != HttpStatusCode::Ok) {
+                set_err(RpcError::HttpError);
+                return std::nullopt;
+            }
+            auto hstr = resp.Content().ReadAsStringAsync().get();
+            return winrt::to_string(hstr);
+        } catch (winrt::hresult_error const& e) {
+            Logf("[rpc] call %s failed: 0x%08X", method.c_str(),
+                 static_cast<unsigned>(e.code().value));
+            set_err(RpcError::Network);
+            return std::nullopt;
+        } catch (...) {
+            Logf("[rpc] call %s failed: unknown", method.c_str());
+            set_err(RpcError::Network);
+            return std::nullopt;
+        }
     }
+    return std::nullopt;
 }
 
-std::optional<BlockchainInfo> RpcGetBlockchainInfo(const std::string& datadir_utf8) {
-    auto body = RpcCall(datadir_utf8, "getblockchaininfo");
+std::optional<BlockchainInfo> RpcGetBlockchainInfo(const std::string& datadir_utf8,
+                                                   RpcError* err) {
+    auto body = RpcCall(datadir_utf8, "getblockchaininfo", "[]", err);
     if (!body) {
         return std::nullopt;
     }
@@ -289,46 +185,31 @@ std::optional<BlockchainInfo> RpcGetBlockchainInfo(const std::string& datadir_ut
     if (auto mt = JsonIntField(*result, "mediantime")) {
         info.mediantime = *mt;
     }
-    if (auto w = JsonStringField(*result, "warnings")) {
+    if (auto w = JsonWarningsField(*result)) {
         info.warnings = *w;
     }
     return info;
 }
 
 std::optional<NetworkInfo> RpcGetNetworkInfo(const std::string& datadir_utf8) {
-    NetworkInfo n;
-    bool got = false;
-    if (auto body = RpcCall(datadir_utf8, "getconnectioncount")) {
-        auto result = JsonResultObject(*body);
-        if (result) {
-            try {
-                std::string r = *result;
-                while (!r.empty() && std::isspace(static_cast<unsigned char>(r.front()))) {
-                    r.erase(r.begin());
-                }
-                n.connections = static_cast<int>(std::stoll(r));
-                got = true;
-            } catch (...) {
-            }
-        }
-    }
-    if (auto body = RpcCall(datadir_utf8, "getnetworkinfo")) {
-        if (auto result = JsonResultObject(*body)) {
-            if (auto c = JsonIntField(*result, "connections")) {
-                n.connections = static_cast<int>(*c);
-                got = true;
-            }
-            if (auto na = JsonBoolField(*result, "networkactive")) {
-                n.network_active = *na;
-            }
-            if (auto sv = JsonStringField(*result, "subversion")) {
-                n.subversion = *sv;
-            }
-            got = true;
-        }
-    }
-    if (!got) {
+    // getnetworkinfo carries connections too — no separate getconnectioncount call.
+    auto body = RpcCall(datadir_utf8, "getnetworkinfo");
+    if (!body) {
         return std::nullopt;
+    }
+    auto result = JsonResultObject(*body);
+    if (!result || *result == "null") {
+        return std::nullopt;
+    }
+    NetworkInfo n;
+    if (auto c = JsonIntField(*result, "connections")) {
+        n.connections = static_cast<int>(*c);
+    }
+    if (auto na = JsonBoolField(*result, "networkactive")) {
+        n.network_active = *na;
+    }
+    if (auto sv = JsonStringField(*result, "subversion")) {
+        n.subversion = *sv;
     }
     return n;
 }
@@ -364,15 +245,7 @@ std::optional<int64_t> RpcUptime(const std::string& datadir_utf8) {
     if (!result) {
         return std::nullopt;
     }
-    try {
-        std::string r = *result;
-        while (!r.empty() && std::isspace(static_cast<unsigned char>(r.front()))) {
-            r.erase(r.begin());
-        }
-        return std::stoll(r);
-    } catch (...) {
-        return std::nullopt;
-    }
+    return JsonScalarInt64(*result);
 }
 
 bool RpcStop(const std::string& datadir_utf8) {
@@ -387,7 +260,11 @@ std::string ReadDebugLogTail(const std::string& datadir_utf8, size_t max_lines) 
         return {};
     }
     in.seekg(0, std::ios::end);
-    const auto size = static_cast<size_t>(in.tellg());
+    const auto end_pos = in.tellg();
+    if (end_pos <= 0) {
+        return {}; // empty file or tellg failure
+    }
+    const auto size = static_cast<size_t>(end_pos);
     const size_t cap = 256 * 1024;
     const size_t read_sz = size > cap ? cap : size;
     in.seekg(static_cast<std::streamoff>(size - read_sz), std::ios::beg);
