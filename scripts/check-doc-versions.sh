@@ -41,6 +41,7 @@ require README.md "${CONSOLE_REV}" "console package rev"
 require docs/README.md "${CONSOLE_REV}" "console package rev"
 require docs/console.md "${CONSOLE_REV}" "console package rev"
 require docs/plan-core-uwp.md "${CONSOLE_REV}" "console package rev"
+require docs/roadmap.md "${CONSOLE_REV}" "console package rev"
 
 # Latest release (SSOT: CHANGELOG.md)
 require README.md "releases/tag/v${LATEST_REL}" "latest release link"

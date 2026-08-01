@@ -24,6 +24,7 @@ on:
       - "docs/README.md"
       - "docs/console.md"
       - "docs/plan-core-uwp.md"
+      - "docs/roadmap.md"
       - ".github/workflows/**"
   pull_request:
     paths:
@@ -43,6 +44,7 @@ on:
       - "docs/README.md"
       - "docs/console.md"
       - "docs/plan-core-uwp.md"
+      - "docs/roadmap.md"
       - ".github/workflows/**"
   workflow_dispatch:
     inputs:
