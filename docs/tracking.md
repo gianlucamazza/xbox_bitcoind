@@ -13,19 +13,19 @@ Update this file when gates move; use Issues for discussion and assignment.
 
 ---
 
-## Status snapshot (2026-08-01)
+## Status snapshot (2026-08-02)
 
 | Area              | State                                                                                                                                                                                                                       |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Engineering v1    | **Complete**                                                                                                                                                                                                                |
 | Architecture + UI | **Complete** (lifecycle SSOT, tip age, HEADERS/STALE) — [plan-core-uwp.md](plan-core-uwp.md) · [ui.md](ui.md)                                                                                                               |
-| Git tag / Release | **[v0.1.3](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.3)** · MSIX `0.1.0.10018` (docs/benchmarks; product = v0.1.2 lineage)                                                                           |
-| Console package   | **0.1.0.10019** (v0.1.4) — deployed 2026-08-02, tip conserved (671223), soft-stop PASS; re-check App type → Game                                                                                                            |
+| Git tag / Release | **[v0.1.5](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.5)** · MSIX `0.1.5.10020` (review closure: concurrency/RPC fixes, CI hardening, tag-derived versions)                                                                           |
+| Console package   | **0.1.5.10020** (v0.1.5) — deployed 2026-08-02, tip conserved (676600, IBD ~45.3%), soft-stop PASS; re-check App type → Game                                                                                                            |
 | Game class        | **Done** — App type → Game confirmed (2026-08-01, user) · `DefaultUWPContentTypeToGame=true`                                                                                                                                |
 | Pin               | Bitcoin Core **v31.1**                                                                                                                                                                                                      |
-| UI on console     | **Live** Core **v31.1 · app 0.1.0.10019** — tip age, dual bars, spark, ETA (screenshot is a 0.1.0.75 capture)                                                                                                               |
+| UI on console     | **Live** Core **v31.1 · app 0.1.5.10020** — tip age, dual bars, spark, ETA (screenshot is a 0.1.0.75 capture)                                                                                                               |
 | Soft-stop         | Mid-IBD **PASS** clean 8s no DELETE + tip conserved (2026-08-01) · [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) **closed**; @ tip retest via [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
-| Mainnet IBD       | **In progress** (~**368k**, progress ~**5.7%**) — leave focused                                                                                                                                                             |
+| Mainnet IBD       | **In progress** (~**676k**, progress ~**45.3%**) — leave focused                                                                                                                                                             |
 | 24h stable at tip | **Pending** IBD                                                                                                                                                                                                             |
 | Soft-stop at tip  | **Pending** tip                                                                                                                                                                                                             |
 | Pre-Lightning     | Blocked on IBD closure gates                                                                                                                                                                                                |
@@ -122,4 +122,4 @@ gh issue list --label v1-close
 
 ---
 
-_Last consolidated: 2026-08-02 — **v0.1.4** deployed on console (`0.1.0.10019`), IBD ~44.5% @ ~671k; leave IBD focused._
+_Last consolidated: 2026-08-02 — **v0.1.5** deployed on console (`0.1.5.10020`, first tag-derived package), IBD ~45.3% @ ~676k; leave IBD focused._

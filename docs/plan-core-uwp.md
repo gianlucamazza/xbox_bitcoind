@@ -162,7 +162,7 @@ CI matrix and path filters: [ci.md](ci.md).
 | UWP patches 0001–0010          | **Done** (API + durability; no language hacks)                                                                                               |
 | `build-core-uwp` / `-WithCore` | **Done** (`bitcoin_embed` + `event.dll`)                                                                                                     |
 | CI + release automation        | **Done**                                                                                                                                     |
-| Package on Series S            | **`0.1.0.10019`** (v0.1.4) WithCore; IBD mid-progress — [tracking.md](tracking.md)               |
+| Package on Series S            | **`0.1.5.10020`** (v0.1.5) WithCore; IBD mid-progress — [tracking.md](tracking.md)               |
 | Architecture + UI              | **Done + deployed** — lifecycle, host plane, tip age, HEADERS/STALE                                                                          |
 | Full node sync                 | **Ops pending** — [tracking.md](tracking.md) · issues #1–#3                                                                                  |
 | Soft-stop persistence          | Tip conserved early + mid IBD; clean mid-IBD soft-stop field-verified ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) closed) |

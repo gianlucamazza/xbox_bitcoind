@@ -13,11 +13,11 @@ Same **Xbox Series S** as [`xllama`](https://github.com/gianlucamazza/xllama) (D
 | Device Portal | `https://192.168.1.44:11443` (DHCP — update if IP changes)                                                                                             |
 | Credentials   | `~/.config/xllama/xbox-env` (see `scripts/env.sh`)                                                                                                     |
 | Sibling       | `GianlucaMazza.xllama_1.5.2.836_x64__pj67f1fcj4n14`                                                                                                    |
-| This package  | `GianlucaMazza.xboxbitcoind_0.1.0.10019_x64__m0e4707sws2jw` (release **[v0.1.4](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.4)**) |
+| This package  | `GianlucaMazza.xboxbitcoind_0.1.5.10020_x64__m0e4707sws2jw` (release **[v0.1.5](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.5)**) |
 
-**Last full ops check:** 2026-08-02 — deploy **v0.1.4** MSIX **`0.1.0.10019`**: tip conserved across upgrade (`nBestHeight=671223`, IBD ~44.5%), soft-stop-test PASS on the new package, health green. Re-check **App type → Game** in Dev Home after this install. The mid-IBD soft-stop field PASS (8s clean, no DELETE) was on package **0.1.0.75** — see [persistence.md](persistence.md). App type → Game already confirmed after this install (2026-08-01).
+**Last full ops check:** 2026-08-02 — deploy **v0.1.5** MSIX **`0.1.5.10020`** (first tag-derived version): checksums + provenance verified, tip conserved across upgrade (`nBestHeight=676600`, IBD ~45.3%), soft-stop-test PASS, health green. Re-check **App type → Game** in Dev Home after this install. Historical field results: [persistence.md](persistence.md).
 
-**Version labels:** Bitcoin Core pin is **v31.1**; `0.1.0.10019` is the **MSIX app**
+**Version labels:** Bitcoin Core pin is **v31.1**; `0.1.5.10020` is the **MSIX app**
 version only. From v0.1.5 on, releases stamp `X.Y.Z` from the git tag
 (`vX.Y.Z` → package `X.Y.Z.1nnnn`), so the installed version maps back to the release.
 

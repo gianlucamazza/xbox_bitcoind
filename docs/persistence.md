@@ -86,6 +86,10 @@ node-lifecycle fixes), then `./scripts/soft-stop-test.sh` on the new package.
 | Soft-stop test         | clean stop, `loaded` **671 223** vs pre-tip **671 275** (Δ within flush window) |
 | **Verdict**            | **PASS tip conservation** + **PASS clean exit**; `health-check` exit 0          |
 
+Same procedure re-verified 2026-08-02 on the `0.1.0.10019` → `0.1.5.10020` upgrade
+(first tag-derived package): tip conserved (`nBestHeight` 676 600, IBD ~45.3%),
+soft-stop-test PASS, health green.
+
 Mid-IBD persistence with the fixed host path is **closed**. Remaining ops gate: soft-stop **at tip** ([#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3)).
 
 ## How to re-test
