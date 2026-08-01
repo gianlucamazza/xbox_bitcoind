@@ -17,7 +17,7 @@ Companion project on the same console: [xllama](https://github.com/gianlucamazza
 
 ![Status dashboard on Xbox Series S](docs/assets/screenshot-console.png)
 
-*Live capture, Series S Dev Mode — mid-IBD dashboard (Core **v31.1** · app package). Ops: [docs/tracking.md](docs/tracking.md).*
+_Live capture, Series S Dev Mode — mid-IBD dashboard (Core **v31.1** · app package). Ops: [docs/tracking.md](docs/tracking.md)._
 
 ## Features
 
@@ -30,13 +30,13 @@ Companion project on the same console: [xllama](https://github.com/gianlucamazza
 - **Soft-stop** on Home suspend + **auto-restart** on resume (continue IBD)
 - Path-filtered CI + automated **GitHub Releases** on `v*` tags
 
-| | |
-|--|--|
-| Package identity | `GianlucaMazza.xboxbitcoind` · App Id `App` · type **Game** |
-| Latest release | **[v0.1.3](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.3)** (MSIX e.g. `0.1.0.10018`) |
-| Live console | `./scripts/node-status.sh` · [docs/tracking.md](docs/tracking.md) |
-| Datadir | `LocalState\bitcoin` |
-| Core pin | [config/bitcoin-core.pin](config/bitcoin-core.pin) (**v31.1**) |
+|                  |                                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| Package identity | `GianlucaMazza.xboxbitcoind` · App Id `App` · type **Game**                                                |
+| Latest release   | **[v0.1.3](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.3)** (MSIX e.g. `0.1.0.10018`) |
+| Live console     | `./scripts/node-status.sh` · [docs/tracking.md](docs/tracking.md)                                          |
+| Datadir          | `LocalState\bitcoin`                                                                                       |
+| Core pin         | [config/bitcoin-core.pin](config/bitcoin-core.pin) (**v31.1**)                                             |
 
 ## Sync benchmarks (measured)
 
@@ -46,19 +46,19 @@ Prefer **progress rate** over raw blocks/h: early chain blocks are small; rate d
 
 ### Throughput (mid-IBD, ~2015-era tip)
 
-| Window | Height | Progress | Rate | Source |
-|--------|--------|----------|------|--------|
-| ~1 h continuous (`UpdateTip`) | 327k → 370k | 3.6% → 5.8% | **~43k blocks/h** · **~2.2 pp progress/h** | `debug.log` on **0.1.0.10017** |
-| ~1.2 h host samples (post-wipe segment) | 191k → 346k | 0.4% → 4.4% | **~126k blocks/h** · **~3.3 pp progress/h** | hourly `ibd.jsonl` |
-| Rough ETA from mid-IBD progress rate | — | @ ~6% | **~40–45 h** wall-clock to tip *if rate held* | optimistic; later years slower |
+| Window                                  | Height      | Progress    | Rate                                          | Source                         |
+| --------------------------------------- | ----------- | ----------- | --------------------------------------------- | ------------------------------ |
+| ~1 h continuous (`UpdateTip`)           | 327k → 370k | 3.6% → 5.8% | **~43k blocks/h** · **~2.2 pp progress/h**    | `debug.log` on **0.1.0.10017** |
+| ~1.2 h host samples (post-wipe segment) | 191k → 346k | 0.4% → 4.4% | **~126k blocks/h** · **~3.3 pp progress/h**   | hourly `ibd.jsonl`             |
+| Rough ETA from mid-IBD progress rate    | —           | @ ~6%       | **~40–45 h** wall-clock to tip _if rate held_ | optimistic; later years slower |
 
 ### Resources (while syncing)
 
-| Metric | Observed mid-IBD | Notes |
-|--------|------------------|--------|
-| Working set | **~0.7–1.1 GiB** | Peak during active verification |
-| Core `cache=` line | **~50–540 MiB** | Cycles with flushes; conf `dbcache=512` |
-| Datadir (pruned) | **~1.5–2.1 GiB** at ~5–6% | Grows then prunes; shared Dev storage ~90 GB |
+| Metric              | Observed mid-IBD              | Notes                                                                       |
+| ------------------- | ----------------------------- | --------------------------------------------------------------------------- |
+| Working set         | **~0.7–1.1 GiB**              | Peak during active verification                                             |
+| Core `cache=` line  | **~50–540 MiB**               | Cycles with flushes; conf `dbcache=512`                                     |
+| Datadir (pruned)    | **~1.5–2.1 GiB** at ~5–6%     | Grows then prunes; shared Dev storage ~90 GB                                |
 | Soft-stop (mid-IBD) | **~8 s** clean, tip conserved | Host `IsRunning`-aware stop; see [docs/persistence.md](docs/persistence.md) |
 
 ### Caveats
@@ -71,10 +71,10 @@ Prefer **progress rate** over raw blocks/h: early chain blocks are small; rate d
 
 ### Requirements
 
-| Role | Need |
-|------|------|
-| Console | Xbox Series S\|X in **Developer Mode**, free space on Dev storage (~90 GB typical) |
-| Host | Linux or Windows, `curl`, `python3`, network path to Device Portal |
+| Role        | Need                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Console     | Xbox Series S\|X in **Developer Mode**, free space on Dev storage (~90 GB typical)                                              |
+| Host        | Linux or Windows, `curl`, `python3`, network path to Device Portal                                                              |
 | Credentials | `~/.config/xllama/xbox-env` **or** copy [config/xbox-env.example](config/xbox-env.example) → `~/.config/xbox_bitcoind/xbox-env` |
 
 ### Install from Release
@@ -107,14 +107,14 @@ Day-to-day operation: **[docs/ops.md](docs/ops.md)**.
 
 ## Build from source
 
-| Target | Host | Command |
-|--------|------|---------|
-| Scaffold MSIX (no Core) | Windows + UWP C++ | `.\scripts\build-uwp.ps1` |
-| Core libs only | **VS 2026 18.3+**, vcpkg | `.\scripts\build-uwp.ps1 -CoreOnly` |
-| Product MSIX (reuse Core) | same | `.\scripts\build-uwp.ps1 -WithCore -SkipCoreBuild` |
-| Product MSIX (all-in-one) | same | `.\scripts\build-uwp.ps1 -WithCore` |
-| Desktop pin baseline | VS 2026 | `.\scripts\build-msvc-baseline.ps1` |
-| Linux pin smoke | Linux | `./scripts/fetch-bitcoin-core.sh && CI_SKIP_TESTS=1 ./scripts/build-linux-smoke.sh` |
+| Target                    | Host                     | Command                                                                             |
+| ------------------------- | ------------------------ | ----------------------------------------------------------------------------------- |
+| Scaffold MSIX (no Core)   | Windows + UWP C++        | `.\scripts\build-uwp.ps1`                                                           |
+| Core libs only            | **VS 2026 18.3+**, vcpkg | `.\scripts\build-uwp.ps1 -CoreOnly`                                                 |
+| Product MSIX (reuse Core) | same                     | `.\scripts\build-uwp.ps1 -WithCore -SkipCoreBuild`                                  |
+| Product MSIX (all-in-one) | same                     | `.\scripts\build-uwp.ps1 -WithCore`                                                 |
+| Desktop pin baseline      | VS 2026                  | `.\scripts\build-msvc-baseline.ps1`                                                 |
+| Linux pin smoke           | Linux                    | `./scripts/fetch-bitcoin-core.sh && CI_SKIP_TESTS=1 ./scripts/build-linux-smoke.sh` |
 
 Fetch the pin first on Windows with `.\scripts\fetch-bitcoin-core.ps1`.
 
@@ -155,30 +155,30 @@ docs/         guides — [docs/README.md](docs/README.md)
 
 ## Documentation
 
-| Audience | Start here |
-|----------|------------|
-| Run on console | [docs/ops.md](docs/ops.md) |
-| Doc index | [docs/README.md](docs/README.md) |
-| Tracking / issues | [docs/tracking.md](docs/tracking.md) |
-| Architecture | [docs/plan-core-uwp.md](docs/plan-core-uwp.md) |
-| CI / releases | [docs/ci.md](docs/ci.md) |
-| Scripts | [scripts/README.md](scripts/README.md) |
-| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Security | [SECURITY.md](SECURITY.md) |
-| Changelog | [CHANGELOG.md](CHANGELOG.md) |
+| Audience          | Start here                                     |
+| ----------------- | ---------------------------------------------- |
+| Run on console    | [docs/ops.md](docs/ops.md)                     |
+| Doc index         | [docs/README.md](docs/README.md)               |
+| Tracking / issues | [docs/tracking.md](docs/tracking.md)           |
+| Architecture      | [docs/plan-core-uwp.md](docs/plan-core-uwp.md) |
+| CI / releases     | [docs/ci.md](docs/ci.md)                       |
+| Scripts           | [scripts/README.md](scripts/README.md)         |
+| Contributing      | [CONTRIBUTING.md](CONTRIBUTING.md)             |
+| Security          | [SECURITY.md](SECURITY.md)                     |
+| Changelog         | [CHANGELOG.md](CHANGELOG.md)                   |
 
 Research archive (phase 0): [docs/research/](docs/research/00-feasibility.md).
 
 ## Status
 
-| Area | State |
-|------|--------|
-| **v1 engineering** | **Complete** ([docs/roadmap.md](docs/roadmap.md)) |
-| Architecture + UI | **Complete** — lifecycle, host plane, tip age / HEADERS·STALE ([docs/plan-core-uwp.md](docs/plan-core-uwp.md) · [docs/ui.md](docs/ui.md)) |
-| WithCore on Series S | Working — package **0.1.0.10017** (release **v0.1.2**); IBD mid-progress |
-| Soft-stop persistence | Tip conserved early + mid IBD; mid-IBD DELETE fallback still possible ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4)) |
-| Mainnet IBD → tip + 24h stable | **Ops pending** (timer running; `./scripts/v1-close-check.sh`) |
-| Wallet / Store / inbound listen | Out of scope for v1 |
+| Area                            | State                                                                                                                                                                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **v1 engineering**              | **Complete** ([docs/roadmap.md](docs/roadmap.md))                                                                                                                                                                      |
+| Architecture + UI               | **Complete** — lifecycle, host plane, tip age / HEADERS·STALE ([docs/plan-core-uwp.md](docs/plan-core-uwp.md) · [docs/ui.md](docs/ui.md))                                                                              |
+| WithCore on Series S            | Working — console package **0.1.0.10017** (**v0.1.2**); latest release **v0.1.3** / `0.1.0.10018` not yet deployed; IBD mid-progress                                                                                   |
+| Soft-stop persistence           | Tip conserved early + mid IBD; clean mid-IBD soft-stop field-verified ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) closed); tip retest [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
+| Mainnet IBD → tip + 24h stable  | **Ops pending** (timer running; `./scripts/v1-close-check.sh`)                                                                                                                                                         |
+| Wallet / Store / inbound listen | Out of scope for v1                                                                                                                                                                                                    |
 
 Live checklist: [docs/tracking.md](docs/tracking.md).
 

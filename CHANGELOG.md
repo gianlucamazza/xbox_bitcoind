@@ -22,6 +22,18 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 - `uwp/json_extract.h` — JSON extractors split out of `rpc_client.cpp`, host-testable via
   new `scripts/test-rpc-client.sh` (wired into ci-linux)
+- `scripts/check-conf-sync.sh` (ci-linux): asserts the embedded bitcoin.conf fallbacks in
+  `node_host.cpp` / `probes.cpp` match `config/bitcoin.conf.console`
+- `docs/troubleshooting.md` (symptom → cause → fix) and `docs/upgrade.md` (Core pin bump
+  - console MSIX upgrade — replaces the procedure forked between the pin file and ci.md)
+
+### Docs
+
+- Version/status reconciliation across README, docs and CHANGELOG link refs: console
+  0.1.0.10017 (v0.1.2) vs latest release v0.1.3 (0.1.0.10018) stated consistently;
+  issue #4 marked closed everywhere; roadmap release table completed; `dbcache=512`
+  corrected in console.md; stale package revisions labeled historical; `docs/ci.md`
+  aligned to the unified workflow layout
 
 ### Security
 
@@ -158,6 +170,8 @@ First public release.
 - Mainnet IBD can take a long time on a fresh datadir
 - No wallet UI; `listen=0` by default
 
-[Unreleased]: https://github.com/gianlucamazza/xbox_bitcoind/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/gianlucamazza/xbox_bitcoind/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.3
+[0.1.2]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.2
 [0.1.1]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1
 [0.1.0]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.0

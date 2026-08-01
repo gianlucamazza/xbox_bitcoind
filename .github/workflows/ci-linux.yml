@@ -11,7 +11,10 @@ on:
       - "scripts/**"
       - "uwp/ui_layout.h"
       - "uwp/json_extract.h"
+      - "uwp/node_host.cpp"
+      - "uwp/probes.cpp"
       - "uwp/xbb_version.generated.h"
+      - "config/bitcoin.conf.console"
       - "config/bitcoin-core.pin"
       - ".github/workflows/ci-linux.yml"
   pull_request:
@@ -19,7 +22,10 @@ on:
       - "scripts/**"
       - "uwp/ui_layout.h"
       - "uwp/json_extract.h"
+      - "uwp/node_host.cpp"
+      - "uwp/probes.cpp"
       - "uwp/xbb_version.generated.h"
+      - "config/bitcoin.conf.console"
       - "config/bitcoin-core.pin"
       - ".github/workflows/ci-linux.yml"
   workflow_dispatch:
@@ -84,6 +90,9 @@ jobs:
 
       - name: Pure JSON extractor unit tests
         run: ./scripts/test-rpc-client.sh
+
+      - name: Embedded conf fallback sync check
+        run: ./scripts/check-conf-sync.sh
 
       - name: Validate bitcoin-core.pin + generated version header
         env:

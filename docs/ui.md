@@ -4,31 +4,31 @@ Controller-first **10-foot** status UI for Series S Dev Mode (programmatic XAML)
 
 ![Status dashboard on console](assets/screenshot-console.png)
 
-*Live capture, package **0.1.0.75**, mid-IBD (~5%): Core **v31.1 · app 0.1.0.75** subtitle, tip age, primary/secondary KPIs, dual bars, sparkline, log. Ops: [tracking.md](tracking.md).*
+_Capture from package **0.1.0.75** (historical; console now runs 0.1.0.10017), mid-IBD (~5%): Core **v31.1 · app 0.1.0.75** subtitle, tip age, primary/secondary KPIs, dual bars, sparkline, log. Ops: [tracking.md](tracking.md)._
 
 ## Best practices (10-foot / TV)
 
-| Practice | How we apply it |
-|----------|-----------------|
-| **Measure usable surface** | `VisibleBounds` × `RawPixelsPerViewPixel` + ~5% title-safe inset (Xbox often reports 960×540@2× for 1080p) |
-| **No silent clipping** | Height **budget** + progressive disclosure (never drop primary KPIs invisibly) |
-| **No page scroll** | Full-viewport Grid shell; only `debug.log` scrolls |
-| **Primary vs secondary data** | P1: Height/Progress/Peers/Behind always; P3 secondary row or folded into meta |
-| **Decorative first to go** | Sparkline is P4 — hide when budget tight |
-| **Safe padding** | Overscan inset + content pad from tokens |
-| **Focus order** | Start → Stop soft → Refresh → log |
-| **High contrast** | Dark cards, semantic colors, large type on TV |
+| Practice                      | How we apply it                                                                                            |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Measure usable surface**    | `VisibleBounds` × `RawPixelsPerViewPixel` + ~5% title-safe inset (Xbox often reports 960×540@2× for 1080p) |
+| **No silent clipping**        | Height **budget** + progressive disclosure (never drop primary KPIs invisibly)                             |
+| **No page scroll**            | Full-viewport Grid shell; only `debug.log` scrolls                                                         |
+| **Primary vs secondary data** | P1: Height/Progress/Peers/Behind always; P3 secondary row or folded into meta                              |
+| **Decorative first to go**    | Sparkline is P4 — hide when budget tight                                                                   |
+| **Safe padding**              | Overscan inset + content pad from tokens                                                                   |
+| **Focus order**               | Start → Stop soft → Refresh → log                                                                          |
+| **High contrast**             | Dark cards, semantic colors, large type on TV                                                              |
 
 ### Priority table
 
-| P | Content | When tight |
-|---|---------|------------|
-| P0 | Header + actions | always |
-| P1 | Primary 4 metrics | always |
-| P2 | Dual bars + one-line meta | always |
-| P3 | Secondary 4 metrics | collapse → fold into meta |
-| P4 | Sparkline | hide |
-| P5 | DEBUG.LOG | shrink min height (floor 72 DIP) |
+| P   | Content                   | When tight                       |
+| --- | ------------------------- | -------------------------------- |
+| P0  | Header + actions          | always                           |
+| P1  | Primary 4 metrics         | always                           |
+| P2  | Dual bars + one-line meta | always                           |
+| P3  | Secondary 4 metrics       | collapse → fold into meta        |
+| P4  | Sparkline                 | hide                             |
+| P5  | DEBUG.LOG                 | shrink min height (floor 72 DIP) |
 
 ## Architecture
 
@@ -40,10 +40,10 @@ Page.SizeChanged / VisibleBounds
   → ApplyLayout(tokens, plan) // mutate live tree
 ```
 
-| Type | Role |
-|------|------|
-| `UiDensity` | Compact · Standard · Comfort |
-| `UiLayout` | Fonts, pads, card/spark/log sizes, columns |
+| Type         | Role                                           |
+| ------------ | ---------------------------------------------- |
+| `UiDensity`  | Compact · Standard · Comfort                   |
+| `UiLayout`   | Fonts, pads, card/spark/log sizes, columns     |
 | `LayoutPlan` | `show_secondary`, `show_spark`, `log_min_h`, … |
 
 ### Shell rows
@@ -61,32 +61,32 @@ Secondary: **HEADERS · DISK · MEMPOOL · UPTIME** (or meta line when hidden)
 
 ## Visualization
 
-| Element | Practice |
-|---------|----------|
-| Dual progress bars | Headers (cyan) = blocks÷headers; Verified (orange) = `verificationprogress` |
-| Sparkline | Session trend; optional under budget |
-| ETA | Rough remaining time from session progress samples (meta line / progress label) |
-| Semantic colors | Peers red if 0; behind orange if large; progress green when synced |
-| Status pill | Coarse state + `updated HH:MM:SS`; **STOPPING Ns** while soft-stop joins |
-| Header subtitle | **Bitcoin Core v31.1 · app 0.1.0.xx** — Core pin (build-time via `xbb_version.generated.h`) + MSIX package (runtime). Do not confuse app rev with Core. |
-| Progress % | One decimal while syncing (`14.0%`); whole percent near tip |
-| Tip age | From `mediantime` — `tip 2m` / `tip now` on progress line + network label when useful |
-| KPI cards | Label + value centered in each metric box |
-| Splash / tiles | Official Core mark from `share/pixmaps` (`scripts/generate-uwp-assets.py`) |
+| Element            | Practice                                                                                                                                                |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dual progress bars | Headers (cyan) = blocks÷headers; Verified (orange) = `verificationprogress`                                                                             |
+| Sparkline          | Session trend; optional under budget                                                                                                                    |
+| ETA                | Rough remaining time from session progress samples (meta line / progress label)                                                                         |
+| Semantic colors    | Peers red if 0; behind orange if large; progress green when synced                                                                                      |
+| Status pill        | Coarse state + `updated HH:MM:SS`; **STOPPING Ns** while soft-stop joins                                                                                |
+| Header subtitle    | **Bitcoin Core v31.1 · app 0.1.0.xx** — Core pin (build-time via `xbb_version.generated.h`) + MSIX package (runtime). Do not confuse app rev with Core. |
+| Progress %         | One decimal while syncing (`14.0%`); whole percent near tip                                                                                             |
+| Tip age            | From `mediantime` — `tip 2m` / `tip now` on progress line + network label when useful                                                                   |
+| KPI cards          | Label + value centered in each metric box                                                                                                               |
+| Splash / tiles     | Official Core mark from `share/pixmaps` (`scripts/generate-uwp-assets.py`)                                                                              |
 
 ### Status pill
 
-| Pill | Meaning |
-|------|---------|
-| `NO CORE` | Scaffold / not WithCore |
-| `STOPPED` / `ERROR` | Node thread not running |
-| `STARTING` | Running, RPC not ready |
-| `STOPPING Ns` | Soft-stop in progress |
-| `NET OFF` | `networkactive=false` |
-| `HEADERS` | Early IBD: mostly header download |
-| `SYNCING` | Block validation / IBD |
-| `SYNCED` | Near tip |
-| `STALE` | Near tip but `mediantime` older than ~45 minutes (stall / isolation) |
+| Pill                | Meaning                                                              |
+| ------------------- | -------------------------------------------------------------------- |
+| `NO CORE`           | Scaffold / not WithCore                                              |
+| `STOPPED` / `ERROR` | Node thread not running                                              |
+| `STARTING`          | Running, RPC not ready                                               |
+| `STOPPING Ns`       | Soft-stop in progress                                                |
+| `NET OFF`           | `networkactive=false`                                                |
+| `HEADERS`           | Early IBD: mostly header download                                    |
+| `SYNCING`           | Block validation / IBD                                               |
+| `SYNCED`            | Near tip                                                             |
+| `STALE`             | Near tip but `mediantime` older than ~45 minutes (stall / isolation) |
 
 No soft-fork **signaling** UI (BIP9 deployments) — operational consensus only.
 
@@ -101,14 +101,14 @@ No soft-fork **signaling** UI (BIP9 deployments) — operational consensus only.
 
 ## Data sources
 
-| Field | RPC |
-|-------|-----|
-| Chain / IBD / disk / mediantime | `getblockchaininfo` |
-| Peers / network | `getconnectioncount`, `getnetworkinfo` |
-| Mempool | `getmempoolinfo` |
-| Uptime | `uptime` |
-| Stop | `stop` |
-| Log | `debug.log` tail |
+| Field                           | RPC                                    |
+| ------------------------------- | -------------------------------------- |
+| Chain / IBD / disk / mediantime | `getblockchaininfo`                    |
+| Peers / network                 | `getconnectioncount`, `getnetworkinfo` |
+| Mempool                         | `getmempoolinfo`                       |
+| Uptime                          | `uptime`                               |
+| Stop                            | `stop`                                 |
+| Log                             | `debug.log` tail                       |
 
 ## Files
 

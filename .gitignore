@@ -23,6 +23,7 @@ uwp/**/ARM64/
 # Build / package artefacts
 build/
 out/
+dist/
 **/build-msvc-baseline/
 **/build-linux-smoke/
 *.msix
