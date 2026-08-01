@@ -63,10 +63,10 @@ def solid(size: tuple[int, int], color=BG) -> Image.Image:
 
 def paste_icon(canvas: Image.Image, icon: Image.Image, cx: float, cy: float, diameter: float) -> None:
     """Center Core icon at (cx,cy) with given diameter (LANCZOS)."""
-    d = max(1, int(round(diameter)))
+    d = max(1, round(diameter))
     mark = icon.resize((d, d), Image.Resampling.LANCZOS)
-    x = int(round(cx - d / 2))
-    y = int(round(cy - d / 2))
+    x = round(cx - d / 2)
+    y = round(cy - d / 2)
     canvas.alpha_composite(mark, (x, y))
 
 

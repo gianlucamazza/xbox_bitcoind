@@ -17,6 +17,7 @@ on:
       - "config/bitcoin.conf.console"
       - "config/bitcoin-core.pin"
       - "PSScriptAnalyzerSettings.psd1"
+      - ".ruff.toml"
       - ".github/workflows/**"
   pull_request:
     paths:
@@ -29,6 +30,7 @@ on:
       - "config/bitcoin.conf.console"
       - "config/bitcoin-core.pin"
       - "PSScriptAnalyzerSettings.psd1"
+      - ".ruff.toml"
       - ".github/workflows/**"
   workflow_dispatch:
     inputs:
