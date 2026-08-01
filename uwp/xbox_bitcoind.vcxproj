@@ -209,6 +209,7 @@
     <ClInclude Include="App.h" />
     <ClInclude Include="MainPage.h" />
     <ClInclude Include="json_extract.h" />
+    <ClInclude Include="text_util.h" />
     <ClInclude Include="ui_layout.h" />
     <ClInclude Include="xbb_version.generated.h" />
     <ClInclude Include="pch.h" />

@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
-# check-conf-sync.sh — assert the embedded bitcoin.conf fallbacks in the UWP host
-# (uwp/node_host.cpp, uwp/probes.cpp) carry the same key=value set as the
+# check-conf-sync.sh — assert the embedded bitcoin.conf fallback in the UWP host
+# (uwp/node_host.cpp — single home since the probes reuse SeedDatadirConf) matches the
 # canonical config/bitcoin.conf.console. Used by ci-linux lint.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONF="${ROOT}/config/bitcoin.conf.console"
-
-fail=0
 
 conf_keys() {
 	grep -E '^[a-z]+=' "${CONF}" | sort
@@ -32,16 +30,11 @@ for line in literal.split("\\n"):
 PY
 }
 
-for cpp in uwp/node_host.cpp uwp/probes.cpp; do
-	if ! diff <(conf_keys) <(cpp_keys "${ROOT}/${cpp}" | sort) >/dev/null; then
-		echo "MISMATCH: ${cpp} embedded conf fallback != config/bitcoin.conf.console" >&2
-		diff <(conf_keys) <(cpp_keys "${ROOT}/${cpp}" | sort) >&2 || true
-		fail=1
-	fi
-done
-
-if [[ "${fail}" -ne 0 ]]; then
-	echo "Keep the embedded fallbacks in sync with config/bitcoin.conf.console" >&2
+CPP="uwp/node_host.cpp"
+if ! diff <(conf_keys) <(cpp_keys "${ROOT}/${CPP}" | sort) >/dev/null; then
+	echo "MISMATCH: ${CPP} embedded conf fallback != config/bitcoin.conf.console" >&2
+	diff <(conf_keys) <(cpp_keys "${ROOT}/${CPP}" | sort) >&2 || true
+	echo "Keep the embedded fallback in sync with config/bitcoin.conf.console" >&2
 	exit 1
 fi
-echo "conf-sync OK: embedded fallbacks match config/bitcoin.conf.console"
+echo "conf-sync OK: embedded fallback matches config/bitcoin.conf.console"

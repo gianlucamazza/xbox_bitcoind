@@ -112,6 +112,8 @@ std::optional<std::string> RpcCall(const std::string& datadir_utf8, const std::s
 
             HttpStringContent content(winrt::to_hstring(body.str()), UnicodeEncoding::Utf8,
                                       L"application/json");
+            // Mainnet default RPC port, by design: the packaged conf pins mainnet and
+            // never sets rpcport. A testnet/signet datadir would need this to change.
             Uri uri(L"http://127.0.0.1:8332/");
             HttpResponseMessage resp = client.PostAsync(uri, content).get();
             const auto status = resp.StatusCode();

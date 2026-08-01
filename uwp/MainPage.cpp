@@ -8,6 +8,7 @@
 #include "node_host.h"
 #include "probes.h"
 #include "rpc_client.h"
+#include "text_util.h"
 #include "xbb_version.generated.h"
 
 #include <winrt/Windows.Graphics.Display.h>
@@ -66,17 +67,6 @@ constexpr size_t kHistMax = 90;
 // Matches StartUiTimer interval (used for session ETA).
 constexpr double kRefreshIntervalSec = 2.0;
 
-std::wstring Utf8ToWide(std::string const& text) {
-    if (text.empty()) {
-        return {};
-    }
-    int need = MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, nullptr, 0);
-    std::wstring w(static_cast<size_t>(need > 0 ? need - 1 : 0), L'\0');
-    if (need > 1) {
-        MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, w.data(), need);
-    }
-    return w;
-}
 
 std::wstring FormatInt(int v) {
     std::wstring s = std::to_wstring(v);
@@ -289,7 +279,8 @@ void MainPageController::Init() {
     StartUiTimer();
 }
 
-Border MainPageController::MakeMetricCard(wchar_t const* label, TextBlock& value_out) {
+Border MainPageController::MakeMetricCard(wchar_t const* label, TextBlock& value_out,
+                                          TextBlock& label_out) {
     auto border = Border{};
     border.Background(SolidColorBrush{kCard});
     border.BorderBrush(SolidColorBrush{kCardBorder});
@@ -318,7 +309,8 @@ Border MainPageController::MakeMetricCard(wchar_t const* label, TextBlock& value
     stack.VerticalAlignment(VerticalAlignment::Center);
     stack.HorizontalAlignment(HorizontalAlignment::Stretch);
     stack.Padding(ThicknessHelper::FromLengths(4, 0, 2, 0));
-    auto lab = TextBlock{};
+    label_out = TextBlock{};
+    auto lab = label_out;
     lab.Text(label);
     lab.CharacterSpacing(40);
     lab.Foreground(SolidColorBrush{kMuted});
@@ -336,9 +328,6 @@ Border MainPageController::MakeMetricCard(wchar_t const* label, TextBlock& value
     Grid::SetColumn(stack, 1);
     root.Children().Append(stack);
     border.Child(root);
-
-    // Track label for ApplyLayout font updates (last child path via value_out sibling).
-    // Labels stored by callers alongside cards.
     return border;
 }
 
@@ -433,10 +422,11 @@ FrameworkElement MainPageController::BuildPrimaryMetrics() {
     m_primary_values.clear();
 
     auto add = [&](wchar_t const* lab, TextBlock& val) {
-        auto card = MakeMetricCard(lab, val);
-        // Recover label from card for ApplyLayout (first TextBlock in stack).
+        TextBlock label{nullptr};
+        auto card = MakeMetricCard(lab, val, label);
         m_primary_cards.push_back(card);
         m_primary_values.push_back(val);
+        m_primary_labels.push_back(label);
         m_primary_grid.Children().Append(card);
     };
     // P1 IBD-critical order
@@ -444,16 +434,6 @@ FrameworkElement MainPageController::BuildPrimaryMetrics() {
     add(L"PROGRESS", m_val_progress);
     add(L"PEERS", m_val_peers);
     add(L"BEHIND", m_val_behind);
-
-    // Extract labels for font updates
-    for (auto const& card : m_primary_cards) {
-        try {
-            auto root = card.Child().as<Grid>();
-            auto stack = root.Children().GetAt(1).as<StackPanel>();
-            m_primary_labels.push_back(stack.Children().GetAt(0).as<TextBlock>());
-        } catch (...) {
-        }
-    }
 
     LayoutMetricRow(m_primary_grid, m_primary_cards, 4);
     return m_primary_grid;
@@ -466,24 +446,17 @@ FrameworkElement MainPageController::BuildSecondaryMetrics() {
     m_secondary_values.clear();
 
     auto add = [&](wchar_t const* lab, TextBlock& val) {
-        auto card = MakeMetricCard(lab, val);
+        TextBlock label{nullptr};
+        auto card = MakeMetricCard(lab, val, label);
         m_secondary_cards.push_back(card);
         m_secondary_values.push_back(val);
+        m_secondary_labels.push_back(label);
         m_secondary_grid.Children().Append(card);
     };
     add(L"HEADERS", m_val_headers);
     add(L"DISK", m_val_disk);
     add(L"MEMPOOL", m_val_mempool);
     add(L"UPTIME", m_val_uptime);
-
-    for (auto const& card : m_secondary_cards) {
-        try {
-            auto root = card.Child().as<Grid>();
-            auto stack = root.Children().GetAt(1).as<StackPanel>();
-            m_secondary_labels.push_back(stack.Children().GetAt(0).as<TextBlock>());
-        } catch (...) {
-        }
-    }
 
     LayoutMetricRow(m_secondary_grid, m_secondary_cards, 4);
     return m_secondary_grid;
@@ -908,14 +881,10 @@ void MainPageController::SetMetric(TextBlock const& value, std::wstring const& t
     value.Foreground(SolidColorBrush{color});
 }
 
-void MainPageController::PushHistory(double verification, int blocks) {
+void MainPageController::PushHistory(double verification) {
     m_hist_progress.push_back(std::clamp(verification, 0.0, 1.0));
-    m_hist_blocks.push_back(blocks);
     while (m_hist_progress.size() > kHistMax) {
         m_hist_progress.pop_front();
-    }
-    while (m_hist_blocks.size() > kHistMax) {
-        m_hist_blocks.pop_front();
     }
     RedrawSparkline();
 }
@@ -1015,7 +984,6 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
     // would poison the slope, so drop history on running transitions.
     if (st.running != m_last_running) {
         m_hist_progress.clear();
-        m_hist_blocks.clear();
         RedrawSparkline();
     }
     m_last_running = st.running;
@@ -1051,8 +1019,9 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         m_btn_start.IsEnabled(false);
         m_btn_stop.IsEnabled(true);
         StylePrimaryButton(m_btn_start, false);
-    } else if (st.rpc_ready) {
-        // Near tip: flag stale chain tip (no new blocks for a long time).
+    } else {
+        // rpc_ready is guaranteed here (the !rpc_ready branch above returned the
+        // chain to STARTING) — near tip: flag stale chain tip (no new blocks for long).
         const int64_t age = TipAgeSec(st.mediantime);
         if (age > 45 * 60 && st.connections > 0) {
             SetPill(L"STALE", kYellow);
@@ -1108,7 +1077,7 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
             m_bar_verify.Value(verify);
             m_bar_verify.Foreground(SolidColorBrush{prog_c});
         }
-        PushHistory(verify, st.blocks);
+        PushHistory(verify);
 
         std::wstring eta;
         if (syncing && m_hist_progress.size() >= 5) {

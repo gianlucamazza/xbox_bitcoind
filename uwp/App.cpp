@@ -94,19 +94,24 @@ void App::OnResuming(IInspectable const&, IInspectable const&) {
 
 // UWP entry: Appx EntryPoint="xbox_bitcoind.App" → factory creates App.
 int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
+    // A fatal XAML/HRESULT failure must not exit "successfully" — the host-side
+    // tooling reads the process exit code.
     try {
         winrt::Windows::UI::Xaml::Application::Start(
             [](auto&&) { winrt::make<::winrt::xbox_bitcoind::implementation::App>(); });
+        return 0;
     } catch (winrt::hresult_error const& e) {
         char buf[256];
         snprintf(buf, sizeof(buf), "[app] wWinMain hresult: 0x%08X\n",
                  static_cast<unsigned>(e.code().value));
         OutputDebugStringA(buf);
         xbb::Logf("%s", buf);
+        return e.code().value ? e.code().value : 1;
     } catch (std::exception const& e) {
         xbb::Logf("[app] wWinMain exception: %s", e.what());
+        return 1;
     } catch (...) {
         xbb::Logf("[app] wWinMain: unknown exception");
+        return 1;
     }
-    return 0;
 }

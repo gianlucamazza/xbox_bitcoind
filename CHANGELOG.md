@@ -13,6 +13,19 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ## [Unreleased]
 
+### Changed
+
+- Probes: heavy checks (16 MiB write probe, outbound TCP to a third-party host) run once
+  and are cached in `probe-results.txt` — no more flash wear / network connect on every
+  launch; probe chunk files are always deleted afterwards; datadir seeding still runs at
+  every start (shared `SeedDatadirConf` with the node host — embedded conf fallback now
+  lives in one place)
+- Manifest: dropped unused `removableStorage` capability
+- `wWinMain` returns non-zero on fatal startup failure (was: silent `return 0`)
+- UI cleanups: metric card labels returned directly by `MakeMetricCard` (no more child-index
+  recovery with silent catch); dead blocks history removed; long log lines no longer
+  silently truncated at 2048 chars; UTF-8⇄UTF-16 helpers unified in `uwp/text_util.h`
+
 ## [0.1.4] — 2026-08-01
 
 Full-repo review closure: UWP host concurrency fixes, RPC parsing corrections,

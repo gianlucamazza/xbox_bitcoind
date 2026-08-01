@@ -49,6 +49,11 @@ void NodeStop();
 // true if compiled with XBB_WITH_CORE
 bool NodeCoreLinked();
 
+// Ensure <datadir> exists and bitcoin.conf is present (packaged profile, else
+// embedded fallback). Never overwrites an existing conf. Returns a short
+// status string for probes/logs. Used by NodeStart and the datadir probe.
+std::string SeedDatadirConf();
+
 std::string NodeDatadirUtf8();
 
 } // namespace xbb

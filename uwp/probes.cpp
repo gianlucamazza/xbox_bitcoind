@@ -3,10 +3,12 @@
 
 #include "pch.h"
 #include "log.h"
+#include "node_host.h"
 #include "probes.h"
 
 #include <chrono>
 #include <fstream>
+#include <optional>
 #include <sstream>
 
 #pragma comment(lib, "ws2_32.lib")
@@ -16,12 +18,22 @@ namespace {
 
 ProbeResult ProbeLocalStateWrite() {
     ProbeResult r{"localstate_write", false, {}};
+    // Probe files are always deleted afterwards — leaving 16 MiB behind on every
+    // launch is pointless flash wear on a console that already does IBD writes.
+    constexpr size_t kChunk = 4 * 1024 * 1024;
+    constexpr int kFiles = 4;
+    auto dir = LocalStatePath() + L"\\probe";
+    auto cleanup = [&]() {
+        for (int i = 0; i < kFiles; ++i) {
+            wchar_t name[64];
+            swprintf(name, 64, L"\\probe\\chunk_%02d.bin", i);
+            DeleteFileW((LocalStatePath() + name).c_str());
+        }
+        RemoveDirectoryW(dir.c_str());
+    };
     try {
-        auto dir = LocalStatePath() + L"\\probe";
         CreateDirectoryW(dir.c_str(), nullptr);
         // Several 4 MiB files (well under 2 GB single-file limit)
-        constexpr size_t kChunk = 4 * 1024 * 1024;
-        constexpr int kFiles = 4;
         std::vector<char> buf(kChunk, static_cast<char>(0xAB));
         size_t total = 0;
         for (int i = 0; i < kFiles; ++i) {
@@ -31,22 +43,27 @@ ProbeResult ProbeLocalStateWrite() {
             FILE* f = _wfopen(path.c_str(), L"wb");
             if (!f) {
                 r.detail = "fopen failed";
+                cleanup();
                 return r;
             }
             if (fwrite(buf.data(), 1, buf.size(), f) != buf.size()) {
                 fclose(f);
                 r.detail = "fwrite short";
+                cleanup();
                 return r;
             }
             fclose(f);
             total += buf.size();
         }
+        cleanup();
         r.ok = true;
         r.detail = "wrote " + std::to_string(total / (1024 * 1024)) + " MiB across " +
-                   std::to_string(kFiles) + " files under LocalState\\probe";
+                   std::to_string(kFiles) + " files under LocalState\\probe (cleaned up)";
     } catch (const std::exception& ex) {
+        cleanup();
         r.detail = ex.what();
     } catch (...) {
+        cleanup();
         r.detail = "unknown exception";
     }
     return r;
@@ -142,54 +159,62 @@ ProbeResult ProbeOutboundTcp() {
 ProbeResult ProbeDatadirLayout() {
     ProbeResult r{"datadir_layout", false, {}};
     try {
-        auto base = LocalStatePath() + L"\\bitcoin";
-        CreateDirectoryW(base.c_str(), nullptr);
-        auto conf = base + L"\\bitcoin.conf";
-        // Never overwrite operator conf (IBD knobs / apply-console-conf). Seed only if missing.
-        const bool conf_missing = GetFileAttributesW(conf.c_str()) == INVALID_FILE_ATTRIBUTES;
-        if (conf_missing) {
-            bool seeded = false;
-            try {
-                auto ip = winrt::Windows::ApplicationModel::Package::Current().InstalledLocation().Path();
-                std::wstring packaged = std::wstring(ip.c_str()) + L"\\bitcoin.conf.console";
-                if (GetFileAttributesW(packaged.c_str()) != INVALID_FILE_ATTRIBUTES) {
-                    seeded = CopyFileW(packaged.c_str(), conf.c_str(), TRUE) != 0;
-                }
-            } catch (...) {
-            }
-            if (!seeded) {
-                // Keep in sync with config/bitcoin.conf.console / node_host fallback.
-                const char* content =
-                    "prune=550\nserver=1\nlisten=0\ndbcache=512\nmaxconnections=16\n"
-                    "maxmempool=50\nblocksonly=1\n"
-                    "printtoconsole=0\nupnp=0\nnatpmp=0\nrpcallowip=127.0.0.1\nrpcbind=127.0.0.1\n";
-                FILE* f = _wfopen(conf.c_str(), L"wb");
-                if (!f) {
-                    r.detail = "cannot write bitcoin.conf";
-                    return r;
-                }
-                fwrite(content, 1, strlen(content), f);
-                fclose(f);
-            }
-        }
-        r.ok = true;
-        // Report UTF-8 path for UI
-        int need = WideCharToMultiByte(CP_UTF8, 0, base.c_str(), -1, nullptr, 0, nullptr, nullptr);
-        std::string utf8(static_cast<size_t>(need > 0 ? need - 1 : 0), '\0');
-        if (need > 1) {
-            WideCharToMultiByte(CP_UTF8, 0, base.c_str(), -1, utf8.data(), need, nullptr, nullptr);
-        }
-        r.detail = conf_missing ? ("datadir seeded: " + utf8) : ("datadir ready (conf kept): " + utf8);
+        // Single implementation shared with NodeStart (node_host).
+        r.detail = SeedDatadirConf();
+        r.ok = r.detail.rfind("error", 0) != 0;
     } catch (...) {
         r.detail = "exception";
     }
     return r;
 }
 
+// Cached results from a previous launch: heavy probes (16 MiB write, outbound
+// TCP to a third-party host) should not rerun on every start. Valid only if the
+// file parses and every probe was OK — any FAIL means re-probe next launch.
+std::optional<std::vector<ProbeResult>> ReadCachedProbeResults() {
+    std::ifstream in(LocalStateFile(L"probe-results.txt"));
+    if (!in) {
+        return std::nullopt;
+    }
+    std::vector<ProbeResult> out;
+    std::string line;
+    while (std::getline(in, line)) {
+        const auto t1 = line.find('\t');
+        const auto t2 = line.find('\t', t1 + 1);
+        if (t1 == std::string::npos || t2 == std::string::npos) {
+            return std::nullopt;
+        }
+        ProbeResult p;
+        p.name = line.substr(0, t1);
+        p.ok = line.substr(t1 + 1, t2 - t1 - 1) == "OK";
+        p.detail = line.substr(t2 + 1);
+        if (!p.ok) {
+            return std::nullopt;
+        }
+        out.push_back(std::move(p));
+    }
+    if (out.size() < 4) {
+        return std::nullopt;
+    }
+    return out;
+}
+
 } // namespace
 
 std::vector<ProbeResult> RunProbes() {
     LogInit();
+    if (auto cached = ReadCachedProbeResults()) {
+        // All probes passed on a previous launch — skip the heavy ones (flash
+        // wear + third-party connect). Datadir seeding is cheap and idempotent:
+        // always refresh it, so a wiped datadir is re-seeded at next start.
+        Logf("[probe] using cached probe results (all OK previously)");
+        for (auto& p : *cached) {
+            if (p.name == "datadir_layout") {
+                p = ProbeDatadirLayout();
+            }
+        }
+        return *cached;
+    }
     Logf("[probe] starting AppContainer probes");
     std::vector<ProbeResult> out;
     out.push_back(ProbeLocalStateWrite());

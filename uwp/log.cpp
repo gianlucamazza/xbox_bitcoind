@@ -63,8 +63,19 @@ void Logf(const char* fmt, ...) {
     char buf[2048];
     va_list ap;
     va_start(ap, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_list ap2;
+    va_copy(ap2, ap);
+    const int need = vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
+    if (need >= static_cast<int>(sizeof(buf))) {
+        // Rare long line (e.g. probe report): heap buffer instead of silent truncation.
+        std::string big(static_cast<size_t>(need) + 1, '\0');
+        vsnprintf(big.data(), big.size(), fmt, ap2);
+        va_end(ap2);
+        LogWrite(big.c_str());
+        return;
+    }
+    va_end(ap2);
     LogWrite(buf);
 }
 

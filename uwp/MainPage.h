@@ -44,7 +44,8 @@ class MainPageController : public std::enable_shared_from_this<MainPageControlle
     winrt::Windows::UI::Xaml::FrameworkElement BuildLogPanel();
 
     winrt::Windows::UI::Xaml::Controls::Border MakeMetricCard(wchar_t const* label,
-                                                             winrt::Windows::UI::Xaml::Controls::TextBlock& value_out);
+                                                             winrt::Windows::UI::Xaml::Controls::TextBlock& value_out,
+                                                             winrt::Windows::UI::Xaml::Controls::TextBlock& label_out);
 
     void WireButtons();
     void WireGamepadFocus();
@@ -61,7 +62,7 @@ class MainPageController : public std::enable_shared_from_this<MainPageControlle
     void SetMetric(winrt::Windows::UI::Xaml::Controls::TextBlock const& value, std::wstring const& text,
                    winrt::Windows::UI::Color color);
     void StylePrimaryButton(winrt::Windows::UI::Xaml::Controls::Button const& btn, bool primary);
-    void PushHistory(double verification, int blocks);
+    void PushHistory(double verification);
     void RedrawSparkline();
     void OnStartClick();
     void OnStopClick();
@@ -124,7 +125,6 @@ class MainPageController : public std::enable_shared_from_this<MainPageControlle
     std::string m_probe_note;
     std::wstring m_last_log;
     std::deque<double> m_hist_progress;
-    std::deque<int> m_hist_blocks;
     // Cached secondary values for meta fold when secondary grid hidden
     int m_cache_headers = 0;
     int64_t m_cache_disk = 0;

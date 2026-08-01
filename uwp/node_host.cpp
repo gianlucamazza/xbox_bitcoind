@@ -6,6 +6,7 @@
 #include "log.h"
 #include "node_host.h"
 #include "rpc_client.h"
+#include "text_util.h"
 
 #include <chrono>
 #include <mutex>
@@ -37,47 +38,54 @@ std::wstring DatadirW() {
     return LocalStatePath() + L"\\bitcoin";
 }
 
-std::string WideToUtf8(const std::wstring& w) {
-    if (w.empty()) {
-        return {};
-    }
-    int need = WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr);
-    std::string u(static_cast<size_t>(need > 0 ? need - 1 : 0), '\0');
-    if (need > 1) {
-        WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, u.data(), need, nullptr, nullptr);
-    }
-    return u;
-}
+} // namespace
 
-void EnsureDatadirLayout() {
+std::string SeedDatadirConf() {
     auto base = DatadirW();
     CreateDirectoryW(base.c_str(), nullptr);
     auto conf = base + L"\\bitcoin.conf";
-    if (GetFileAttributesW(conf.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        std::wstring packaged;
-        try {
-            auto ip = winrt::Windows::ApplicationModel::Package::Current().InstalledLocation().Path();
-            packaged = std::wstring(ip.c_str()) + L"\\bitcoin.conf.console";
-        } catch (...) {
-        }
-        if (!packaged.empty() && GetFileAttributesW(packaged.c_str()) != INVALID_FILE_ATTRIBUTES) {
-            CopyFileW(packaged.c_str(), conf.c_str(), TRUE);
-        } else {
-            // Last-resort only: package should ship config/bitcoin.conf.console as
-            // bitcoin.conf.console (vcxproj). Keep key knobs aligned with that file.
-            // Prefer: ./scripts/apply-console-conf.sh for operator updates.
-            const char* content =
-                "prune=550\nserver=1\nlisten=0\ndbcache=512\nmaxconnections=16\n"
-                "maxmempool=50\nblocksonly=1\n"
-                "printtoconsole=0\nupnp=0\nnatpmp=0\nrpcallowip=127.0.0.1\nrpcbind=127.0.0.1\n";
-            FILE* f = _wfopen(conf.c_str(), L"wb");
-            if (f) {
-                fwrite(content, 1, strlen(content), f);
-                fclose(f);
-            }
-            Logf("[node] bitcoin.conf missing package seed; wrote embedded fallback");
-        }
+    // Never overwrite operator conf (IBD knobs / apply-console-conf). Seed only if missing.
+    if (GetFileAttributesW(conf.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        return "conf kept: " + WideToUtf8(base);
     }
+    std::wstring packaged;
+    try {
+        auto ip = winrt::Windows::ApplicationModel::Package::Current().InstalledLocation().Path();
+        packaged = std::wstring(ip.c_str()) + L"\\bitcoin.conf.console";
+    } catch (...) {
+    }
+    if (!packaged.empty() && GetFileAttributesW(packaged.c_str()) != INVALID_FILE_ATTRIBUTES) {
+        packaged.clear();
+    }
+    if (!packaged.empty() && CopyFileW(packaged.c_str(), conf.c_str(), TRUE)) {
+        return "datadir seeded from package: " + WideToUtf8(base);
+    }
+    // Last-resort only: package should ship config/bitcoin.conf.console as
+    // bitcoin.conf.console (vcxproj). Keep key knobs aligned with that file
+    // (enforced by scripts/check-conf-sync.sh in CI).
+    // Prefer: ./scripts/apply-console-conf.sh for operator updates.
+    const char* content =
+        "prune=550\nserver=1\nlisten=0\ndbcache=512\nmaxconnections=16\n"
+        "maxmempool=50\nblocksonly=1\n"
+        "printtoconsole=0\nupnp=0\nnatpmp=0\nrpcallowip=127.0.0.1\nrpcbind=127.0.0.1\n";
+    FILE* f = _wfopen(conf.c_str(), L"wb");
+    if (!f) {
+        return "error: cannot write bitcoin.conf under " + WideToUtf8(base);
+    }
+    const size_t len = strlen(content);
+    const bool ok = fwrite(content, 1, len, f) == len;
+    fclose(f);
+    if (!ok) {
+        return "error: short write seeding bitcoin.conf";
+    }
+    Logf("[node] bitcoin.conf missing package seed; wrote embedded fallback");
+    return "datadir seeded (embedded fallback): " + WideToUtf8(base);
+}
+
+namespace {
+
+void EnsureDatadirLayout() {
+    SeedDatadirConf();
 }
 
 #ifdef XBB_WITH_CORE
