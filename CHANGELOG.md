@@ -13,6 +13,12 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ## [Unreleased]
 
+## [0.1.4] — 2026-08-01
+
+Full-repo review closure: UWP host concurrency fixes, RPC parsing corrections,
+CI/patch hardening, script security, docs reconciliation. Bitcoin Core pin
+remains **v31.1**.
+
 ### Added
 
 - CI `patch-check` job (Linux, runs on PRs too): pinned Core fetch + full UWP patch-set
@@ -25,7 +31,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 - `scripts/check-conf-sync.sh` (ci-linux): asserts the embedded bitcoin.conf fallbacks in
   `node_host.cpp` / `probes.cpp` match `config/bitcoin.conf.console`
 - `docs/troubleshooting.md` (symptom → cause → fix) and `docs/upgrade.md` (Core pin bump
-  - console MSIX upgrade — replaces the procedure forked between the pin file and ci.md)
+  and console MSIX upgrade — replaces the procedure forked between the pin file and ci.md)
 
 ### Docs
 
@@ -170,7 +176,8 @@ First public release.
 - Mainnet IBD can take a long time on a fresh datadir
 - No wallet UI; `listen=0` by default
 
-[Unreleased]: https://github.com/gianlucamazza/xbox_bitcoind/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/gianlucamazza/xbox_bitcoind/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.4
 [0.1.3]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.3
 [0.1.2]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.2
 [0.1.1]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1
