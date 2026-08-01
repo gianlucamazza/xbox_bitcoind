@@ -20,10 +20,10 @@ Update this file when gates move; use Issues for discussion and assignment.
 | Engineering v1    | **Complete**                                                                                                                                                                                                                |
 | Architecture + UI | **Complete** (lifecycle SSOT, tip age, HEADERS/STALE) — [plan-core-uwp.md](plan-core-uwp.md) · [ui.md](ui.md)                                                                                                               |
 | Git tag / Release | **[v0.1.3](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.3)** · MSIX `0.1.0.10018` (docs/benchmarks; product = v0.1.2 lineage)                                                                           |
-| Console package   | **0.1.0.10017** (v0.1.2) — leave running; optional upgrade to **10018** when convenient                                                                                                                                     |
+| Console package   | **0.1.0.10019** (v0.1.4) — deployed 2026-08-02, tip conserved (671223), soft-stop PASS; re-check App type → Game                                                                                                                                     |
 | Game class        | **Done** — App type → Game confirmed (2026-08-01, user) · `DefaultUWPContentTypeToGame=true`                                                                                                                                |
 | Pin               | Bitcoin Core **v31.1**                                                                                                                                                                                                      |
-| UI on console     | **Live** Core **v31.1 · app 0.1.0.10017** — tip age, dual bars, spark, ETA (screenshot is a 0.1.0.75 capture)                                                                                                               |
+| UI on console     | **Live** Core **v31.1 · app 0.1.0.10019** — tip age, dual bars, spark, ETA (screenshot is a 0.1.0.75 capture)                                                                                                               |
 | Soft-stop         | Mid-IBD **PASS** clean 8s no DELETE + tip conserved (2026-08-01) · [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) **closed**; @ tip retest via [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
 | Mainnet IBD       | **In progress** (~**368k**, progress ~**5.7%**) — leave focused                                                                                                                                                             |
 | 24h stable at tip | **Pending** IBD                                                                                                                                                                                                             |
@@ -97,7 +97,7 @@ Wallet UI · Store · `listen=1` · CLN on-console · USB datadir UX
 
 | Issue                                                         | Title                              | Status                                                                                                                     |
 | ------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close)    | open — ~368k / ~5.7%                                                                                                       |
+| [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) | Complete mainnet IBD (v1 close)    | open — ~671k / ~44.5%                                                                                                       |
 | [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2) | 24h stability at tip (v1 close)    | open                                                                                                                       |
 | [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) | Soft-stop retest at tip (v1 close) | open                                                                                                                       |
 | [#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) | Soft-stop → DELETE fallback        | **closed** (2026-07-31) — mid-IBD field PASS; tip retest via [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
@@ -121,4 +121,4 @@ gh issue list --label v1-close
 
 ---
 
-_Last consolidated: 2026-08-01 — **v0.1.3** published (`0.1.0.10018`); console still **0.1.0.10017**; leave IBD focused._
+_Last consolidated: 2026-08-02 — **v0.1.4** deployed on console (`0.1.0.10019`), IBD ~44.5% @ ~671k; leave IBD focused._

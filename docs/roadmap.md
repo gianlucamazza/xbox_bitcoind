@@ -29,7 +29,7 @@ Live ops status: [tracking.md](tracking.md).
 
 | Gate                 | How to verify                                                            | Status                                                                                                                                               |
 | -------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mainnet IBD finished | `tip_progress >= 0.999` via `node-status` / UI                           | **in progress** (~5.7% @ height ~**368k**, console package **0.1.0.10017** / v0.1.2) — [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) |
+| Mainnet IBD finished | `tip_progress >= 0.999` via `node-status` / UI                           | **in progress** (~44.5% @ height ~**671k**, console package **0.1.0.10019** / v0.1.4) — [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) |
 | ≥24h stable at tip   | Hourly samples in `ibd.jsonl` all running near tip                       | **pending** IBD — [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2)                                                                      |
 | Soft-stop at tip     | `./scripts/soft-stop-test.sh` + note in [persistence.md](persistence.md) | **pending** tip — [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3)                                                                      |
 
@@ -96,4 +96,4 @@ Live checklist + issue map: [tracking.md](tracking.md).
 
 ---
 
-_Last roadmap reconciliation: 2026-08-01 — console **0.1.0.10017** (v0.1.2); IBD ~368k; leave node running._
+_Last roadmap reconciliation: 2026-08-02 — console **0.1.0.10019** (v0.1.4); IBD ~671k (~44.5%); leave node running._
