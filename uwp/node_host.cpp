@@ -20,6 +20,10 @@ namespace xbb {
 namespace {
 
 std::mutex g_mu;
+// Serializes NodeStart/NodeStop and guards g_thread: start and stop can be issued
+// concurrently (UI click, suspend worker, resume worker). Held for the whole stop wait,
+// so a start racing a stop blocks until the stop settles — callers must be off the UI thread.
+std::mutex g_lifecycle_mu;
 std::atomic<bool> g_running{false};
 std::atomic<int> g_exit{0};
 std::thread g_thread;
@@ -207,6 +211,7 @@ NodeStatus NodeStatusLive() {
 
 bool NodeStart() {
 #ifdef XBB_WITH_CORE
+    std::lock_guard lifecycle(g_lifecycle_mu);
     if (g_running) {
         return true;
     }
@@ -229,6 +234,7 @@ bool NodeStart() {
 
 void NodeStop() {
 #ifdef XBB_WITH_CORE
+    std::lock_guard lifecycle(g_lifecycle_mu);
     Logf("[node] NodeStop: requesting RPC stop");
     const std::string datadir = NodeDatadirUtf8();
     if (g_running.load()) {

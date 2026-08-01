@@ -40,8 +40,10 @@ NodeStatus NodeStatusSnapshot();
 NodeStatus NodeStatusLive();
 
 // Start bitcoind on a background thread (no-op / false if not linked).
+// Serialized with NodeStop; may block on an in-flight stop — call off the UI thread.
 bool NodeStart();
 // Stop via RPC "stop", then join the node thread (best-effort).
+// Blocking (up to ~150s mid-IBD) — call off the UI thread.
 void NodeStop();
 
 // true if compiled with XBB_WITH_CORE

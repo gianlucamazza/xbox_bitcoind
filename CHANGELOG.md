@@ -13,6 +13,18 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ## [Unreleased]
 
+### Fixed
+
+- UWP host concurrency: `NodeStart`/`NodeStop` serialized by a lifecycle mutex (concurrent
+  `std::thread` join/detach was UB); resume now waits out an in-flight suspend soft-stop
+  before restarting the node (fast Home in/out race)
+- Dashboard could freeze permanently if a refresh worker threw (`m_refreshing` stuck);
+  refresh flag is now atomic and re-armed on failure
+- `NodeStart` (thread join + datadir I/O) no longer runs on the UI thread (Start button,
+  post-probe auto-start)
+- Data races: probe note now mutex-guarded; `LocalStatePath()` init is thread-safe
+- Session sparkline/ETA history reset on node stop/start (pre-suspend samples poisoned the slope)
+
 ## [0.1.3] — 2026-08-01
 
 Docs and field-verify closure after v0.1.2. Bitcoin Core pin remains **v31.1**.  
@@ -59,7 +71,7 @@ Bitcoin Core pin remains **v31.1**.
 - Pure layout helpers `uwp/ui_layout.h` + `scripts/test-ui-layout.sh` (Linux CI)
 - `ibd-report.sh` recent rate + rough height/progress ETA
 - IBD console conf defaults (`dbcache=512`, `maxconnections=16`, `blocksonly=1`)
-  + `scripts/apply-console-conf.sh`
+  - `scripts/apply-console-conf.sh`
 - Off-LAN console access via standard OpenSSH LocalForward (Odroid Tailscale)
 - Auto-start node after probes (WithCore)
 - `scripts/generate-version-header.py` — pin → `uwp/xbb_version.generated.h`
@@ -82,9 +94,9 @@ Bitcoin Core pin remains **v31.1**.
 
 ### Known limits (unchanged)
 
-- Dev Mode only; mainnet IBD still wall-clock  
-- Mid-IBD soft-stop may still fall back to DELETE after long host wait (tip usually conserved)  
-- No wallet UI; `listen=0` by default  
+- Dev Mode only; mainnet IBD still wall-clock
+- Mid-IBD soft-stop may still fall back to DELETE after long host wait (tip usually conserved)
+- No wallet UI; `listen=0` by default
 
 ## [0.1.0] — 2026-07-31
 
@@ -102,9 +114,9 @@ First public release.
 
 ### Limits (v0.1)
 
-- Dev Mode only; no Store submission  
-- Mainnet IBD can take a long time on a fresh datadir  
-- No wallet UI; `listen=0` by default  
+- Dev Mode only; no Store submission
+- Mainnet IBD can take a long time on a fresh datadir
+- No wallet UI; `listen=0` by default
 
 [Unreleased]: https://github.com/gianlucamazza/xbox_bitcoind/compare/v0.1.1...HEAD
 [0.1.1]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.1

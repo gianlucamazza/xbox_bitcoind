@@ -43,18 +43,23 @@ void App::OnLaunched(LaunchActivatedEventArgs const&) {
 
 void App::OnSuspending(IInspectable const&, SuspendingEventArgs const& e) {
     // Prefer clean stop over freezing mid-write (LevelDB). Game OS still suspends the process
-    // after this — IBD does not continue while the title is not in focus.
+    // after this — IBD does not continue while the title is not in focus. The OS deferral
+    // budget is much shorter than a worst-case mid-IBD flush; if it runs out the process is
+    // suspended anyway and the host DELETE + relaunch path recovers.
     const bool was_running = xbb::NodeStatusSnapshot().running;
     m_restart_node_on_resume = was_running && xbb::NodeCoreLinked();
     xbb::Logf("[app] OnSuspending — soft-stop node (was_running=%d restart_on_resume=%d)",
               was_running ? 1 : 0, m_restart_node_on_resume ? 1 : 0);
     auto deferral = e.SuspendingOperation().GetDeferral();
-    std::thread([deferral]() {
+    auto stopped = std::make_shared<std::promise<void>>();
+    m_pending_stop = stopped->get_future().share();
+    std::thread([deferral, stopped]() {
         try {
             xbb::NodeStop();
         } catch (...) {
             xbb::Logf("[app] OnSuspending NodeStop threw");
         }
+        stopped->set_value();
         deferral.Complete();
         xbb::Logf("[app] OnSuspending complete");
     }).detach();
@@ -66,12 +71,13 @@ void App::OnResuming(IInspectable const&, IInspectable const&) {
         return;
     }
     m_restart_node_on_resume = false;
-    // Resume on a worker thread so UI can paint; bitcoind start is blocking setup only.
-    std::thread([]() {
+    // Resume on a worker thread so UI can paint. Wait out any in-flight suspend stop first,
+    // otherwise the restart would target the instance being stopped (fast Home in/out).
+    auto pending_stop = m_pending_stop;
+    std::thread([pending_stop]() {
         try {
-            if (xbb::NodeStatusSnapshot().running) {
-                xbb::Logf("[app] OnResuming: node already running");
-                return;
+            if (pending_stop.valid()) {
+                pending_stop.wait();
             }
             if (xbb::NodeStart()) {
                 xbb::Logf("[app] OnResuming: NodeStart OK (continue IBD)");

@@ -11,19 +11,19 @@ namespace {
 
 std::mutex g_mu;
 FILE* g_fp = nullptr;
-std::wstring g_local;
 
 } // namespace
 
 std::wstring LocalStatePath() {
-    if (g_local.empty()) {
+    // Magic static: first caller wins the init race (node thread, probes, UI all call this).
+    static const std::wstring local = []() -> std::wstring {
         try {
-            g_local = std::wstring(winrt::Windows::Storage::ApplicationData::Current().LocalFolder().Path().c_str());
+            return std::wstring(winrt::Windows::Storage::ApplicationData::Current().LocalFolder().Path().c_str());
         } catch (...) {
-            g_local = L".";
+            return L".";
         }
-    }
-    return g_local;
+    }();
+    return local;
 }
 
 std::wstring LocalStateFile(const wchar_t* name) {

@@ -1011,6 +1011,15 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
         return;
     }
 
+    // Session sparkline/ETA are per-run: samples across a stop/start (or suspend/resume)
+    // would poison the slope, so drop history on running transitions.
+    if (st.running != m_last_running) {
+        m_hist_progress.clear();
+        m_hist_blocks.clear();
+        RedrawSparkline();
+    }
+    m_last_running = st.running;
+
     if (m_stopping) {
         const auto sec = std::chrono::duration_cast<std::chrono::seconds>(
                              std::chrono::steady_clock::now() - m_stop_started)
@@ -1190,26 +1199,42 @@ void MainPageController::ApplyStatus(NodeStatus const& st, std::string const& lo
     }
 }
 
+std::string MainPageController::ProbeNote() const {
+    std::lock_guard lock(m_probe_mu);
+    return m_probe_note;
+}
+
+void MainPageController::SetProbeNote(std::string note) {
+    std::lock_guard lock(m_probe_mu);
+    m_probe_note = std::move(note);
+}
+
 void MainPageController::RefreshAsync() {
-    if (m_refreshing) {
+    if (m_refreshing.exchange(true)) {
         return;
     }
-    m_refreshing = true;
     auto self = shared_from_this();
     auto dispatcher = winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread().Dispatcher();
 
     winrt::Windows::System::Threading::ThreadPool::RunAsync([self, dispatcher](auto&&) {
-        NodeStatus st = NodeStatusLive();
-        std::string log;
-        if (st.available) {
-            log = ReadDebugLogTail(st.datadir, 40);
+        // Any throw before the dispatcher callback would leave m_refreshing stuck true
+        // and freeze the dashboard for good — re-arm from the worker on failure.
+        try {
+            NodeStatus st = NodeStatusLive();
+            std::string log;
+            if (st.available) {
+                log = ReadDebugLogTail(st.datadir, 40);
+            }
+            auto probe = self->ProbeNote();
+            dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal,
+                                [self, st, log, probe]() {
+                                    self->ApplyStatus(st, log, probe);
+                                    self->m_refreshing = false;
+                                });
+        } catch (...) {
+            Logf("[ui] RefreshAsync worker failed; re-arming");
+            self->m_refreshing = false;
         }
-        auto probe = self->m_probe_note;
-        dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal,
-                            [self, st, log, probe]() {
-                                self->ApplyStatus(st, log, probe);
-                                self->m_refreshing = false;
-                            });
     });
 }
 
@@ -1218,10 +1243,21 @@ void MainPageController::OnStartClick() {
     if (!NodeCoreLinked() || m_stopping) {
         return;
     }
-    if (NodeStart()) {
-        ApplyStatus(NodeStatusSnapshot(), {}, m_probe_note);
-        RefreshAsync();
-    }
+    // NodeStart may join a previous node thread and touch the datadir — keep it off the UI thread.
+    m_btn_start.IsEnabled(false);
+    auto self = shared_from_this();
+    auto dispatcher = winrt::Windows::UI::Core::CoreWindow::GetForCurrentThread().Dispatcher();
+    winrt::Windows::System::Threading::ThreadPool::RunAsync([self, dispatcher](auto&&) {
+        const bool ok = NodeStart();
+        dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal, [self, ok]() {
+            if (ok) {
+                self->ApplyStatus(NodeStatusSnapshot(), {}, self->ProbeNote());
+                self->RefreshAsync();
+            } else {
+                self->m_btn_start.IsEnabled(true);
+            }
+        });
+    });
 }
 
 void MainPageController::OnStopClick() {
@@ -1240,7 +1276,7 @@ void MainPageController::OnStopClick() {
         NodeStop();
         dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal, [self]() {
             self->m_stopping = false;
-            self->ApplyStatus(NodeStatusSnapshot(), {}, self->m_probe_note);
+            self->ApplyStatus(NodeStatusSnapshot(), {}, self->ProbeNote());
             self->RefreshAsync();
         });
     });
@@ -1263,16 +1299,15 @@ void MainPageController::StartProbesAsync() {
                 break;
             }
         }
-        self->m_probe_note = all_ok ? "probes OK" : FormatProbeReport(results);
+        self->SetProbeNote(all_ok ? "probes OK" : FormatProbeReport(results));
+        // Auto-start pruned node after probes (WithCore builds) — here on the worker,
+        // NodeStart blocks and must not run on the UI thread.
+        if (NodeCoreLinked() && !NodeStatusSnapshot().running) {
+            Logf("[ui] auto-start after probes");
+            NodeStart();
+        }
         dispatcher.RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal, [self]() {
-            self->ApplyStatus(NodeStatusSnapshot(), {}, self->m_probe_note);
-            // Auto-start pruned node after probes (WithCore builds).
-            if (NodeCoreLinked() && !NodeStatusSnapshot().running) {
-                Logf("[ui] auto-start after probes");
-                if (NodeStart()) {
-                    self->ApplyStatus(NodeStatusSnapshot(), {}, self->m_probe_note);
-                }
-            }
+            self->ApplyStatus(NodeStatusSnapshot(), {}, self->ProbeNote());
             self->RefreshAsync();
         });
     });

@@ -8,9 +8,11 @@
 #include "ui_layout.h"
 
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <deque>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -52,6 +54,8 @@ class MainPageController : public std::enable_shared_from_this<MainPageControlle
     void LayoutMetricRow(winrt::Windows::UI::Xaml::Controls::Grid const& grid,
                          std::vector<winrt::Windows::UI::Xaml::Controls::Border> const& cards, int columns);
     void RefreshAsync();
+    std::string ProbeNote() const;
+    void SetProbeNote(std::string note);
     void ApplyStatus(NodeStatus const& st, std::string const& log_tail, std::string const& probe_note);
     void SetPill(std::wstring const& text, winrt::Windows::UI::Color bg);
     void SetMetric(winrt::Windows::UI::Xaml::Controls::TextBlock const& value, std::wstring const& text,
@@ -115,6 +119,8 @@ class MainPageController : public std::enable_shared_from_this<MainPageControlle
     winrt::Windows::UI::Xaml::DispatcherTimer m_timer{nullptr};
     UiLayout m_layout{};
     LayoutPlan m_plan{};
+    // Written on ThreadPool (StartProbesAsync), read on UI + worker threads — use accessors.
+    mutable std::mutex m_probe_mu;
     std::string m_probe_note;
     std::wstring m_last_log;
     std::deque<double> m_hist_progress;
@@ -124,8 +130,11 @@ class MainPageController : public std::enable_shared_from_this<MainPageControlle
     int64_t m_cache_disk = 0;
     int m_cache_mempool = 0;
     int64_t m_cache_uptime = 0;
-    bool m_refreshing = false;
+    // Set on UI thread, cleared on UI or worker thread (RefreshAsync failure path).
+    std::atomic<bool> m_refreshing{false};
     bool m_stopping = false;
+    // Last running state seen by ApplyStatus (UI thread) — resets ETA history on transitions.
+    bool m_last_running = false;
     std::chrono::steady_clock::time_point m_stop_started{};
 };
 

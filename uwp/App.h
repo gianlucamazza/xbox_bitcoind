@@ -5,6 +5,7 @@
 #include "App.g.h"
 #include "pch.h"
 
+#include <future>
 #include <memory>
 
 namespace xbb {
@@ -27,6 +28,9 @@ struct App : AppT<App> {
     winrt::event_token m_resuming_token{};
     // Restart bitcoind after Home suspend if it was running (soft-stopped in OnSuspending).
     bool m_restart_node_on_resume = false;
+    // Completed when the suspend soft-stop worker finishes; OnResuming waits on it so the
+    // restart cannot race an in-flight stop. UI-thread access only.
+    std::shared_future<void> m_pending_stop;
 };
 
 } // namespace winrt::xbox_bitcoind::implementation
