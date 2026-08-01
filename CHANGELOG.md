@@ -13,6 +13,13 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ## [Unreleased]
 
+## [0.1.5] — 2026-08-02
+
+Quality/hardening follow-up to the v0.1.4 review: probe flash-wear fix, extended
+CI lint wall, tag-derived MSIX versions (this is the first `0.1.5.1nnnn` package),
+release provenance, and version-SSOT enforcement across docs. Bitcoin Core pin
+remains **v31.1**.
+
 ### Added
 
 - CI lint coverage: `actionlint` (workflows), `PSScriptAnalyzer` (all `.ps1`, settings in
@@ -209,7 +216,8 @@ First public release.
 - Mainnet IBD can take a long time on a fresh datadir
 - No wallet UI; `listen=0` by default
 
-[Unreleased]: https://github.com/gianlucamazza/xbox_bitcoind/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/gianlucamazza/xbox_bitcoind/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.5
 [0.1.4]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.4
 [0.1.3]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.3
 [0.1.2]: https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.2
