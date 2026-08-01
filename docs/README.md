@@ -11,7 +11,7 @@ Snapshot (see also [ops.md](ops.md) · [tracking.md](tracking.md)):
 |                 |                                                                                                                    |
 | --------------- | ------------------------------------------------------------------------------------------------------------------ |
 | Pin             | Bitcoin Core **v31.1** (not the MSIX revision)                                                                     |
-| Console package | `GianlucaMazza.xboxbitcoind` **0.1.0.10017** (WithCore, **v0.1.2**); latest release **v0.1.3** (`0.1.0.10018`)     |
+| Console package | `GianlucaMazza.xboxbitcoind` **0.1.0.10017** (WithCore, **v0.1.2**); latest release **v0.1.4** (`0.1.0.10019`)     |
 | Screenshot      | [assets/screenshot-console.png](assets/screenshot-console.png) (capture from an earlier package; refresh optional) |
 | Datadir         | `LocalState\bitcoin`                                                                                               |
 | IBD             | Mainnet ~5% — [tracking.md](tracking.md)                                                                           |

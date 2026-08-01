@@ -33,7 +33,7 @@ _Live capture, Series S Dev Mode — mid-IBD dashboard (Core **v31.1** · app pa
 |                  |                                                                                                            |
 | ---------------- | ---------------------------------------------------------------------------------------------------------- |
 | Package identity | `GianlucaMazza.xboxbitcoind` · App Id `App` · type **Game**                                                |
-| Latest release   | **[v0.1.3](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.3)** (MSIX e.g. `0.1.0.10018`) |
+| Latest release   | **[v0.1.4](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.4)** (MSIX e.g. `0.1.0.10019`) |
 | Live console     | `./scripts/node-status.sh` · [docs/tracking.md](docs/tracking.md)                                          |
 | Datadir          | `LocalState\bitcoin`                                                                                       |
 | Core pin         | [config/bitcoin-core.pin](config/bitcoin-core.pin) (**v31.1**)                                             |
@@ -175,7 +175,7 @@ Research archive (phase 0): [docs/research/](docs/research/00-feasibility.md).
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **v1 engineering**              | **Complete** ([docs/roadmap.md](docs/roadmap.md))                                                                                                                                                                      |
 | Architecture + UI               | **Complete** — lifecycle, host plane, tip age / HEADERS·STALE ([docs/plan-core-uwp.md](docs/plan-core-uwp.md) · [docs/ui.md](docs/ui.md))                                                                              |
-| WithCore on Series S            | Working — console package **0.1.0.10017** (**v0.1.2**); latest release **v0.1.3** / `0.1.0.10018` not yet deployed; IBD mid-progress                                                                                   |
+| WithCore on Series S            | Working — console package **0.1.0.10017** (**v0.1.2**); latest release **v0.1.4** / `0.1.0.10019` not yet deployed; IBD mid-progress                                                                                   |
 | Soft-stop persistence           | Tip conserved early + mid IBD; clean mid-IBD soft-stop field-verified ([#4](https://github.com/gianlucamazza/xbox_bitcoind/issues/4) closed); tip retest [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3) |
 | Mainnet IBD → tip + 24h stable  | **Ops pending** (timer running; `./scripts/v1-close-check.sh`)                                                                                                                                                         |
 | Wallet / Store / inbound listen | Out of scope for v1                                                                                                                                                                                                    |
