@@ -8,19 +8,21 @@ Mark results in this file or in linked notes under `docs/research/spikes/`.
 
 ## 0. Environment inventory
 
-| Check                                                        | Status | Notes                                                   |
-| ------------------------------------------------------------ | ------ | ------------------------------------------------------- |
-| Windows 10/11 PC available                                   | [ ]    | Required for VS + UWP packaging                         |
-| Visual Studio with C++ desktop + UWP / Windows app workloads | [ ]    |                                                         |
-| Xbox Series X or S                                           | [x]    | **Series S** (`docs/console.md`)                        |
-| Microsoft developer account                                  | [x]    | Dev Mode already active on this account                 |
-| Console in Developer Mode                                    | [x]    | Device Portal HTTP 200 (2026-07-30)                     |
-| Host credentials                                             | [x]    | `~/.config/xbox_bitcoind/xbox-env` via `scripts/env.sh` |
-| Probe / deploy scripts                                       | [x]    | `scripts/probe-console.sh`, `scripts/deploy.sh`         |
-| Ethernet preferred for IBD tests                             | [ ]    | Preferred; Wi‑Fi may work for tests                     |
-| External USB drive (≥64–128 GB free)                         | [ ]    | For datadir experiments                                 |
+| Check                                                        | Status | Notes                                                        |
+| ------------------------------------------------------------ | ------ | ------------------------------------------------------------ |
+| Windows 10/11 PC available                                   | [ ]    | Required for the VS/CI packaging path (2026-08 update below) |
+| Visual Studio with C++ desktop + UWP / Windows app workloads | [ ]    |                                                              |
+| Xbox Series X or S                                           | [x]    | **Series S** (`docs/console.md`)                             |
+| Microsoft developer account                                  | [x]    | Dev Mode already active on this account                      |
+| Console in Developer Mode                                    | [x]    | Device Portal HTTP 200 (2026-07-30)                          |
+| Host credentials                                             | [x]    | `~/.config/xbox_bitcoind/xbox-env` via `scripts/env.sh`      |
+| Probe / deploy scripts                                       | [x]    | `scripts/probe-console.sh`, `scripts/deploy.sh`              |
+| Ethernet preferred for IBD tests                             | [ ]    | Preferred; Wi‑Fi may work for tests                          |
+| External USB drive (≥64–128 GB free)                         | [ ]    | For datadir experiments                                      |
 
-**Blocker if no Windows machine:** packaging cannot complete; research/docs and Device Portal tooling work from Linux.
+**Blocker if no Windows machine** (as assessed 2026-07): packaging could not complete; research/docs and Device Portal tooling work from Linux.
+
+**Update 2026-08-09:** a Linux cross path now exists — [uwp-crossbuild](https://github.com/gianlucamazza/uwp-crossbuild) + [openappx](https://github.com/gianlucamazza/openappx) compile, pack, sign and deploy a real C++/WinRT UWP app verified running on this console (2026-08-08). Not yet proven for the bitcoind embed (static Core + UWP patches); CI keeps the Windows runners.
 
 ---
 

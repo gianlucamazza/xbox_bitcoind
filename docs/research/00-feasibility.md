@@ -35,6 +35,7 @@ Closest reusable engineering surface: **Bitcoin Core’s official Windows MSVC +
 - Series hardware is locked (secure boot / co-processors); public Linux is not a practical target.
 - Dev Mode gives **UWP sideloading**, SSH (`DevToolsUser`), SMB, and development scratch storage — not a general desktop OS for end users.
 - Community experiments show **mingw Win32 EXEs** can run under SSH tooling, but with ~**1.5 GB** RAM and no proper app lifecycle. Rejected as the product target; useful only as a canary.
+- **Update 2026-08:** proper **UWP cross-compilation from Linux** (not the mingw canary) is now proven on this console via [uwp-crossbuild](https://github.com/gianlucamazza/uwp-crossbuild) + [openappx](https://github.com/gianlucamazza/openappx). The delivery decision below is unchanged — the UWP package stays the product target; only "Windows host is the sole packaging path" no longer holds (unproven for the bitcoind embed).
 
 ### Delivery model (locked)
 

@@ -29,11 +29,11 @@ Live ops status: [tracking.md](tracking.md).
 
 ### Operations closure (time-bound)
 
-| Gate                 | How to verify                                                            | Status                                                                                                                                               |
-| -------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gate                 | How to verify                                                            | Status                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Mainnet IBD finished | `tip_progress >= 0.999` via `node-status` / UI                           | **in progress** (~45.3% @ height ~**676k**, console package **0.1.5.10020** / v0.1.5) — [#1](https://github.com/gianlucamazza/xbox_bitcoind/issues/1) |
-| ≥24h stable at tip   | Hourly samples in `ibd.jsonl` all running near tip                       | **pending** IBD — [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2)                                                                      |
-| Soft-stop at tip     | `./scripts/soft-stop-test.sh` + note in [persistence.md](persistence.md) | **pending** tip — [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3)                                                                      |
+| ≥24h stable at tip   | Hourly samples in `ibd.jsonl` all running near tip                       | **pending** IBD — [#2](https://github.com/gianlucamazza/xbox_bitcoind/issues/2)                                                                       |
+| Soft-stop at tip     | `./scripts/soft-stop-test.sh` + note in [persistence.md](persistence.md) | **pending** tip — [#3](https://github.com/gianlucamazza/xbox_bitcoind/issues/3)                                                                       |
 
 Automated assessment:
 
@@ -91,6 +91,7 @@ Only then: CLN spike / sibling `xbox_lightning` (not a conf flag). **Default lea
 - Automated soft-stop on milestone via notify (human still confirms)
 - Richer mempool / peer detail panels
 - Soft-stop without DELETE under deep IBD (host RPC stop path / longer wait policy)
+- Linux-native MSIX build path via [uwp-crossbuild](https://github.com/gianlucamazza/uwp-crossbuild) + [openappx](https://github.com/gianlucamazza/openappx) (proven for a C++/WinRT app on this console, 2026-08; needs a spike on the bitcoind embed before it can sit alongside the Windows CI runners)
 
 ---
 
