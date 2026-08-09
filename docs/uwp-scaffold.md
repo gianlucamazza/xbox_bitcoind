@@ -48,25 +48,25 @@ Full node package (**VS 2026 18.3+**) — **split stages** (reuse Core across ap
 
 Requirements:
 
-| Build | Toolchain |
-|-------|-----------|
-| Scaffold | VS 2022+ with UWP C++, Windows SDK (auto / props) |
+| Build    | Toolchain                                             |
+| -------- | ----------------------------------------------------- |
+| Scaffold | VS 2022+ with UWP C++, Windows SDK (auto / props)     |
 | WithCore | **VS 2026 18.3+**, C++ desktop + UWP, vcpkg `x64-uwp` |
 
 CI (path-filtered — see [ci.md](ci.md)):
 
-| Job | When | Runner |
-|-----|------|--------|
-| `uwp-scaffold` | **PR** (or dispatch `with_core=false`) | `windows-2022` |
-| `core-uwp` | **push main** / dispatch WithCore | `windows-2025-vs2026` — libs only, SkipIfFresh |
-| `package-uwp` | after `core-uwp` | `windows-2025-vs2026` — MSIX only |
+| Job            | When                                   | Runner                                         |
+| -------------- | -------------------------------------- | ---------------------------------------------- |
+| `uwp-scaffold` | **PR** (or dispatch `with_core=false`) | `windows-2022`                                 |
+| `core-uwp`     | **push main** / dispatch WithCore      | `windows-2025-vs2026` — libs only, SkipIfFresh |
+| `package-uwp`  | after `core-uwp`                       | `windows-2025-vs2026` — MSIX only              |
 
 Warm pin/patches cache → Core stage is near-instant; package dominates.
 
 ## Deploy (Linux host → Series S)
 
 ```bash
-source ~/.config/xllama/xbox-env   # or scripts/env.sh
+source scripts/env.sh   # reads ~/.config/xbox_bitcoind/xbox-env
 ./scripts/deploy.sh path/to/xbox_bitcoind_*.msix
 # first time / new cert:
 ./scripts/deploy.sh install-cert path/to/xbox_bitcoind-dev.cer
@@ -82,18 +82,18 @@ source ~/.config/xllama/xbox-env   # or scripts/env.sh
 
 ## Probes (on launch)
 
-| Probe | Expectation |
-|-------|-------------|
-| `localstate_write` | ~16 MiB across 4 files under `LocalState\probe` |
-| `virtual_alloc` | 64 MiB `VirtualAlloc`+touch (`VirtualLock` not available in UWP) |
-| `outbound_tcp` | connect to `one.one.one.one:80` |
-| `datadir_layout` | creates `LocalState\bitcoin\bitcoin.conf` |
+| Probe              | Expectation                                                      |
+| ------------------ | ---------------------------------------------------------------- |
+| `localstate_write` | ~16 MiB across 4 files under `LocalState\probe`                  |
+| `virtual_alloc`    | 64 MiB `VirtualAlloc`+touch (`VirtualLock` not available in UWP) |
+| `outbound_tcp`     | connect to `one.one.one.one:80`                                  |
+| `datadir_layout`   | creates `LocalState\bitcoin\bitcoin.conf`                        |
 
 Results also in `LocalState\probe-results.txt`.
 
 ## Related
 
-- [persistence.md](persistence.md) — soft stop and chain conservation  
-- [device-portal.md](device-portal.md) — full `deploy.sh` surface  
-- [patches/uwp/README.md](../patches/uwp/README.md) — Core patch set  
-- [research/spikes/api-matrix.md](research/spikes/api-matrix.md) — API matrix  
+- [persistence.md](persistence.md) — soft stop and chain conservation
+- [device-portal.md](device-portal.md) — full `deploy.sh` surface
+- [patches/uwp/README.md](../patches/uwp/README.md) — Core patch set
+- [research/spikes/api-matrix.md](research/spikes/api-matrix.md) — API matrix

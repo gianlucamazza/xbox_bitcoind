@@ -151,7 +151,7 @@ if (-not $PlatformToolsetOverride) {
     }
 }
 
-# Windows SDK: prefer 22621 (xllama/scaffold pin) when installed; else newest 10.0.*.
+# Windows SDK: prefer 22621 (scaffold pin) when installed; else newest 10.0.*.
 # windows-2025-vs2026 ships 10.0.26100.0 only (no 22621).
 $WindowsSdkVersion = $env:XBB_WINDOWS_SDK_VERSION
 if (-not $WindowsSdkVersion) {
@@ -303,7 +303,7 @@ if (-not $Msix) {
 Write-Host "Build succeeded."
 if ($Msix) {
     Write-Host "Package: $($Msix.FullName)"
-    Write-Host "Deploy:  source ~/.config/xllama/xbox-env && ./scripts/deploy.sh $($Msix.FullName)"
+    Write-Host "Deploy:  source scripts/env.sh && ./scripts/deploy.sh $($Msix.FullName)"
     Write-Host "Then:    Dev Home → package → App type → Game"
     if ($env:GITHUB_OUTPUT) {
         "msix=$($Msix.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8

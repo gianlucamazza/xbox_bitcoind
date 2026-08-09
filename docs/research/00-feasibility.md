@@ -16,13 +16,13 @@ Highest risks: **UWP RAM quotas**, **filesystem/sandbox limits** (including the 
 
 ## Prior art
 
-| Item | Relevance |
-|------|-----------|
-| No known Bitcoin Core / bitcoind Xbox One/Series port | Greenfield project |
-| Bitcointalk Xbox 360 mining threads (2011) | Mining only |
-| [XNAMiner](https://github.com/Generalkidd/XNAMiner) | XNA miner, not a node |
-| UWP pool miners in Store / sideload catalogs | Often broken; Store bans on-device mining |
-| RetroArch / homebrew UWP scene | Proves Dev Mode packaging and large native C++ apps |
+| Item                                                  | Relevance                                           |
+| ----------------------------------------------------- | --------------------------------------------------- |
+| No known Bitcoin Core / bitcoind Xbox One/Series port | Greenfield project                                  |
+| Bitcointalk Xbox 360 mining threads (2011)            | Mining only                                         |
+| [XNAMiner](https://github.com/Generalkidd/XNAMiner)   | XNA miner, not a node                               |
+| UWP pool miners in Store / sideload catalogs          | Often broken; Store bans on-device mining           |
+| RetroArch / homebrew UWP scene                        | Proves Dev Mode packaging and large native C++ apps |
 
 Closest reusable engineering surface: **Bitcoin Core’s official Windows MSVC + CMake + vcpkg** build, then adapt for UWP packaging and sandbox.
 
@@ -38,11 +38,11 @@ Closest reusable engineering surface: **Bitcoin Core’s official Windows MSVC +
 
 ### Delivery model (locked)
 
-- **Xbox Series S** (same unit as xllama — see [`docs/console.md`](../console.md))
+- **Xbox Series S** (see [`docs/console.md`](../console.md))
 - Developer Mode (already active; Device Portal verified 2026-07-30)
 - Proper **UWP package** (**Game** resource class — measured beneficial on this console)
 - Sideload via Device Portal / Visual Studio
-- Host tooling: `scripts/env.sh` reuses `~/.config/xllama/xbox-env`
+- Host tooling: `scripts/env.sh` reads `~/.config/xbox_bitcoind/xbox-env`
 
 ### Useful references
 
@@ -56,13 +56,13 @@ Closest reusable engineering surface: **Bitcoin Core’s official Windows MSVC +
 
 ## Hardware vs node requirements
 
-| Resource | Series X|S (order of magnitude) | Pruned bitcoind |
-|----------|----------------------------------|-----------------|
-| CPU | Zen 2, many cores, shared | IBD CPU-heavy; no mining required |
-| RAM | 16 GB GDDR6 shared with GPU; **app quota much lower** | Need measured budget; desktop guides often assume multi-GB |
-| Disk | Internal usable hundreds of GB; Dev storage default often ~5 GB | Full chain too large; **prune required** (~10–50+ GB class) |
-| External USB | Supported for data (with UWP access caveats) | Preferred for `datadir` if sandbox allows |
-| Network | Home NAT, Ethernet preferred | Outbound P2P sufficient; inbound 8333 optional |
+| Resource     | Series X                                                        | S (order of magnitude)                                      | Pruned bitcoind |
+| ------------ | --------------------------------------------------------------- | ----------------------------------------------------------- | --------------- |
+| CPU          | Zen 2, many cores, shared                                       | IBD CPU-heavy; no mining required                           |
+| RAM          | 16 GB GDDR6 shared with GPU; **app quota much lower**           | Need measured budget; desktop guides often assume multi-GB  |
+| Disk         | Internal usable hundreds of GB; Dev storage default often ~5 GB | Full chain too large; **prune required** (~10–50+ GB class) |
+| External USB | Supported for data (with UWP access caveats)                    | Preferred for `datadir` if sandbox allows                   |
+| Network      | Home NAT, Ethernet preferred                                    | Outbound P2P sufficient; inbound 8333 optional              |
 
 **v1 is pruned only.** Archival full chain is deferred.
 
@@ -87,10 +87,10 @@ Closest reusable engineering surface: **Bitcoin Core’s official Windows MSVC +
 5. **Capability manifest for networking**  
    Declare internet/private network client (and server if listening). Start with `listen=0` / outbound-only.
 
-6. **Store vs sideload**  
-   - Mining on-device: **disallowed** on Store (policy 10.2.6).  
-   - Full node is not mining; wallets/trading have extra rules and company-account requirements.  
-   - **v1 = Dev Mode sideload only.** Store is optional later.  
+6. **Store vs sideload**
+   - Mining on-device: **disallowed** on Store (policy 10.2.6).
+   - Full node is not mining; wallets/trading have extra rules and company-account requirements.
+   - **v1 = Dev Mode sideload only.** Store is optional later.
    - Microsoft has reduced Dev Mode access for accounts with no Store presence — operational risk.
 
 ### Bitcoin Core build notes (2025–2026)
@@ -112,26 +112,26 @@ UWP package (Game class preferred)
 └── Network: outbound P2P; local RPC for debug / future UI
 ```
 
-| Style | Role |
-|-------|------|
-| **A. In-process library** | Preferred product shape if CMake allows linking node into UWP host |
-| **B. Hosted daemon + IPC** | Closer to stock `bitcoind`; harder under UWP lifecycle |
-| **C. SSH Win32 EXE** | Spike-only canary for APIs/RAM |
+| Style                      | Role                                                               |
+| -------------------------- | ------------------------------------------------------------------ |
+| **A. In-process library**  | Preferred product shape if CMake allows linking node into UWP host |
+| **B. Hosted daemon + IPC** | Closer to stock `bitcoind`; harder under UWP lifecycle             |
+| **C. SSH Win32 EXE**       | Spike-only canary for APIs/RAM                                     |
 
 ---
 
 ## Risk register
 
-| Risk | Severity | Mitigation |
-|------|----------|------------|
-| RAM too low for IBD / UTXO cache | High | Game package; small `dbcache`; prune; early device measurement |
-| FS sandbox / 2 GB file limit / USB access | High | Layout audit; folder picker / declared capabilities; external datadir tests |
-| Socket or capability denials | High | Outbound-only first; capability declarations |
-| Missing Win32 APIs | High | API matrix spike; shims; UWP-specific ifdefs |
-| App suspension when not focused | Medium | Document foreground use; Game category |
-| Dev Mode account policy | Medium | Real development activity; sideload docs |
-| Windows+VS build dependency | Medium | Document Windows package pipeline; Linux for research/docs only |
-| Long IBD / bandwidth | Low–Med | Progress UI; patience; no illegal bootstrap claims |
+| Risk                                      | Severity | Mitigation                                                                  |
+| ----------------------------------------- | -------- | --------------------------------------------------------------------------- |
+| RAM too low for IBD / UTXO cache          | High     | Game package; small `dbcache`; prune; early device measurement              |
+| FS sandbox / 2 GB file limit / USB access | High     | Layout audit; folder picker / declared capabilities; external datadir tests |
+| Socket or capability denials              | High     | Outbound-only first; capability declarations                                |
+| Missing Win32 APIs                        | High     | API matrix spike; shims; UWP-specific ifdefs                                |
+| App suspension when not focused           | Medium   | Document foreground use; Game category                                      |
+| Dev Mode account policy                   | Medium   | Real development activity; sideload docs                                    |
+| Windows+VS build dependency               | Medium   | Document Windows package pipeline; Linux for research/docs only             |
+| Long IBD / bandwidth                      | Low–Med  | Progress UI; patience; no illegal bootstrap claims                          |
 
 ---
 
@@ -170,11 +170,11 @@ See [01-phase0-spikes.md](./01-phase0-spikes.md).
 
 Go/no-go must answer:
 
-1. Measured RAM class for Game UWP package  
-2. Writable large datadir path (internal and/or USB)  
-3. Outbound TCP works from UWP  
-4. Which Bitcoin Core tag to pin  
-5. Style A vs B host model  
+1. Measured RAM class for Game UWP package
+2. Writable large datadir path (internal and/or USB)
+3. Outbound TCP works from UWP
+4. Which Bitcoin Core tag to pin
+5. Style A vs B host model
 
 ---
 

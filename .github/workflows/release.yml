@@ -211,7 +211,7 @@ jobs:
 
           ### Install
           \`\`\`bash
-          source ~/.config/xllama/xbox-env
+          source scripts/env.sh
           # Keep Dependencies/x64/ next to the .msix when using deploy.sh
           ./scripts/deploy.sh install-cert path/to/xbox_bitcoind-dev.cer
           ./scripts/deploy.sh path/to/$(basename "${MSIX}")

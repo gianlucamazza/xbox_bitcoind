@@ -4,7 +4,6 @@
 # Priority:
 #   1. XBOX_ENV_FILE (explicit path)
 #   2. ~/.config/xbox_bitcoind/xbox-env
-#   3. ~/.config/xllama/xbox-env  (shared Series S console — preferred default)
 #
 # Usage (from other scripts):
 #   # shellcheck source=env.sh
@@ -27,7 +26,6 @@ if [[ -n "${XBOX_ENV_FILE:-}" ]]; then
 fi
 _xbox_env_candidates+=(
 	"${HOME}/.config/xbox_bitcoind/xbox-env"
-	"${HOME}/.config/xllama/xbox-env"
 )
 
 _xbox_env_found=""
@@ -43,7 +41,7 @@ done
 if [[ -z "$_xbox_env_found" ]]; then
 	echo "xbox_bitcoind: no xbox-env found." >&2
 	echo "  Copy config/xbox-env.example to ~/.config/xbox_bitcoind/xbox-env" >&2
-	echo "  or reuse xllama: ensure ~/.config/xllama/xbox-env exists." >&2
+	echo "  (or point XBOX_ENV_FILE at an existing credentials file)." >&2
 	# Sourced → return; executed as a script → exit
 	if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
 		return 1

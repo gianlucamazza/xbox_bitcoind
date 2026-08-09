@@ -66,11 +66,11 @@ not self-sabotaged** on Xbox Dev Mode (not a Linux systemd daemon).
 
 ### Conf & data
 
-| Do                                            | Don't                                                                      |
-| --------------------------------------------- | -------------------------------------------------------------------------- |
-| Change conf via `apply-console-conf.sh`       | Expect MSIX reinstall to refresh conf (it won't if LocalState conf exists) |
-| Treat pruned chain as **not** a full backup   | Assume uninstall keeps datadir                                             |
-| Watch Dev storage (~90 GB shared with xllama) | Fill disk silently                                                         |
+| Do                                                    | Don't                                                                      |
+| ----------------------------------------------------- | -------------------------------------------------------------------------- |
+| Change conf via `apply-console-conf.sh`               | Expect MSIX reinstall to refresh conf (it won't if LocalState conf exists) |
+| Treat pruned chain as **not** a full backup           | Assume uninstall keeps datadir                                             |
+| Watch Dev storage (~90 GB shared with other Dev apps) | Fill disk silently                                                         |
 
 ---
 
@@ -108,7 +108,7 @@ PFN=$(./scripts/deploy.sh pfn)
    DELETE after long waits — tip is usually conserved; see [persistence.md](persistence.md).
 3. **Never** use raw taskmanager DELETE / hard kill as the normal path.
 4. After every MSIX reinstall: Dev Home → **App type → Game**.
-5. Watch free space on the shared Dev partition (xllama + bitcoind).
+5. Watch free space on the Dev partition (shared with other Dev apps).
 6. **Versions:** package `0.1.0.N` is the **app**; Bitcoin Core pin is **v31.1**.  
    Live package: `./scripts/node-status.sh` · gates: [tracking.md](tracking.md).
 7. **Never uninstall** just to install a lower package revision — **LocalState/datadir is deleted**. Prefer higher revision stamps. Deploy with `Dependencies/x64/*.appx` (VCLibs) beside the `.msix` or launch fails.
@@ -185,7 +185,7 @@ Progress rate is the better planner; blocks/h looks high early (small historical
 | RAM      | Keep Game class; package default `dbcache=512` — try 1024 only after WS re-sample |
 | Disk     | Dev ~90 GB shared; pruned node still needs headroom for blk\* during IBD          |
 | CPU      | Series S will peg cores during verification — expected                            |
-| Thermals | Unmeasured; if console throttles, reduce concurrent xllama load                   |
+| Thermals | Unmeasured; if console throttles, reduce other concurrent Dev app load            |
 
 Re-sample with `./scripts/node-status.sh` after major height milestones
 (500k, 700k, tip).

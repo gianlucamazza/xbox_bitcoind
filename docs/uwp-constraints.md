@@ -1,16 +1,15 @@
 # UWP constraints for xbox_bitcoind
 
-Bitcoind-focused subset. **Measured Series S numbers** live in the sibling
-project and are treated as SSOT unless re-measured here:
-
-→ [`../xllama/docs/uwp-constraints.md`](../../xllama/docs/uwp-constraints.md)
+Bitcoind-focused subset. Numbers marked **measured** come from prior UWP work
+on this same console; treat them as baseline unless re-measured here.
 
 This console is documented in [`console.md`](./console.md).
 
 ## 1. No POSIX `mmap`
 
-AppContainer does not provide POSIX `mmap`. xllama disabled desktop mmap for
-GGUF loads and saw no win from `CreateFileMappingFromApp` experiments.
+AppContainer does not provide POSIX `mmap`. Prior UWP work on this console
+disabled desktop mmap for large-file loads and saw no win from
+`CreateFileMappingFromApp` experiments.
 
 **For Bitcoin Core:** audit Windows file / leveldb / block-index paths for
 mmap assumptions. Prefer buffered I/O or App-compatible mapping APIs if
@@ -23,20 +22,20 @@ No arbitrary `C:\…` paths.
 
 **For bitcoind:** set `-datadir` to a path under LocalState (e.g.
 `LocalState\bitcoin`). Optional later: USB via `removableStorage` + user grant
-(xllama uses this pattern for large assets).
+(pattern already proven on this console for large assets).
 
 Device Portal can upload/download LocalState for debugging (`scripts/deploy.sh`).
 
 ## 3. ~2 GB per-file limit (Dev Mode)
 
-Confirmed relevant on this console’s Dev Mode stack (xllama §8–§9).
+Confirmed relevant on this console’s Dev Mode stack (measured in prior UWP work).
 
 Bitcoin Core default block files are **128 MB** → OK. Avoid shipping or creating
 single multi-GB files (bootstrap monofiles, huge logs without rotation).
 
 ## 4. Dev Mode disk budget
 
-On **this** Series S, Dev storage was raised to **~90 GB** (xllama, 2026-07-08).
+On **this** Series S, Dev storage was raised to **~90 GB** (measured 2026-07-08).
 Default activation is only a few GB free — always verify with
 `./scripts/deploy.sh disk-usage`.
 
@@ -49,8 +48,8 @@ Dev Home can mark a sideloaded package **App** or **Game**. **Game** grants
 Game OS resources (more RAM/CPU; full GPU for games — irrelevant for us except
 as “more resources”).
 
-xllama on this console is **Game**; GPU budget measured **3801 MB** under that
-class. **After every xbox_bitcoind reinstall, set App type → Game** and re-check
+GPU budget measured **3801 MB** under the **Game** class on this console.
+**After every xbox_bitcoind reinstall, set App type → Game** and re-check
 if RAM during IBD is tight.
 
 **Game does not prevent suspend.** Navigating to the Xbox **Home** still suspends
@@ -65,11 +64,11 @@ scheduler behavior.
 
 ## 7. Network capabilities
 
-Declared in `uwp/AppxManifest.xml` (same pattern as xllama):
+Declared in `uwp/AppxManifest.xml`:
 
-- `internetClient` — P2P outbound, DNS, seeds  
-- `privateNetworkClientServer` — LAN RPC/debug if needed  
-- `removableStorage` — optional USB datadir  
+- `internetClient` — P2P outbound, DNS, seeds
+- `privateNetworkClientServer` — LAN RPC/debug if needed
+- `removableStorage` — optional USB datadir
 
 v1: `listen=0` (outbound-only). RPC binds `127.0.0.1:8332` with cookie auth.
 Inbound 8333 is optional and may fight NAT/UWP.
@@ -104,18 +103,18 @@ until measured.
 ## 10. Signing
 
 Packages must be signed; console must trust the cert
-(`deploy.sh install-cert`). Decide at first MSIX whether to reuse the xllama
-dev cert or create `xbox_bitcoind-dev`.
+(`deploy.sh install-cert`). This project uses its own dev cert,
+`xbox_bitcoind-dev` (shipped with each release).
 
 ## Checklist before IBD on console
 
 > **Historical research checklist.** v1 console path is done; live status is
 > [tracking.md](tracking.md). Kept for design context only.
 
-- [x] MSIX installs via `deploy.sh`  
-- [x] App type = **Game**  
-- [x] LocalState writable; multi-file tree > pruned size works  
-- [x] Outbound TCP to peers works  
-- [x] `dbcache` / peak WS measured; no OOM (mid-IBD WS ~0.7–1.2 GiB @ dbcache=512)  
-- [x] No single file ≥ 2 GB in datadir (pruned; portal per-file limit noted)  
-- [x] Disk free after xllama models still enough for prune target  
+- [x] MSIX installs via `deploy.sh`
+- [x] App type = **Game**
+- [x] LocalState writable; multi-file tree > pruned size works
+- [x] Outbound TCP to peers works
+- [x] `dbcache` / peak WS measured; no OOM (mid-IBD WS ~0.7–1.2 GiB @ dbcache=512)
+- [x] No single file ≥ 2 GB in datadir (pruned; portal per-file limit noted)
+- [x] Disk free after other Dev apps' data still enough for prune target

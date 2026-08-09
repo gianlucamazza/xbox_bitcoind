@@ -6,8 +6,6 @@ packaged as a **UWP Game** app and installed over Device Portal.
 
 > **Dev Mode only** — not Microsoft Store, not retail Xbox. Not affiliated with Microsoft or Bitcoin Core.
 
-Companion project on the same console: [xllama](https://github.com/gianlucamazza/xllama).
-
 [![ci-linux](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-linux.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-linux.yml)
 [![ci-msvc-baseline](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/ci-msvc-baseline.yml)
 [![build-uwp](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml/badge.svg)](https://github.com/gianlucamazza/xbox_bitcoind/actions/workflows/build-uwp.yml)
@@ -63,7 +61,7 @@ Prefer **progress rate** over raw blocks/h: early chain blocks are small; rate d
 
 ### Caveats
 
-- Not a lab benchmark: home LAN, concurrent Dev apps (e.g. xllama) may reduce headroom.
+- Not a lab benchmark: home LAN, other concurrent Dev apps may reduce headroom.
 - After datadir wipe / redeploy, wall-clock restarts; tip is conserved across **soft-stop** upgrades.
 - Re-measure at tip with `./scripts/ibd-report.sh` and `./scripts/node-status.sh` — full results live in [docs/ops.md](docs/ops.md) and [docs/tracking.md](docs/tracking.md).
 
@@ -71,11 +69,11 @@ Prefer **progress rate** over raw blocks/h: early chain blocks are small; rate d
 
 ### Requirements
 
-| Role        | Need                                                                                                                            |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Console     | Xbox Series S\|X in **Developer Mode**, free space on Dev storage (~90 GB typical)                                              |
-| Host        | Linux or Windows, `curl`, `python3`, network path to Device Portal                                                              |
-| Credentials | `~/.config/xllama/xbox-env` **or** copy [config/xbox-env.example](config/xbox-env.example) → `~/.config/xbox_bitcoind/xbox-env` |
+| Role        | Need                                                                                         |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| Console     | Xbox Series S\|X in **Developer Mode**, free space on Dev storage (~90 GB typical)           |
+| Host        | Linux or Windows, `curl`, `python3`, network path to Device Portal                           |
+| Credentials | copy [config/xbox-env.example](config/xbox-env.example) → `~/.config/xbox_bitcoind/xbox-env` |
 
 ### Install from Release
 
@@ -84,7 +82,7 @@ Prefer **progress rate** over raw blocks/h: early chain blocks are small; rate d
 2. From the repo root on the host:
 
 ```bash
-source scripts/env.sh   # resolves xllama or project xbox-env
+source scripts/env.sh   # resolves ~/.config/xbox_bitcoind/xbox-env
 ./scripts/deploy.sh install-cert path/to/xbox_bitcoind-dev.cer
 ./scripts/deploy.sh path/to/xbox_bitcoind_*.msix
 ```

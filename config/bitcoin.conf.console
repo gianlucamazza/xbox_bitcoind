@@ -32,7 +32,7 @@ listen=0
 # dbcache: MiB of UTXO+LevelDB cache. Core default is 450; we used 256 early
 # for safety. Series S mid-IBD WS was ~0.7–1.0 GiB at 256 → 512 is the
 # primary IBD speed lever (fewer flushes). Try 1024 only if no concurrent
-# heavy Dev apps (e.g. large xllama) and soft-stop still clean.
+# heavy Dev apps and soft-stop still clean.
 dbcache=512
 
 # Peer slots for parallel block download. 8 was very conservative; 16 is still

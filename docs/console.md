@@ -1,6 +1,6 @@
-# Target console (shared with xllama)
+# Target console
 
-Same **Xbox Series S** as [`xllama`](https://github.com/gianlucamazza/xllama) (Dev Mode + Device Portal).
+**Xbox Series S** in Dev Mode + Device Portal, shared with other Dev apps.
 
 ## Live baseline
 
@@ -11,8 +11,7 @@ Same **Xbox Series S** as [`xllama`](https://github.com/gianlucamazza/xllama) (D
 | OS version    | `26100.8866.amd64fre.xb_flt_2607ge.260630-2200`                                                                                                        |
 | OsEdition     | SystemOS                                                                                                                                               |
 | Device Portal | `https://192.168.1.44:11443` (DHCP — update if IP changes)                                                                                             |
-| Credentials   | `~/.config/xllama/xbox-env` (see `scripts/env.sh`)                                                                                                     |
-| Sibling       | `GianlucaMazza.xllama_1.5.2.836_x64__pj67f1fcj4n14`                                                                                                    |
+| Credentials   | `~/.config/xbox_bitcoind/xbox-env` (see `scripts/env.sh`)                                                                                              |
 | This package  | `GianlucaMazza.xboxbitcoind_0.1.5.10020_x64__m0e4707sws2jw` (release **[v0.1.5](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.5)**) |
 
 **Last full ops check:** 2026-08-02 — deploy **v0.1.5** MSIX **`0.1.5.10020`** (first tag-derived version): checksums + provenance verified, tip conserved across upgrade (`nBestHeight=676600`, IBD ~45.3%), soft-stop-test PASS, health green. Re-check **App type → Game** in Dev Home after this install. Historical field results: [persistence.md](persistence.md).
@@ -29,7 +28,7 @@ Live tracking [tracking.md](tracking.md). Day-to-day: [ops.md](ops.md).
 ```
 
 Note: `/api/devices/file/usage` returns **HTTP 404** on this OS build. Free space
-is managed in Dev Home → Manage Dev Storage (~90 GB from xllama notes).
+is managed in Dev Home → Manage Dev Storage (~90 GB on this console).
 
 ## Storage
 
@@ -39,8 +38,8 @@ is managed in Dev Home → Manage Dev Storage (~90 GB from xllama notes).
 | Per-file limit (Dev Mode UWP) | ~**2 GB**                            |
 | Package resource class        | **Game** (set after every reinstall) |
 
-Pruned datadir should fit the 90 GB allocation; USB later if chain + xllama models
-contend for space.
+Pruned datadir should fit the 90 GB allocation; USB later if the chain and other
+Dev apps' data contend for space.
 
 ## Memory / CPU (Series S, Game)
 
@@ -76,7 +75,7 @@ Packaged default is `dbcache=512` (`config/bitcoin.conf.console`; 256 was the ea
 
 1. No secrets in the repo — only `config/xbox-env.example`.
 2. DHCP may change IP — update `xbox-env` if probe fails.
-3. xllama and xbox_bitcoind share the Dev partition — watch free space during IBD.
+3. The Dev partition is shared with other Dev apps — watch free space during IBD.
 4. After every MSIX install: **App type → Game**.
 5. Prefer `./scripts/deploy.sh stop-app` (soft stop) — never hard-kill mid-IBD.
 6. Leave the app open while syncing; use `./scripts/deploy.sh status` to sample progress.

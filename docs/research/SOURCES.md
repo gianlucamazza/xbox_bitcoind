@@ -15,7 +15,7 @@ Collected during initial online research (2026-07-30). Not exhaustive.
 
 ## Microsoft Store policy (crypto)
 
-- https://learn.microsoft.com/en-us/windows/apps/publish/store-policies  
+- https://learn.microsoft.com/en-us/windows/apps/publish/store-policies
   - §10.2.6 mining ban; wallet/view rules; company account for financial crypto features
 
 ## Bitcoin Core build / node ops
@@ -33,10 +33,10 @@ Collected during initial online research (2026-07-30). Not exhaustive.
 
 ## Sibling projects (this machine)
 
-- `/home/gianluca/Workspace/tooling/xllama` — LLM UWP on the **same Series S**; SSOT for measured UWP constraints and Device Portal scripts pattern
+- Sibling local repo `~/Workspace/tooling/xllama` — prior UWP project on the **same Series S**; provenance of the measured UWP constraints (storage, GPU budget, mmap) cited in `docs/uwp-constraints.md`
 - `/home/gianluca/Workspace/tooling/xbox_lightning` — reserved for a later Lightning layer; out of scope for v1
 
 ## Local console baseline
 
-- `docs/console.md` — live probe (OS build, IP via env, xllama package presence)
-- `~/.config/xllama/xbox-env` — Device Portal credentials (not in git)
+- `docs/console.md` — live probe (OS build, IP via env, installed packages)
+- `~/.config/xbox_bitcoind/xbox-env` — Device Portal credentials (not in git)

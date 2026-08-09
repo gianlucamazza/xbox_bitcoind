@@ -1,12 +1,12 @@
 # Scripts
 
 All paths relative to the repo root. Credentials: `source scripts/env.sh`
-(or `~/.config/xllama/xbox-env`).
+(reads `~/.config/xbox_bitcoind/xbox-env`).
 
 ## Release
 
-| Script | Purpose |
-|--------|---------|
+| Script           | Purpose                                                         |
+| ---------------- | --------------------------------------------------------------- |
 | `cut-release.sh` | Annotated tag `vX.Y.Z` + push → `.github/workflows/release.yml` |
 
 ```bash
@@ -16,25 +16,25 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 
 ## Operate (Linux host → Series S)
 
-| Script | Purpose |
-|--------|---------|
-| `env.sh` | Resolve Device Portal credentials + package identity |
-| `probe-console.sh` | OS/packages smoke probe |
-| `deploy.sh` | Install MSIX, start/stop, logs, **status**, **package-gc**, **soft-stop-test** |
-| `health-check.sh` | **Ops hygiene** one-shot (portal, process, tip, timer, stuck) exit 0/1/2 |
-| `node-status.sh` | IBD tip, RAM, datadir snapshot (`--json`, `--loop N`) |
-| `soft-stop-test.sh` | Automated soft-stop persistence check |
-| `ibd-sample.sh` | Append one JSONL sample (+ milestones / stuck detection) |
-| `ibd-report.sh` | Summarize JSONL history, rate, rough ETA, errors (wipe-aware) |
-| `install-ibd-timer.sh` | Enable hourly user systemd timer |
-| `v1-close-check.sh` | Gate: IBD done + 24h stability (exit 0 = close v1 ops) |
-| `apply-console-conf.sh` | Soft-stop → push conf profile (`console`/`ibd`/`tip`) → start |
-| `test-ui-layout.sh` | Pure layout unit tests (no Xbox; used by ci-linux) |
-| `test-rpc-client.sh` | Pure JSON extractor unit tests (no Xbox; used by ci-linux) |
-| `check-conf-sync.sh` | Embedded conf fallback ≡ config/bitcoin.conf.console (ci-linux) |
-| `check-doc-versions.sh` | Doc version SSOT: tracking.md rev + CHANGELOG release vs README/docs (ci-linux) |
-| `generate-uwp-assets.py` | Rebuild splash/tiles from Core `share/pixmaps` icons |
-| `generate-version-header.py` | `config/bitcoin-core.pin` → `uwp/xbb_version.generated.h` (UI Core version) |
+| Script                       | Purpose                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------- |
+| `env.sh`                     | Resolve Device Portal credentials + package identity                            |
+| `probe-console.sh`           | OS/packages smoke probe                                                         |
+| `deploy.sh`                  | Install MSIX, start/stop, logs, **status**, **package-gc**, **soft-stop-test**  |
+| `health-check.sh`            | **Ops hygiene** one-shot (portal, process, tip, timer, stuck) exit 0/1/2        |
+| `node-status.sh`             | IBD tip, RAM, datadir snapshot (`--json`, `--loop N`)                           |
+| `soft-stop-test.sh`          | Automated soft-stop persistence check                                           |
+| `ibd-sample.sh`              | Append one JSONL sample (+ milestones / stuck detection)                        |
+| `ibd-report.sh`              | Summarize JSONL history, rate, rough ETA, errors (wipe-aware)                   |
+| `install-ibd-timer.sh`       | Enable hourly user systemd timer                                                |
+| `v1-close-check.sh`          | Gate: IBD done + 24h stability (exit 0 = close v1 ops)                          |
+| `apply-console-conf.sh`      | Soft-stop → push conf profile (`console`/`ibd`/`tip`) → start                   |
+| `test-ui-layout.sh`          | Pure layout unit tests (no Xbox; used by ci-linux)                              |
+| `test-rpc-client.sh`         | Pure JSON extractor unit tests (no Xbox; used by ci-linux)                      |
+| `check-conf-sync.sh`         | Embedded conf fallback ≡ config/bitcoin.conf.console (ci-linux)                 |
+| `check-doc-versions.sh`      | Doc version SSOT: tracking.md rev + CHANGELOG release vs README/docs (ci-linux) |
+| `generate-uwp-assets.py`     | Rebuild splash/tiles from Core `share/pixmaps` icons                            |
+| `generate-version-header.py` | `config/bitcoin-core.pin` → `uwp/xbb_version.generated.h` (UI Core version)     |
 
 ```bash
 # Off home LAN: standard SSH local forward (see docs/device-portal.md)
@@ -54,10 +54,10 @@ Best practices write-up: [docs/ops.md § Ops hygiene](../docs/ops.md#ops-hygiene
 
 ## Fetch pin
 
-| Script | Platform |
-|--------|----------|
-| `fetch-bitcoin-core.sh` | Linux / Git Bash |
-| `fetch-bitcoin-core.ps1` | Windows / GHA |
+| Script                   | Platform         |
+| ------------------------ | ---------------- |
+| `fetch-bitcoin-core.sh`  | Linux / Git Bash |
+| `fetch-bitcoin-core.ps1` | Windows / GHA    |
 
 ## Build (split stages)
 
@@ -65,13 +65,13 @@ Best practices write-up: [docs/ops.md § Ops hygiene](../docs/ops.md#ops-hygiene
 fetch → apply patches (via core script) → CoreOnly → package SkipCoreBuild
 ```
 
-| Script | Purpose |
-|--------|---------|
-| `apply-uwp-patches.sh` / `.ps1` | Patch pin tree (idempotent marker) |
-| `build-core-uwp.ps1` | Core UWP static libs (`-SkipIfFresh`, `-Force`) |
-| `build-uwp.ps1` | Scaffold MSIX, or `-CoreOnly`, or `-WithCore` / `-SkipCoreBuild` |
-| `build-msvc-baseline.ps1` | Desktop MSVC pin (`-SkipTests`, `-EnableWallet`) |
-| `build-linux-smoke.sh` | Linux pin smoke (Ninja + ccache when available) |
+| Script                          | Purpose                                                          |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `apply-uwp-patches.sh` / `.ps1` | Patch pin tree (idempotent marker)                               |
+| `build-core-uwp.ps1`            | Core UWP static libs (`-SkipIfFresh`, `-Force`)                  |
+| `build-uwp.ps1`                 | Scaffold MSIX, or `-CoreOnly`, or `-WithCore` / `-SkipCoreBuild` |
+| `build-msvc-baseline.ps1`       | Desktop MSVC pin (`-SkipTests`, `-EnableWallet`)                 |
+| `build-linux-smoke.sh`          | Linux pin smoke (Ninja + ccache when available)                  |
 
 ### Recommended Windows iterate
 

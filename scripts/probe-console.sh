@@ -34,13 +34,13 @@ USAGE="$(curl "${CURL_AUTH[@]}" -w "\nHTTP %{http_code}\n" "${BASE_URL}/api/devi
 echo "${USAGE}"
 echo
 
-echo "--- packages (xllama / bitcoind) ---"
+echo "--- packages (bitcoind) ---"
 curl "${CURL_AUTH[@]}" "${BASE_URL}/api/app/packagemanager/packages" | python3 -c '
 import json, sys
 data = json.load(sys.stdin)
 pkgs = data.get("InstalledPackages") or []
 print(f"installed_packages={len(pkgs)}")
-keys = ("xllama", "bitcoind", "bitcoin")
+keys = ("bitcoind", "bitcoin")
 for p in pkgs:
     name = p.get("PackageFullName") or p.get("Name") or ""
     low = name.lower()

@@ -1,4 +1,4 @@
-# Keep GitHub Actions majors current (aligned with xllama-style hygiene).
+# Keep GitHub Actions majors current.
 version: 2
 updates:
   - package-ecosystem: github-actions

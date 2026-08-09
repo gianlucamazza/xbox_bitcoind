@@ -11,11 +11,11 @@ Upstream: [bitcoin/doc/build-windows-msvc.md](https://github.com/bitcoin/bitcoin
 
 ## Why keep a desktop baseline
 
-| Reason | Detail |
-|--------|--------|
-| Official Windows path | CMake + vcpkg presets (`vs2026`, `vs2026-static`) |
-| Same MSVC family as UWP | Catch Core / pin issues before AppContainer |
-| Unit tests on desktop | `ctest` on main when the MSVC workflow runs |
+| Reason                  | Detail                                            |
+| ----------------------- | ------------------------------------------------- |
+| Official Windows path   | CMake + vcpkg presets (`vs2026`, `vs2026-static`) |
+| Same MSVC family as UWP | Catch Core / pin issues before AppContainer       |
+| Unit tests on desktop   | `ctest` on main when the MSVC workflow runs       |
 
 Linux smoke (`scripts/build-linux-smoke.sh`) only proves the pin configures/builds
 on Linux; ship decisions for Windows still use this MSVC artifact.
@@ -29,8 +29,9 @@ Minimum (from Core v31.1 docs):
 - Git for Windows
 - Python 3 (for `ctest` suite)
 
-Same Windows 11 VM used for xllama UWP is fine if it has the **NativeDesktop**
-workload (xllama’s UWP workload alone is not enough for Core’s desktop preset).
+Any Windows 11 VM already set up for UWP builds is fine if it also has the
+**NativeDesktop** workload (the UWP workload alone is not enough for Core’s
+desktop preset).
 
 ```powershell
 # Optional: install VS Community with C++ desktop (elevated)
@@ -66,16 +67,16 @@ clone manually):
 
 Default flags (aligned with pin / console v1):
 
-| CMake / vcpkg | Value |
-|---------------|--------|
-| Preset | `vs2026` (dynamic `x64-windows`) |
-| `BUILD_GUI` | OFF |
-| `ENABLE_WALLET` | OFF (unless `-EnableWallet`) |
-| `WITH_ZMQ` | OFF |
-| `ENABLE_IPC` | OFF |
-| `BUILD_TESTS` | ON (unless `-SkipTests`) |
-| `VCPKG_MANIFEST_NO_DEFAULT_FEATURES` | ON (no Qt / default features) |
-| Features | `tests` (+ `wallet` if enabled) |
+| CMake / vcpkg                        | Value                            |
+| ------------------------------------ | -------------------------------- |
+| Preset                               | `vs2026` (dynamic `x64-windows`) |
+| `BUILD_GUI`                          | OFF                              |
+| `ENABLE_WALLET`                      | OFF (unless `-EnableWallet`)     |
+| `WITH_ZMQ`                           | OFF                              |
+| `ENABLE_IPC`                         | OFF                              |
+| `BUILD_TESTS`                        | ON (unless `-SkipTests`)         |
+| `VCPKG_MANIFEST_NO_DEFAULT_FEATURES` | ON (no Qt / default features)    |
+| Features                             | `tests` (+ `wallet` if enabled)  |
 
 Equivalent manual commands:
 

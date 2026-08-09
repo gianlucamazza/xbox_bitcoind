@@ -1,6 +1,6 @@
 # Xbox Device Portal (xbox_bitcoind)
 
-Same console and workflow as **xllama**. Credentials live outside the repo.
+Credentials live outside the repo.
 
 ## Enable (already done on the shared Series S)
 
@@ -9,17 +9,13 @@ Same console and workflow as **xllama**. Credentials live outside the repo.
 3. Credentials set under Dev Home → Device Portal credentials.
 4. Portal URL: `https://<console-ip>:11443` (TLS self-signed → curl `-k`).
 
-Full activation notes: sibling project `../xllama/docs/device-portal.md`.
+Full activation walkthrough: [Microsoft devkit activation docs](https://learn.microsoft.com/en-us/windows/uwp/xbox-apps/devkit-activation).
 
 ## Host env
 
 ```bash
-# Prefer shared xllama credentials (default)
-source ~/.config/xllama/xbox-env
-
-# Or project-local
-# cp config/xbox-env.example ~/.config/xbox_bitcoind/xbox-env
-# source ~/.config/xbox_bitcoind/xbox-env
+cp config/xbox-env.example ~/.config/xbox_bitcoind/xbox-env
+$EDITOR ~/.config/xbox_bitcoind/xbox-env
 
 # Scripts resolve this automatically:
 source scripts/env.sh
@@ -38,9 +34,9 @@ to Device Portal. No project-specific tunnel scripts.
 
 Global **`AllowTcpForwarding no`** stays in hardening. User `gmazza` only:
 
-| File on Odroid | Policy |
-|----------------|--------|
-| `…/hardening.conf` | `AllowTcpForwarding no` (global) |
+| File on Odroid                   | Policy                                                                             |
+| -------------------------------- | ---------------------------------------------------------------------------------- |
+| `…/hardening.conf`               | `AllowTcpForwarding no` (global)                                                   |
 | `…/zz-gmazza-local-forward.conf` | `Match User gmazza` → `AllowTcpForwarding local` + `PermitOpen 192.168.1.44:11443` |
 
 Reference copy: [ops/odroid-sshd-gmazza-local-forward.conf](ops/odroid-sshd-gmazza-local-forward.conf).  
@@ -69,38 +65,37 @@ Host odroid-ts
     # LocalForward 127.0.0.1:11443 192.168.1.44:11443   # uncomment if always needed
 ```
 
-| Piece | Role |
-|-------|------|
-| `ssh odroid-ts` | Tailnet jump |
-| Odroid on LAN | reaches Xbox `192.168.1.44:11443` |
+| Piece              | Role                                                 |
+| ------------------ | ---------------------------------------------------- |
+| `ssh odroid-ts`    | Tailnet jump                                         |
+| Odroid on LAN      | reaches Xbox `192.168.1.44:11443`                    |
 | `XBOX_IP_OVERRIDE` | `env.sh` uses this instead of LAN IP from `xbox-env` |
 
 ## Scripts
 
-| Command | Purpose |
-|---------|---------|
-| `./scripts/probe-console.sh` | OS info, disk usage, sibling packages |
-| `./scripts/deploy.sh probe` | Same |
-| `./scripts/deploy.sh os-info` | Raw JSON |
-| `./scripts/deploy.sh packages` | Installed packages |
-| `./scripts/deploy.sh disk-usage` | Dev storage usage API |
-| `./scripts/deploy.sh path/to/app.msix` | Install package (+ companion `.cer` if present) |
-| `./scripts/deploy.sh install-cert file.cer` | Trust signing cert |
-| `./scripts/deploy.sh pfn` | Package full name (when installed) |
-| `./scripts/deploy.sh get-log` | `LocalState/bitcoind.log` (app log) |
-| `./scripts/deploy.sh list-localstate` | List app data |
-| `./scripts/deploy.sh fetch-file <pfn> <name> <out> [subdir]` | Pull a LocalState file |
-| `./scripts/deploy.sh upload-file …` | Push files into LocalState |
-| `./scripts/deploy.sh start-app` | Launch package |
-| `./scripts/deploy.sh stop-app` | **Soft stop**: suspend → wait (default **180s**, `XBB_SOFT_STOP_MAX_WAIT`) → DELETE if needed |
-| `./scripts/deploy.sh package-list` | List installed `xbox_bitcoind` package full names |
-| `./scripts/deploy.sh package-gc [--keep N] [--yes]` | Uninstall older package revisions |
-| `./scripts/deploy.sh status` | IBD/process snapshot (`node-status.sh`) |
-| `./scripts/deploy.sh soft-stop-test` | Persistence self-check |
-| `./scripts/deploy.sh diagnose-startup` | Startup diagnostics |
+| Command                                                      | Purpose                                                                                       |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `./scripts/probe-console.sh`                                 | OS info, disk usage, sibling packages                                                         |
+| `./scripts/deploy.sh probe`                                  | Same                                                                                          |
+| `./scripts/deploy.sh os-info`                                | Raw JSON                                                                                      |
+| `./scripts/deploy.sh packages`                               | Installed packages                                                                            |
+| `./scripts/deploy.sh disk-usage`                             | Dev storage usage API                                                                         |
+| `./scripts/deploy.sh path/to/app.msix`                       | Install package (+ companion `.cer` if present)                                               |
+| `./scripts/deploy.sh install-cert file.cer`                  | Trust signing cert                                                                            |
+| `./scripts/deploy.sh pfn`                                    | Package full name (when installed)                                                            |
+| `./scripts/deploy.sh get-log`                                | `LocalState/bitcoind.log` (app log)                                                           |
+| `./scripts/deploy.sh list-localstate`                        | List app data                                                                                 |
+| `./scripts/deploy.sh fetch-file <pfn> <name> <out> [subdir]` | Pull a LocalState file                                                                        |
+| `./scripts/deploy.sh upload-file …`                          | Push files into LocalState                                                                    |
+| `./scripts/deploy.sh start-app`                              | Launch package                                                                                |
+| `./scripts/deploy.sh stop-app`                               | **Soft stop**: suspend → wait (default **180s**, `XBB_SOFT_STOP_MAX_WAIT`) → DELETE if needed |
+| `./scripts/deploy.sh package-list`                           | List installed `xbox_bitcoind` package full names                                             |
+| `./scripts/deploy.sh package-gc [--keep N] [--yes]`          | Uninstall older package revisions                                                             |
+| `./scripts/deploy.sh status`                                 | IBD/process snapshot (`node-status.sh`)                                                       |
+| `./scripts/deploy.sh soft-stop-test`                         | Persistence self-check                                                                        |
+| `./scripts/deploy.sh diagnose-startup`                       | Startup diagnostics                                                                           |
 
-WDP POST/DELETE need a CSRF token; `deploy.sh` extracts it from the portal cookie
-(same pattern as xllama).
+WDP POST/DELETE need a CSRF token; `deploy.sh` extracts it from the portal cookie.
 
 ### Soft stop (required for chain durability)
 
@@ -118,11 +113,11 @@ PFN=$(./scripts/deploy.sh pfn)
 
 ### Console settings used by this project
 
-| Setting / API | Purpose |
-|---------------|---------|
+| Setting / API                                 | Purpose                            |
+| --------------------------------------------- | ---------------------------------- |
 | `/ext/settings` `DefaultUWPContentTypeToGame` | Prefer Game resource class for UWP |
-| `/ext/screenshot` | Live frame for docs/README |
-| `taskmanager` start / stop / **suspend** | Lifecycle + clean shutdown |
+| `/ext/screenshot`                             | Live frame for docs/README         |
+| `taskmanager` start / stop / **suspend**      | Lifecycle + clean shutdown         |
 
 ## Manual curl examples
 
