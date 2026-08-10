@@ -13,6 +13,11 @@ and this project aims to follow [Semantic Versioning](https://semver.org/) for
 
 ## [Unreleased]
 
+### Changed
+
+- Docs: scrub lab IPs / jump-host identity from public Device Portal docs;
+  generic SSH LocalForward examples (`<console-ip>`, `<jump-host>`, `<user>`)
+
 ## [0.1.5] — 2026-08-02
 
 Quality/hardening follow-up to the v0.1.4 review: probe flash-wear fix, extended
@@ -170,7 +175,7 @@ Bitcoin Core pin remains **v31.1**.
 - `ibd-report.sh` recent rate + rough height/progress ETA
 - IBD console conf defaults (`dbcache=512`, `maxconnections=16`, `blocksonly=1`)
   - `scripts/apply-console-conf.sh`
-- Off-LAN console access via standard OpenSSH LocalForward (Odroid Tailscale)
+- Off-LAN console access via standard OpenSSH LocalForward (SSH jump host)
 - Auto-start node after probes (WithCore)
 - `scripts/generate-version-header.py` — pin → `uwp/xbb_version.generated.h`
 - `scripts/generate-uwp-assets.py` — Core official icons for splash/tiles

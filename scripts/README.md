@@ -38,7 +38,7 @@ All paths relative to the repo root. Credentials: `source scripts/env.sh`
 
 ```bash
 # Off home LAN: standard SSH local forward (see docs/device-portal.md)
-ssh -N -L 127.0.0.1:11443:192.168.1.44:11443 odroid-ts   # other terminal
+ssh -N -L 127.0.0.1:11443:<console-ip>:11443 <jump-host>   # other terminal
 export XBOX_IP_OVERRIDE=127.0.0.1
 
 ./scripts/health-check.sh               # green/amber/red

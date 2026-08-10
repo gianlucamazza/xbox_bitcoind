@@ -10,7 +10,7 @@
 | ComputerName  | `XBOX`                                                                                                                                                 |
 | OS version    | `26100.8866.amd64fre.xb_flt_2607ge.260630-2200`                                                                                                        |
 | OsEdition     | SystemOS                                                                                                                                               |
-| Device Portal | `https://192.168.1.44:11443` (DHCP — update if IP changes)                                                                                             |
+| Device Portal | `https://<console-ip>:11443` (live IP in `xbox-env`; DHCP may change)                                                                                  |
 | Credentials   | `~/.config/xbox_bitcoind/xbox-env` (see `scripts/env.sh`)                                                                                              |
 | This package  | `GianlucaMazza.xboxbitcoind_0.1.5.10020_x64__m0e4707sws2jw` (release **[v0.1.5](https://github.com/gianlucamazza/xbox_bitcoind/releases/tag/v0.1.5)**) |
 

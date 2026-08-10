@@ -24,29 +24,32 @@ source scripts/env.sh
 
 Resolution order is documented in `scripts/env.sh`.
 
-## Off-LAN via Tailscale + Odroid
+## Off-LAN via SSH jump host
 
-When the laptop is **not** on `192.168.1.0/24` but Odroid is (Tailscale /
-Headscale host `odroid-ts` → `100.64.0.2`), use a normal **SSH local forward**
-to Device Portal. No project-specific tunnel scripts.
+When the laptop is **not** on the same LAN as the console, use a normal
+**SSH local forward** through any jump host that *can* reach Device Portal.
+No project-specific tunnel scripts. Real IPs, hostnames, and usernames stay in
+operator-local config (`xbox-env`, `~/.ssh/config`) — not in this repo.
 
-### Odroid sshd (least privilege)
+### Jump-host sshd (least privilege)
 
-Global **`AllowTcpForwarding no`** stays in hardening. User `gmazza` only:
+If the jump host hardens SSH with global **`AllowTcpForwarding no`**, allow
+local forwards for one operator user only, destination-whitelisted to the
+console portal:
 
-| File on Odroid                   | Policy                                                                             |
-| -------------------------------- | ---------------------------------------------------------------------------------- |
-| `…/hardening.conf`               | `AllowTcpForwarding no` (global)                                                   |
-| `…/zz-gmazza-local-forward.conf` | `Match User gmazza` → `AllowTcpForwarding local` + `PermitOpen 192.168.1.44:11443` |
+| Drop-in on jump host           | Policy                                                                                   |
+| ------------------------------ | ---------------------------------------------------------------------------------------- |
+| `…/hardening.conf`             | `AllowTcpForwarding no` (global)                                                         |
+| `…/zz-local-forward.conf`      | `Match User <user>` → `AllowTcpForwarding local` + `PermitOpen <console-ip>:11443`       |
 
-Reference copy: [ops/odroid-sshd-gmazza-local-forward.conf](ops/odroid-sshd-gmazza-local-forward.conf).  
+Reference copy: [ops/sshd-local-forward-example.conf](ops/sshd-local-forward-example.conf).  
 Reload: `sudo sshd -t && sudo systemctl reload ssh`.
 
 ### Standard tunnel
 
 ```bash
 # terminal 1 — keep open (OpenSSH LocalForward)
-ssh -N -L 127.0.0.1:11443:192.168.1.44:11443 odroid-ts
+ssh -N -L 127.0.0.1:11443:<console-ip>:11443 <jump-host>
 
 # terminal 2 — tools talk to localhost; creds still from xbox-env
 export XBOX_IP_OVERRIDE=127.0.0.1
@@ -58,17 +61,17 @@ export XBOX_IP_OVERRIDE=127.0.0.1
 Optional `~/.ssh/config` (standard OpenSSH, not a project script):
 
 ```sshconfig
-Host odroid-ts
-    HostName 100.64.0.2
-    User gmazza
-    Port 2233
-    # LocalForward 127.0.0.1:11443 192.168.1.44:11443   # uncomment if always needed
+Host <jump-host>
+    HostName <jump-ip-or-name>
+    User <user>
+    # Port <ssh-port>   # if non-default
+    # LocalForward 127.0.0.1:11443 <console-ip>:11443   # uncomment if always needed
 ```
 
 | Piece              | Role                                                 |
 | ------------------ | ---------------------------------------------------- |
-| `ssh odroid-ts`    | Tailnet jump                                         |
-| Odroid on LAN      | reaches Xbox `192.168.1.44:11443`                    |
+| `ssh <jump-host>`  | Reach a host that can talk to the console LAN       |
+| Jump host on LAN   | reaches Xbox `<console-ip>:11443`                    |
 | `XBOX_IP_OVERRIDE` | `env.sh` uses this instead of LAN IP from `xbox-env` |
 
 ## Scripts
