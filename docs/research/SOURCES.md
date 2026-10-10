@@ -34,7 +34,7 @@ Collected during initial online research (2026-07-30). Not exhaustive.
 ## Sibling projects (this machine)
 
 - Sibling local repo `~/Workspace/tooling/xllama` — prior UWP project on the **same Series S**; provenance of the measured UWP constraints (storage, GPU budget, mmap) cited in `docs/uwp-constraints.md`
-- `/home/gianluca/Workspace/tooling/xbox_lightning` — reserved for a later Lightning layer; out of scope for v1
+- a sibling local repo (xbox_lightning) — reserved for a later Lightning layer; out of scope for v1
 
 ## Local console baseline
 
