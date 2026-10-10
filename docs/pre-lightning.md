@@ -35,7 +35,7 @@ Live status: [tracking.md](tracking.md). Day-to-day ops: [ops.md](ops.md).
      ┌─────────────────────┴─────────────────────┐
      │  Integration options (choose later)       │
      │                                           │
-     │  A. Host / Odroid CLN  ──tunnel/RPC?──►   │
+     │  A. Host/<jump-host> CLN ──tunnel/RPC?──► │
      │     (cookie copy or SSH + local bitcoind) │
      │                                           │
      │  B. Sibling UWP “xbox_lightning”          │
@@ -135,12 +135,12 @@ What LN needs from Core (CLN-oriented, stock):
 
 ## 5. Integration options (decision after G1–G3)
 
-### Option A — CLN on host/Odroid (recommended first spike)
+### Option A — CLN on Host/<jump-host> (recommended first spike)
 
 ```text
-Host/Odroid CLN  →  needs a bitcoind backend
-                 →  either: local bitcoind on host
-                 →  or: Xbox bitcoind if RPC can be reached safely
+Host/<jump-host> CLN  →  needs a bitcoind backend
+                      →  either: local bitcoind on host
+                      →  or: Xbox bitcoind if RPC can be reached safely
 ```
 
 | Pros                | Cons                                       |
