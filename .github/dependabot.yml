@@ -11,6 +11,10 @@ updates:
       - dependencies
       - ci
   # uwp/packages.config (CppWinRT NuGet) was previously unmonitored.
+    groups:
+      version-updates:
+        applies-to: version-updates
+        patterns: ['*']
   - package-ecosystem: nuget
     directory: /uwp
     schedule:
@@ -19,3 +23,7 @@ updates:
     open-pull-requests-limit: 2
     labels:
       - dependencies
+    groups:
+      version-updates:
+        applies-to: version-updates
+        patterns: ['*']
